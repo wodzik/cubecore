@@ -366,6 +366,11 @@ re-export shims in core — they would make core depend on the method packages
   Demo `/playground`: every player option (timing: tempo / recording / share
   code; skins, page theme, 2D views, back view, hints, masks, stage markers,
   controls) with the matching code snippet.
+- 2026-09-25 — **progress bar sections**: `Segment` data + `stageSegments`
+  (timeline; any Method), `player.segments` / `player.method`; coloured
+  sections (palette or per-segment colour, `::part(segment-<id>)`), hatched
+  recognition, `segment-labels` (click to jump), popup over a section
+  (`formatSegment`, `tooltips="off"`), PageUp/PageDown, `segmentchange`.
 - Next: glTF piece models, alg notation extras from cubing.js, React bindings,
   per-theme skins, gyroscope adapter from smart-cube drivers, then
   `solve` (cross/xcross).

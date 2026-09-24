@@ -70,7 +70,7 @@
             <div><label for="viz">Visualization</label><select id="viz"><option value="3d">3D</option><option value="net">2D net</option><option value="top">2D last layer</option><option value="iso">2D iso</option></select></div>
             <div><label for="back">Back view</label><select id="back"><option value="none">none</option><option value="side-by-side">side by side</option><option value="top-right">corner</option></select></div>
             <div><label for="mask">Mask</label><select id="mask"><option value="">none</option></select></div>
-            <div><label for="method">Stage markers</label><select id="method"><option value="">none</option></select></div>
+            <div><label for="method">Sections from method</label><select id="method"><option value="">none</option></select></div>
           </div>
           <label class="check"><input type="checkbox" id="hints" /> Back stickers (floating copies of hidden faces)</label>
         </section>
@@ -78,7 +78,9 @@
           <h2>Controls</h2>
           <label class="check"><input type="checkbox" id="controls" checked /> Default controls (controls="none" to hide)</label>
           <label class="check"><input type="checkbox" id="progress" checked /> Progress bar (progress)</label>
-          <label class="check"><input type="checkbox" id="markers" checked /> Markers on it (markers)</label>
+          <label class="check"><input type="checkbox" id="markers" /> Tick marks at section ends (markers)</label>
+          <label class="check"><input type="checkbox" id="labels" checked /> Section names under the bar (segment-labels)</label>
+          <label class="check"><input type="checkbox" id="tooltips" checked /> Popup over a section (tooltips; "off" hides it)</label>
         </section>
       </div>
     </main>

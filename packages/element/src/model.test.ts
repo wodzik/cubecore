@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { applyMoves, formatAlg, invert, isSolved, parseAlg, solvedState, statesEqual } from "@cubecore/core";
 import { CFOP } from "@cubecore/cfop";
 import { recording } from "@cubecore/timeline";
-import { formatTime, fraction, stageMarkers, startMoves, stepTime, tempoRecording } from "./model";
+import { formatTime, fraction, segmentText, stageMarkers, startMoves, stepTime, tempoRecording } from "./model";
 
 describe("player model", () => {
   it("formats times like a timer", () => {
@@ -50,5 +50,12 @@ describe("where an algorithm starts", () => {
     const setup = "F2 D";
     const s2 = applyMoves(solvedState(), startMoves(setup, alg, "end"));
     expect(statesEqual(applyMoves(s2, alg), applyMoves(solvedState(), setup))).toBe(true);
+  });
+});
+
+describe("segment tooltip text", () => {
+  it("label, detail, time split into recognition and execution, moves", () => {
+    expect(segmentText({ start: 1000, end: 4210, split: 1800, label: "F2L 2", detail: "FL", moves: 9 })).toBe("F2L 2 · FL · 3.21 s (recognition 0.80 · execution 2.41) · 9 moves");
+    expect(segmentText({ start: 0, end: 1500, label: "Cross", moves: 1 })).toBe("Cross · 1.50 s · 1 move");
   });
 });

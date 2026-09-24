@@ -34,6 +34,11 @@
       #styled::part(time) { color: #ffd28a; opacity: 1; }
       #styled::part(button-speed) { font-family: system-ui; letter-spacing: 0.04em; }
       #styled::part(progress-track) { background: repeating-linear-gradient(90deg, #2a2420 0 6px, #231e1b 6px 12px); }
+      #styled { --cc-segment-1: #ff7a2f; --cc-segment-2: #ffb347; --cc-segment-3: #ffd28a; --cc-segment-4: #e8743b; --cc-segment-5: #c9562c; --cc-segment-6: #ff9e5e; --cc-segment-7: #f6c177; --cc-segment-8: #d97b4a; --cc-segment-height: 12px; }
+      #styled::part(segment) { border-radius: 3px; }
+      #styled::part(segment-cross) { --seg: #f3f2ee; }
+      #styled::part(tooltip) { background: #ff7a2f; font-weight: 700; }
+      #styled::part(tooltip-text) { color: #1c1917; }
 
       /* 3 · custom controls */
       .mine { display: flex; gap: 8px; align-items: center; width: 100%; }
@@ -51,14 +56,15 @@
     <main>
       <section>
         <h2>1 · Default look — a recorded solve</h2>
-        <p>Real-time replay, <code>progress</code> + <code>markers</code> (CFOP stages from the method). Keys: Space, ←/→, Home/End.</p>
-        <cube-player id="solve" progress markers skin="gan"></cube-player>
+        <p>Real-time replay; <code>progress</code> + <code>segment-labels</code>: CFOP stages as sections (hatched = recognition), popup on hover. Keys: Space, ←/→, Home/End, PageUp/PageDown.</p>
+        <cube-player id="solve" progress segment-labels skin="gan"></cube-player>
       </section>
 
       <section>
         <h2>2 · Restyled — CSS variables and <code>::part()</code></h2>
         <p>Same element; accent, sizes, rounded pill bar and track pattern from the page's CSS.</p>
         <cube-player id="styled" progress markers skin="stickerless"></cube-player>
+        <p style="margin:0">Sections restyled too: a warm palette, <code>::part(segment-cross)</code> in white, a squarer bar.</p>
       </section>
 
       <section>

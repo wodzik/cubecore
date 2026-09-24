@@ -51,6 +51,8 @@ function apply() {
   on("controls") ? player.removeAttribute("controls") : player.setAttribute("controls", "none");
   player.toggleAttribute("progress", on("progress"));
   player.toggleAttribute("markers", on("markers"));
+  player.toggleAttribute("segment-labels", on("labels"));
+  on("tooltips") ? player.removeAttribute("tooltips") : player.setAttribute("tooltips", "off");
 
   // What plays
   let rec: Recording | null = null;
@@ -89,10 +91,12 @@ function snippet(timing: string, method: Method | null): string {
     !on("controls") && `controls="none"`,
     on("progress") && "progress",
     on("markers") && "markers",
+    on("labels") && "segment-labels",
+    !on("tooltips") && `tooltips="off"`,
   ].filter(Boolean);
   const js = [
     timing !== "tempo" && (timing === "share" ? `player.recording = decodeShare(code).recording;` : `player.recording = mySolve; // { scramble, moves: [{ move, t }], totalMs }`),
-    method && `player.method = ${method.id.toUpperCase().replace("-", "_")}; // stage markers`,
+    method && `player.method = ${method.id.toUpperCase().replace("-", "_")}; // sections (or: player.segments = [{ start, end, label, split?, … }])`,
     val("mask") && `player.mask = maskByName("${val("mask")}");`,
     on("hints") && `player.skin = { ...SKINS.${val("skin")}, hints: { ...SKINS.${val("skin")}.hints, enabled: true } };`,
   ].filter(Boolean);

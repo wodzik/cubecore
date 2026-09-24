@@ -12,12 +12,23 @@
  * starts at setup + inverse of the algorithm), tempo (moves per second,
  * default 2), skin (preset name), back-view, visualization ("3d" | "net" |
  * "top" — the 2D views are SVG pictures from @cubecore/image), controls
- * ("default" | "none"), progress (show the bar), markers (stage markers).
+ * ("default" | "none"), progress (show the bar), markers (ticks at section
+ * ends), segment-labels (section names under the bar — click one to jump to
+ * it), tooltips ("off" to hide the section popup).
+ *
+ * Sections: `segments` (any [{ start, end, label, id?, detail?, split?,
+ * moves?, color? }] — see @cubecore/timeline Segment), or `method`, which
+ * computes them from the recording (stageSegments: any Method, colour
+ * neutral). The bar colours each section (palette --cc-segment-1…8 or the
+ * segment's colour), hatches the recognition part (before `split`), and
+ * shows a popup over the section under the pointer / at the playhead
+ * (`formatSegment` for your own text). PageUp / PageDown jump between sections.
  * Properties: recording (a timed solve — plays in real time), alg, setup,
- * skin, mask, method (stage markers from it), markers, speeds, rate,
+ * skin, mask, method (sections from it), segments, formatSegment, markers, speeds, rate,
  * currentTime, duration, playing, renderer.
  * Events: timeupdate {time, duration, applied}, play, pause, ended,
- * error {message} (e.g. an algorithm that doesn't parse — the cube then shows the setup).
+ * error {message} (e.g. an algorithm that doesn't parse — the cube then shows the setup),
+ * segmentchange {index, segment} (the playhead entered another section).
  *
  * Live: `attach(session)` follows a smart cube (a @cubecore/bluetooth
  * SmartCubeSession, or anything with the same events) — its moves animate,
@@ -37,20 +48,23 @@ import { type Mask, type Method, type Move, type State, applyMoves, parseAlg, so
 import { renderSvg } from "@cubecore/image";
 import { type BackView, CubeRenderer, showPosition } from "@cubecore/render";
 import { SKINS, type Skin } from "@cubecore/skin";
-import { type Position, type Recording, ReplayClock } from "@cubecore/timeline";
-import { type Marker, formatTime, fraction, stageMarkers, startMoves, stepTime, tempoRecording } from "./model";
+import { type Position, type Recording, ReplayClock, type Segment, segmentAt, segmentPlayed, stageSegments } from "@cubecore/timeline";
+import { type Marker, formatTime, fraction, segmentText, startMoves, stepTime, tempoRecording } from "./model";
 import { ICONS, STYLES } from "./styles";
 
 const TEMPLATE = `
 <style>${STYLES}</style>
 <div class="stage" part="stage"><div class="flat" part="flat" hidden></div></div>
 <div class="progress" part="progress" role="slider" tabindex="0" aria-label="Position" aria-valuemin="0">
+  <div class="tooltip" part="tooltip" role="tooltip" hidden></div>
   <div class="track" part="progress-track">
     <div class="fill" part="progress-fill"></div>
+    <div class="segments"></div>
     <div class="markers"></div>
     <div class="thumb" part="progress-thumb"></div>
   </div>
 </div>
+<div class="labels" part="segment-labels"></div>
 <slot name="controls">
   <div class="controls" part="controls">
     <span class="time" part="time">0.00 / 0.00</span>
@@ -80,6 +94,12 @@ export class CubePlayer extends HTMLElement {
   private _mask: Mask | null = null;
   private _method: Method | null = null;
   private _markers: Marker[] | null = null;
+  private _segments: Segment[] | null = null;
+  private segs: Segment[] = [];
+  private currentSegment = -1;
+  private tooltipHide = 0;
+  /** Tooltip text of a section (default: label · detail · time (recognition · execution) · moves). */
+  formatSegment: (s: Segment) => string = segmentText;
   private _speeds = [0.5, 1, 2];
   private _rate = 1;
   private _setupState: State | null = null;
@@ -178,22 +198,31 @@ export class CubePlayer extends HTMLElement {
     this.redraw();
   }
 
-  /** Stage markers come from this method's analysis of the recording (colour neutral). */
+  /** Sections come from this method's analysis of the recording (colour neutral), unless `segments` are given. */
   get method(): Method | null {
     return this._method;
   }
   set method(m: Method | null) {
     this._method = m;
-    this.renderMarkers();
+    this.renderSections();
   }
 
-  /** Explicit markers (override `method`). */
+  /** Explicit sections of the bar (override `method`). */
+  get segments(): Segment[] {
+    return [...this.segs];
+  }
+  set segments(s: Segment[] | null) {
+    this._segments = s;
+    this.renderSections();
+  }
+
+  /** Explicit tick marks (default: the ends of the sections). */
   get markers(): Marker[] | null {
     return this._markers;
   }
   set markers(m: Marker[] | null) {
     this._markers = m;
-    this.renderMarkers();
+    this.renderSections();
   }
 
   /** Speeds the speed button cycles through. */
@@ -345,7 +374,7 @@ export class CubePlayer extends HTMLElement {
     this.clock = new ReplayClock(this.rec, { maxAnimMs });
     this.clock.rate = this._rate;
     this.unsubscribe = this.clock.onChange((time, pos) => this.onTime(time, pos));
-    this.renderMarkers();
+    this.renderSections();
     this.clock.seek(0);
     if (wasPlaying) this.play();
   }
@@ -399,20 +428,82 @@ export class CubePlayer extends HTMLElement {
     this.$<HTMLButtonElement>(".back").disabled = atStart;
     this.$<HTMLButtonElement>(".forward").disabled = atEnd;
     this.$<HTMLButtonElement>(".end").disabled = atEnd;
+    this.updateSections(time);
   }
 
-  private renderMarkers(): void {
-    const box = this.$(".markers");
-    const marks = this._markers ?? (this._method && this.rec.moves.length ? stageMarkers(this._method, this.rec) : []);
-    box.innerHTML = "";
-    for (const m of marks) {
-      const el = document.createElement("div");
-      el.className = "marker";
-      el.setAttribute("part", "progress-marker");
-      el.title = `${m.label} · ${formatTime(m.time)}`;
-      el.style.left = `${fraction(m.time, this.duration) * 100}%`;
-      box.appendChild(el);
+  // ─── sections ───
+
+  private renderSections(): void {
+    this.segs = this._segments ?? (this._method && this.rec.moves.length ? stageSegments(this._method, this.rec) : []);
+    this.currentSegment = -1;
+    const pct = (t: number) => fraction(t, this.duration) * 100;
+    const partId = (s: Segment) => (s.id ? ` segment-${s.id.replace(/[^\w-]/g, "")}` : "");
+    this.$(".progress").classList.toggle("has-segments", this.segs.length > 0);
+    this.$(".segments").innerHTML = this.segs
+      .map((s, i) => {
+        const colour = s.color ?? `var(--cc-segment-${(i % 8) + 1})`;
+        const rec = s.split !== undefined && s.end > s.start ? ((s.split - s.start) / (s.end - s.start)) * 100 : 0;
+        return `<div class="segment" part="segment${partId(s)}" style="left:${pct(s.start)}%;width:${pct(s.end) - pct(s.start)}%;--seg:${colour}">
+          <div class="played" part="segment-played"></div>
+          ${rec > 0 ? `<div class="recognition" part="segment-recognition" style="width:${rec}%"></div>` : ""}
+        </div>`;
+      })
+      .join("");
+    this.$(".labels").innerHTML = this.segs
+      .map(
+        (s, i) =>
+          `<button class="label" part="segment-label${s.id ? ` segment-label-${s.id.replace(/[^\w-]/g, "")}` : ""}" data-segment="${i}" style="left:${pct(s.start)}%;width:${pct(s.end) - pct(s.start)}%" title="${this.formatSegment(s).replace(/"/g, "&quot;")}">${s.label}</button>`,
+      )
+      .join("");
+    // Ticks: explicit markers, else the ends of the sections.
+    const marks = this._markers ?? this.segs.slice(0, -1).map((s) => ({ time: s.end, label: s.label }));
+    this.$(".markers").innerHTML = marks
+      .map((m) => `<div class="marker" part="progress-marker" title="${`${m.label} · ${formatTime(m.time)}`.replace(/"/g, "&quot;")}" style="left:${pct(m.time)}%"></div>`)
+      .join("");
+    this.updateSections(this.currentTime);
+  }
+
+  private updateSections(time: number): void {
+    const els = this.root.querySelectorAll<HTMLElement>(".segment .played");
+    this.segs.forEach((s, i) => els[i] && (els[i].style.width = `${segmentPlayed(s, time) * 100}%`));
+    const index = segmentAt(this.segs, time);
+    if (index === this.currentSegment) return;
+    this.currentSegment = index;
+    this.root.querySelectorAll(".label").forEach((el, i) => el.classList.toggle("current", i === index));
+    if (index >= 0) this.dispatchEvent(new CustomEvent("segmentchange", { detail: { index, segment: this.segs[index] } }));
+  }
+
+  /** Show the popup of section `index` (−1 hides it). */
+  private showTooltip(index: number, autoHideMs = 0): void {
+    const tip = this.$(".tooltip");
+    clearTimeout(this.tooltipHide);
+    if (index < 0 || this.getAttribute("tooltips") === "off" || !this.segs[index]) {
+      tip.hidden = true;
+      return;
     }
+    const s = this.segs[index];
+    tip.innerHTML = "";
+    const text = document.createElement("span");
+    text.className = "tip";
+    text.setAttribute("part", "tooltip-text");
+    text.textContent = this.formatSegment(s);
+    tip.appendChild(text);
+    tip.hidden = false;
+    const track = this.$(".track").getBoundingClientRect();
+    const centre = ((s.start + s.end) / 2 / (this.duration || 1)) * track.width;
+    const half = tip.offsetWidth / 2;
+    tip.style.left = `${Math.min(Math.max(centre, half), Math.max(half, track.width - half))}px`;
+    if (autoHideMs) this.tooltipHide = window.setTimeout(() => (tip.hidden = true), autoHideMs);
+  }
+
+  /** Start of the next (+1) / this-or-previous (−1) section. */
+  private jumpSection(direction: 1 | -1): void {
+    if (!this.segs.length) return;
+    const t = this.currentTime;
+    const i = Math.max(0, segmentAt(this.segs, t));
+    const target = direction > 0 ? (this.segs[i + 1]?.start ?? this.duration) : t - this.segs[i].start > 250 ? this.segs[i].start : (this.segs[i - 1]?.start ?? 0);
+    this.pause();
+    this.seek(target);
   }
 
   private onClick(e: Event): void {
@@ -439,6 +530,8 @@ export class CubePlayer extends HTMLElement {
       ArrowLeft: () => this.stepBack(),
       Home: () => this.toStart(),
       End: () => this.toEnd(),
+      PageDown: () => this.jumpSection(1),
+      PageUp: () => this.jumpSection(-1),
     };
     const run = keys[e.key];
     if (!run) return;
@@ -460,15 +553,38 @@ export class CubePlayer extends HTMLElement {
       bar.classList.add("dragging");
       seekTo(e.clientX);
     });
+    const timeAt = (clientX: number) => {
+      const r = this.$(".track").getBoundingClientRect();
+      return fraction(clientX - r.left, r.width) * this.duration;
+    };
     bar.addEventListener("pointermove", (e) => {
       if (bar.hasPointerCapture(e.pointerId)) seekTo(e.clientX);
+      // Popup over the section under the pointer (mouse hover, or while dragging).
+      if (e.pointerType === "mouse" || bar.hasPointerCapture(e.pointerId)) this.showTooltip(segmentAt(this.segs, timeAt(e.clientX)));
+    });
+    bar.addEventListener("pointerleave", (e) => {
+      if (!bar.hasPointerCapture(e.pointerId) && this.shadowRoot?.activeElement !== bar) this.showTooltip(-1);
+    });
+    bar.addEventListener("focus", () => this.showTooltip(segmentAt(this.segs, this.currentTime)));
+    bar.addEventListener("blur", () => this.showTooltip(-1));
+    this.addEventListener("segmentchange", (e) => {
+      if (this.shadowRoot?.activeElement === bar || bar.classList.contains("dragging")) this.showTooltip((e as CustomEvent<{ index: number }>).detail.index);
     });
     const end = (e: PointerEvent) => {
       if (!bar.hasPointerCapture(e.pointerId)) return;
       bar.releasePointerCapture(e.pointerId);
       bar.classList.remove("dragging");
+      // Touch: keep the popup a moment after lifting the finger.
+      if (e.pointerType !== "mouse") this.showTooltip(segmentAt(this.segs, this.currentTime), 1500);
       if (resume) this.play();
     };
+    // Section names under the bar: jump to the start of that section.
+    this.$(".labels").addEventListener("click", (e) => {
+      const i = Number((e.target as HTMLElement).closest<HTMLElement>(".label")?.dataset.segment);
+      if (!Number.isFinite(i) || !this.segs[i]) return;
+      this.pause();
+      this.seek(this.segs[i].start);
+    });
     bar.addEventListener("pointerup", end);
     bar.addEventListener("pointercancel", end);
   }

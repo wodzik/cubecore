@@ -23,7 +23,7 @@
 | `skin` | preset name, or a `Skin` object via the property |
 | `back-view` | `none` / `side-by-side` / `top-right` |
 | `progress` | show the progress bar (seek by click / drag / arrow keys) |
-| `markers` | show stage markers on it — from `method`, or an explicit `markers` list |
+| `segment-labels`, `tooltips`, `markers` | section names under the bar · the section popup (`off` hides it) · tick marks at section ends |
 | `controls` | `default` or `none` |
 | `mask`, `speeds`, `rate` | properties |
 
@@ -48,21 +48,45 @@ and progress bar. The difference is where the times come from:
 
 `rate` (speed button) scales either one, keeping proportions.
 
-## Stage markers
+## Sections on the progress bar
 
-`markers` shows ticks on the progress bar where stages END. They come from:
+The bar can be split into **sections** — plain data, not tied to any method:
 
-- **`player.method`** — any `Method` (CFOP, Roux, ZZ, Petrus, LBL, or your own
-  from `@cubecore/core`'s `Method` / `Stage`). The player runs the method's
-  colour-neutral `MethodTracker` over the recording (its scramble + moves) and
-  puts a tick at the time each stage was reached (skipped stages — reached on
-  the same move as the previous — get none). Nothing to pass: stage times are
-  derived from the moves, like `stageTimings` in @cubecore/timeline.
-- **`player.markers = [{ time, label }, …]`** — any ticks you like (overrides
-  `method`): chapters of a guide, your own analysis, stage times you stored.
+```ts
+interface Segment {           // @cubecore/timeline
+  start: number; end: number; // ms
+  label: string;              // "F2L 2"
+  id?: string;                // "f2l-2" → ::part(segment-f2l-2)
+  detail?: string;            // "FL", "OLL 27"…
+  split?: number;             // end of recognition: the part before it is hatched
+  moves?: number;
+  color?: string;             // else the palette --cc-segment-1…8
+}
 
-Hovering a tick shows its label and time.
-Keyboard (when focused): Space / K, ← →, Home / End.
+player.segments = [...];                 // anything: guide chapters, stored stage times…
+player.method = CFOP;                    // shortcut: sections computed from the recording
+stageSegments(ROUX, recording);          // the same helper, anywhere (next to stageTimings)
+```
+
+With a `method`, the player runs its colour-neutral `MethodTracker` over the
+recording — any `Method` works (CFOP, Roux, ZZ, Petrus, LBL, your own);
+stages reached on the same move as the previous one get no section of their
+own. Nothing about times has to be passed: they come from the moves.
+
+What the bar shows: each section in its colour, dim until played; the
+recognition part (before `split`) hatched; `segment-labels` puts the names
+under the bar (click one to jump to that section; the current one is bold);
+a popup over the section under the pointer / while scrubbing / when the bar
+has focus (`tooltips="off"` hides it, `player.formatSegment = (s) => "…"` for
+your own text, e.g. a translation). PageUp / PageDown jump between sections;
+`segmentchange` fires when the playhead enters another section. `markers`
+adds tick marks at the section ends (or at `player.markers = [{ time, label }]`).
+
+Styling: `--cc-segment-1…8`, `--cc-segment-height`, `--cc-segment-gap`,
+`--cc-segment-unplayed`, `--cc-tooltip-bg`, `--cc-tooltip-fg`; parts `segment`,
+`segment-<id>`, `segment-played`, `segment-recognition`, `segment-labels`,
+`segment-label`, `segment-label-<id>`, `tooltip`, `tooltip-text`. Per section:
+`cube-player::part(segment-cross) { --seg: white; }`.
 
 ## Three levels of customising the controls
 
@@ -81,7 +105,8 @@ cube-player {
 All variables: `--cc-accent`, `--cc-control-bg`, `--cc-control-bg-hover`,
 `--cc-control-fg`, `--cc-control-radius`, `--cc-button-size`,
 `--cc-controls-gap`, `--cc-progress-height`, `--cc-progress-track`,
-`--cc-progress-fill`, `--cc-marker`, `--cc-thumb-size`, `--cc-font`. Colours
+`--cc-progress-fill`, `--cc-marker`, `--cc-thumb-size`, `--cc-font`, and the
+section ones below. Colours
 default to shades of `currentColor`, so light and dark pages both work.
 
 **2. Style any piece with `::part()`**: `stage`, `progress`, `progress-track`,

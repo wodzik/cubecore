@@ -154,3 +154,21 @@ describe("share links", () => {
     expect(decodeShare("")).toBeNull();
   });
 });
+
+describe("segments", async () => {
+  const { stageSegments, segmentAt, segmentPlayed } = await import("./index");
+  it("a solve's stages as segments: contiguous, labelled, with recognition splits", () => {
+    const segs = stageSegments(CFOP, solve());
+    expect(segs.length).toBeGreaterThanOrEqual(5);
+    expect(segs[0]).toMatchObject({ id: "cross", label: "Cross", start: 0 });
+    for (let i = 1; i < segs.length; i++) expect(segs[i].start).toBe(segs[i - 1].end);
+    for (const s of segs) if (s.split !== undefined) expect(s.split >= s.start && s.split <= s.end).toBe(true);
+    expect(segs.some((s) => s.detail)).toBe(true); // F2L slots
+  });
+
+  it("finds the segment at a time and how much of it has played", () => {
+    const segs = [{ start: 0, end: 100, label: "a" }, { start: 100, end: 300, label: "b" }];
+    expect([segmentAt(segs, 0), segmentAt(segs, 99), segmentAt(segs, 100), segmentAt(segs, 300), segmentAt(segs, 400)]).toEqual([0, 0, 1, 1, -1]);
+    expect(segmentPlayed(segs[1], 200)).toBe(0.5);
+  });
+});

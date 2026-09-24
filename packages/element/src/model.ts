@@ -4,7 +4,7 @@
  */
 
 import { type Method, type Move, invert, parseAlg } from "@cubecore/core";
-import { type Recording, stageTimings } from "@cubecore/timeline";
+import { type Recording, type Segment, stageTimings } from "@cubecore/timeline";
 
 /** A mark on the progress bar, e.g. where a stage ends. */
 export interface Marker {
@@ -57,4 +57,14 @@ export const fraction = (time: number, duration: number) => (duration > 0 ? Math
 export function startMoves(setup: string | readonly Move[], alg: readonly Move[], anchor: "start" | "end" = "start"): Move[] {
   const s = typeof setup === "string" ? parseAlg(setup) : [...setup];
   return anchor === "end" ? [...s, ...invert(alg)] : s;
+}
+
+/** Default tooltip text of a segment: "F2L 2 · FL · 3.21 s (recognition 0.80 · execution 2.41) · 9 moves". */
+export function segmentText(s: Segment): string {
+  const parts = [s.label];
+  if (s.detail) parts.push(s.detail);
+  const total = `${formatTime(s.end - s.start)} s`;
+  parts.push(s.split !== undefined ? `${total} (recognition ${formatTime(s.split - s.start)} · execution ${formatTime(s.end - s.split)})` : total);
+  if (s.moves !== undefined) parts.push(`${s.moves} move${s.moves === 1 ? "" : "s"}`);
+  return parts.join(" · ");
 }

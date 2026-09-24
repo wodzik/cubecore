@@ -10,7 +10,9 @@
  *     --cc-marker            stage marker colour      --cc-thumb-size
  *     --cc-font              time / speed text
  * - ::part() for anything else: stage, flat (the 2D picture), progress, progress-track,
- *   progress-fill, progress-thumb, progress-marker, controls, buttons, button,
+ *   progress-fill, progress-thumb, progress-marker, segment (+ segment-<id>),
+ *   segment-played, segment-recognition, segment-labels, segment-label
+ *   (+ segment-label-<id>), tooltip, tooltip-text, controls, buttons, button,
  *   button-start, button-back, button-play, button-forward, button-end,
  *   button-speed, time.
  * - Replace the controls entirely: put your own element in slot="controls"
@@ -34,6 +36,21 @@ export const STYLES = /* css */ `
   --cc-marker: color-mix(in srgb, currentColor 55%, transparent);
   --cc-thumb-size: 14px;
   --cc-font: ui-monospace, "SF Mono", Menlo, monospace;
+  /* sections of the progress bar */
+  --cc-segment-1: #4f8cff;
+  --cc-segment-2: #22c55e;
+  --cc-segment-3: #f59e0b;
+  --cc-segment-4: #ef4444;
+  --cc-segment-5: #a855f7;
+  --cc-segment-6: #14b8a6;
+  --cc-segment-7: #ec4899;
+  --cc-segment-8: #eab308;
+  --cc-segment-height: calc(var(--cc-progress-height) + 2px);
+  --cc-segment-gap: 2px;
+  --cc-segment-unplayed: 30%;
+  /* popup: inverted page colours by default (text colour as background) */
+  --cc-tooltip-bg: color-mix(in srgb, currentColor 92%, transparent);
+  --cc-tooltip-fg: Canvas;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -73,6 +90,53 @@ export const STYLES = /* css */ `
   transition: transform 0.12s ease;
 }
 .progress:hover .thumb, .progress.dragging .thumb { transform: translate(-50%, -50%) scale(1); }
+/* Sections: coloured parts of the bar, dim until played, recognition hatched. */
+.progress { position: relative; }
+.progress.has-segments .fill { display: none; }
+.segments { position: absolute; inset: 0; }
+.segment {
+  position: absolute; top: 50%;
+  height: var(--cc-segment-height);
+  transform: translateY(-50%);
+  overflow: hidden;
+  background: color-mix(in srgb, var(--seg) var(--cc-segment-unplayed), transparent);
+  clip-path: inset(0 calc(var(--cc-segment-gap) / 2) 0 calc(var(--cc-segment-gap) / 2) round 999px);
+}
+.segment .played { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--seg); }
+.segment .recognition {
+  position: absolute; inset: 0 auto 0 0;
+  background: repeating-linear-gradient(135deg, color-mix(in srgb, Canvas 50%, transparent) 0 2px, transparent 2px 5px);
+}
+.progress.has-segments .thumb { background: currentColor; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 20%, transparent); }
+.tooltip {
+  position: absolute; bottom: calc(100% + 4px); left: 0;
+  transform: translateX(-50%);
+  width: max-content; max-width: min(320px, 100%);
+  padding: 6px 9px;
+  border-radius: 8px;
+  /* colour stays the page's text colour here, so the background can be derived from it… */
+  background: var(--cc-tooltip-bg);
+  font: 500 12px/1.35 system-ui, sans-serif;
+  pointer-events: none;
+  z-index: 2;
+  box-shadow: 0 6px 18px -8px rgb(0 0 0 / 0.5);
+}
+/* …and the text inverts it. */
+.tooltip .tip { color: var(--cc-tooltip-fg); }
+.tooltip[hidden] { display: none; }
+.labels { display: none; position: relative; height: 18px; margin-top: -4px; }
+:host([segment-labels]) .labels { display: block; }
+.label {
+  position: absolute; top: 0;
+  min-width: 0; height: 18px; padding: 0 2px;
+  background: none; border-radius: 4px;
+  color: inherit; opacity: 0.6;
+  font: 500 11px/18px system-ui, sans-serif;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.label:hover { background: var(--cc-control-bg); opacity: 1; transform: none; }
+.label:active { transform: none; }
+.label.current { opacity: 1; font-weight: 700; }
 .marker {
   position: absolute; top: 50%;
   width: 2px; height: calc(var(--cc-progress-height) + 8px);

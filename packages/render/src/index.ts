@@ -5,3 +5,6 @@ export * from "./viewports";
 export * from "./tile";
 export * from "./build/tiles";
 export * from "./build/attachments";
+export * from "./pieceModels";
+export * from "./gltf";
+export * from "./build/models";

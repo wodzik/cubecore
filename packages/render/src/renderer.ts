@@ -19,6 +19,7 @@ import {
   DirectionalLight,
   Mesh,
   MeshBasicMaterial,
+  Object3D,
   MeshStandardMaterial,
   PerspectiveCamera,
   Quaternion,
@@ -47,6 +48,8 @@ import { SKINS, type Skin, stickerColor } from "@cubecore/skin";
 import { layerTurn, defaultDuration } from "./layers";
 import { type AttachmentSet, buildAttachments, placeAttachments } from "./build/attachments";
 import { type TileKit, tileKit } from "./build/tiles";
+import { loadModel, readyModel } from "./build/models";
+import { PLACEMENTS, stickerFaceOf } from "./pieceModels";
 import { type BackView, backPosition, viewports } from "./viewports";
 
 export interface CameraOptions {
@@ -94,7 +97,12 @@ export class CubeRenderer {
   private size = { w: 1, h: 1 };
   private root = new Group(); // gyroscope orientation applies here
   private cubieGroups: Group[] = [];
-  private stickerMeshes: Mesh[] = []; // by facelet position
+  /** Meshes coloured as the sticker at each facelet position (a built-in tile, or a model's sticker-X meshes). */
+  private paintTargets: Mesh[][] = [];
+  /** Tile frame at each facelet position (z = 0 on the cubie face): where decals and features attach. */
+  private anchors: Object3D[] = [];
+  /** Height of the sticker surface above the anchors. */
+  private surface = 0;
   private hintMeshes: Mesh[] = [];
   private kit: TileKit | null = null;
   private attachments: AttachmentSet | null = null;
@@ -279,35 +287,71 @@ export class CubeRenderer {
     this.kit?.dispose();
     this.attachments?.dispose();
     this.cubieGroups = [];
-    this.stickerMeshes = [];
+    this.paintTargets = Array.from({ length: 54 }, () => []);
+    this.anchors = [];
     this.hintMeshes = [];
     const s = this.skin;
     const kit = tileKit(s);
     this.kit = kit;
     const bodyMat = new MeshStandardMaterial({ color: new Color(s.body), roughness: 0.85, metalness: 0 });
 
+    const models = s.models;
+    let waiting = false;
+    this.surface = models?.surface ?? kit.thickness;
+
     CUBIES.forEach((cubie, ci) => {
       const g = new Group();
-      const body = new Mesh(kit.body, bodyMat);
-      body.position.set(...cubie.pos);
-      g.add(body);
+      const place = PLACEMENTS[ci];
+      const url = models?.[place.kind];
+      const model = readyModel(url);
+      if (url && !model) waiting = true;
+      if (model) {
+        // A model for this kind: rotate it onto the cubie, colour its sticker-X meshes.
+        const clone = model.clone(true);
+        const r = place.rotation;
+        clone.matrixAutoUpdate = false;
+        clone.matrix.set(r[0][0], r[0][1], r[0][2], cubie.pos[0], r[1][0], r[1][1], r[1][2], cubie.pos[1], r[2][0], r[2][1], r[2][2], cubie.pos[2], 0, 0, 0, 1);
+        if (models?.scale && models.scale !== 1) clone.matrix.multiply(new Matrix4().makeScale(models.scale, models.scale, models.scale));
+        clone.traverse((o) => {
+          const m = o as Mesh;
+          if (!m.isMesh) return;
+          const face = stickerFaceOf((Array.isArray(m.material) ? m.material[0] : m.material)?.name);
+          const fi = face ? place.stickers[face] : undefined;
+          if (fi !== undefined) this.paintTargets[fi].push(m);
+        });
+        g.add(clone);
+      } else {
+        const body = new Mesh(kit.body, bodyMat);
+        body.position.set(...cubie.pos);
+        g.add(body);
+      }
       for (const fi of cubie.facelets) {
         const f = FACELETS[fi];
         const { a, b, n } = FACE_BASIS[f.face];
         const basis = new Matrix4().makeBasis(new Vector3(...a), new Vector3(...b), new Vector3(...n));
         const normal = new Vector3(...n);
-        const mesh = new Mesh(kit.tile(fi), this.material("#000000", false));
-        mesh.position.set(...f.pos).addScaledVector(normal, kit.faceOffset);
-        mesh.quaternion.setFromRotationMatrix(basis);
-        g.add(mesh);
-        const skirt = kit.skirt(fi);
-        if (skirt) {
-          const m = new Mesh(skirt, bodyMat);
-          m.position.copy(mesh.position);
-          m.quaternion.copy(mesh.quaternion);
-          g.add(m);
+        if (model) {
+          // Nothing to draw here: an invisible frame for decals / features.
+          const anchor = new Object3D();
+          anchor.position.set(...f.pos).addScaledVector(normal, kit.faceOffset);
+          anchor.quaternion.setFromRotationMatrix(basis);
+          g.add(anchor);
+          this.anchors[fi] = anchor;
+        } else {
+          const mesh = new Mesh(kit.tile(fi), this.material("#000000", false));
+          mesh.position.set(...f.pos).addScaledVector(normal, kit.faceOffset);
+          mesh.quaternion.setFromRotationMatrix(basis);
+          g.add(mesh);
+          const skirt = kit.skirt(fi);
+          if (skirt) {
+            const m = new Mesh(skirt, bodyMat);
+            m.position.copy(mesh.position);
+            m.quaternion.copy(mesh.quaternion);
+            g.add(m);
+          }
+          this.paintTargets[fi].push(mesh);
+          this.anchors[fi] = mesh;
         }
-        this.stickerMeshes[fi] = mesh;
         this.cubieOfFacelet[fi] = ci;
         if (s.hints.enabled) {
           const hint = new Mesh(kit.hint(fi), this.material("#000000", true));
@@ -321,23 +365,35 @@ export class CubeRenderer {
       this.cubieGroups.push(g);
     });
     this.attachments = buildAttachments(s, kit, () => this.requestRender());
+    // Models still loading: rebuild with them once they're here (if this skin is still the one shown).
+    if (waiting && models) {
+      const urls = [models.corner, models.edge, models.center].filter((u): u is string => !!u);
+      Promise.all(urls.map(loadModel)).then(() => {
+        if (this.skin === s && !this.disposed) {
+          this.build();
+          this.requestRender();
+        }
+      });
+    }
     this.renderer.setClearColor(s.background ? new Color(s.background) : new Color(0x000000), s.background ? 1 : 0);
   }
 
   private paint(): void {
-    for (let i = 0; i < this.stickerMeshes.length; i++) {
+    for (let i = 0; i < this.paintTargets.length; i++) {
       const st = this.mask ? maskStateAt(this.mask, this.state, i) : "regular";
       const color = stickerColor(this.skin, colorAt(this.state, i), st);
-      const mesh = this.stickerMeshes[i];
-      mesh.visible = color !== null;
-      if (color) mesh.material = this.material(color, false);
+      for (const mesh of this.paintTargets[i]) {
+        mesh.visible = color !== null;
+        if (color) mesh.material = this.material(color, false);
+      }
+      if (this.anchors[i]) this.anchors[i].visible = color !== null;
       const hint = this.hintMeshes[i];
       if (hint) {
         hint.visible = color !== null;
         if (color) hint.material = this.material(color, true, st === "regular" || st === "dim" ? this.skin.hints.opacity : this.skin.hints.ignoredOpacity);
       }
     }
-    if (this.attachments && this.kit) placeAttachments(this.attachments, this.state, this.spins, this.stickerMeshes, this.kit.thickness, this.mask);
+    if (this.attachments) placeAttachments(this.attachments, this.state, this.spins, this.anchors, this.surface, this.mask);
     const turn = this.partial ? layerTurn(this.partial.move) : null;
     const axis = turn ? new Vector3(turn.axis === 0 ? 1 : 0, turn.axis === 1 ? 1 : 0, turn.axis === 2 ? 1 : 0) : null;
     CUBIES.forEach((c, i) => {

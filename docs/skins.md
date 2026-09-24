@@ -97,14 +97,48 @@ defineFeature({
 Register before building the renderer / rendering pictures. A feature with no
 `svg` simply doesn't appear in 2D; unknown types are skipped.
 
+## Your own 3D pieces (glTF)
+
+When parameters aren't enough — a specific cube model's exact shapes — give
+the skin one model per piece kind:
+
+```ts
+const mine: Skin = {
+  ...SKINS.ganI4,
+  models: { corner: "/models/my-corner.glb", edge: "/models/my-edge.glb", center: "/models/my-center.glb", surface: 0.04 },
+};
+```
+
+Convention (1 unit = one cubie, centred on the cubie, Y up, Z towards you):
+
+| kind | modelled as | stickers |
+|---|---|---|
+| corner | the UFR corner (+x +y +z) | `sticker-U`, `sticker-F`, `sticker-R` |
+| edge | the UF edge (0 +y +z) | `sticker-U`, `sticker-F` |
+| center | the U centre (0 +y 0) | `sticker-U` |
+
+Meshes whose **material name** is `sticker-X` are recoloured (state, masks);
+everything else (`body`, springs, a moulded logo…) is drawn as authored. The
+renderer rotates each model onto all positions of its kind. Kinds left out
+keep the built-in pieces; until a model has loaded (or if loading fails) the
+built-in pieces are drawn. `surface` = height of the sticker surface above
+the cubie face, so decals and features sit on it. `scale` if you didn't
+model in cubie units. 2D pictures keep using the skin's outlines.
+
+**Start from a template:** `bun scripts/export-models.ts ganI4 ./out` writes
+the skin's pieces as `.gltf` in exactly this convention (`pieceTemplates(skin)`
+in code) — open in Blender, reshape, keep the material names, export GLB.
+`demo/models/` has the i4 templates (our own geometry, CC0); the "glTF models
+(sample)" skin in `/render` draws them. Brand models are the app's business,
+like logos.
+
 ## Where the code lives
 
 - `@cubecore/skin` — `skin.ts` (the data model, presets), `shapes.ts` (tile
   outlines), `attachments.ts` (selectors, decals, `defineFeature`, built-ins).
 - `@cubecore/render` — `tile.ts` (tile / piece solids, pure maths),
+  `pieceModels.ts` (placing glTF pieces), `gltf.ts` (templates), `build/models.ts` (loading),
   `build/tiles.ts` (three.js geometry for a skin), `build/attachments.ts`
   (decals & features riding on stickers), `renderer.ts` (scene, animation).
 - `@cubecore/image` — `svg.ts` (the same skin as SVG).
 
-Planned: whole-piece models (glTF per corner / edge / centre, materials named
-`sticker-*` and `body`) for cubes that parameters can't describe.

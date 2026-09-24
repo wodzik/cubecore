@@ -65,6 +65,14 @@ const DEMO_SKINS: Record<string, Skin> = {
   ...SKINS,
   "gan + logo": { ...SKINS.gan, decals: [{ select: { stickers: [4] }, image: "/assets/gan-logo.png", size: 0.72, blend: "multiply" }] },
   "gan i4 + logo": { ...SKINS.ganI4, decals: [{ select: { stickers: [4] }, image: "/assets/gan-logo.png", size: 0.62, blend: "multiply" }] },
+  // Pieces from glTF files: the standard skin's settings, but every piece is a model (here: i4-style templates
+  // exported by scripts/export-models.ts) — if you see i4 pieces, the models are what's drawn.
+  "glTF models (sample)": {
+    ...SKINS.standard,
+    stickers: { ...SKINS.standard.stickers, material: "plastic", roughness: 0.55, colors: SKINS.ganI4.stickers.colors },
+    models: { corner: "/models/ganI4-corner.gltf", edge: "/models/ganI4-edge.gltf", center: "/models/ganI4-center.gltf", surface: SKINS.ganI4.stickers.thickness },
+    features: SKINS.ganI4.features,
+  },
   // Per-face geometry: a charging port on the yellow (D) centre only — it stays on that sticker whatever you turn.
   "charging port on yellow": {
     ...SKINS.stickerless,

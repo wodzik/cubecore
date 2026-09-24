@@ -71,6 +71,23 @@ export interface Skin {
   decals?: readonly Decal[];
   /** Extra geometry on stickers — holes, charging slots, your own types (see `defineFeature`). */
   features?: readonly FeatureUse[];
+  /**
+   * Your own 3D pieces (glTF / GLB URLs) instead of the built-in geometry —
+   * see @cubecore/render pieceModels.ts for the convention (UFR corner, UF
+   * edge, U centre; materials sticker-U / sticker-F / sticker-R are
+   * recoloured). Kinds left out keep the built-in pieces; until a model has
+   * loaded (or if it fails), the built-in pieces are drawn. Stickers /
+   * outlines above still drive the 2D pictures.
+   */
+  models?: {
+    corner?: string;
+    edge?: string;
+    center?: string;
+    /** Uniform scale if the models aren't in cubie units. Default 1. */
+    scale?: number;
+    /** Height of the sticker surface above the cubie's face (for decals / features). Default: stickers.thickness. */
+    surface?: number;
+  };
   /** Colours for masked stickers. `dim` pulls the sticker colour towards the body by `dimAmount`. */
   mask: { ignored: string; oriented: string; dimAmount: number };
   /** Floating "back" stickers showing the hidden faces. */

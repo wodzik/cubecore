@@ -85,7 +85,7 @@ export function buildAttachments(skin: Skin, kit: { side: number; thickness: num
 }
 
 /** Put each attachment on the tile where its sticker is now, turned with the sticker. */
-export function placeAttachments(set: AttachmentSet, state: State, spins: CenterSpins, tiles: readonly THREE.Mesh[], thickness: number, mask: Mask | null): void {
+export function placeAttachments(set: AttachmentSet, state: State, spins: CenterSpins, tiles: readonly THREE.Object3D[], thickness: number, mask: Mask | null): void {
   for (const a of set.items) {
     const pos = state.indexOf(a.sticker);
     const tile = tiles[pos];

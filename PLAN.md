@@ -371,9 +371,17 @@ re-export shims in core — they would make core depend on the method packages
   sections (palette or per-segment colour, `::part(segment-<id>)`), hatched
   recognition, `segment-labels` (click to jump), popup over a section
   (`formatSegment`, `tooltips="off"`), PageUp/PageDown, `segmentchange`.
-- Next: glTF piece models, alg notation extras from cubing.js, React bindings,
-  per-theme skins, gyroscope adapter from smart-cube drivers, then
-  `solve` (cross/xcross).
+- 2026-09-25 — **glTF piece models** (geometry level 3): `skin.models`
+  (corner / edge / centre URLs, scale, surface); convention UFR / UF / U with
+  `sticker-X` materials recoloured, rest as authored; placement maths in
+  `pieceModels.ts` (tested), loader with fallback to built-in pieces, decals
+  / features on per-facelet anchors; `pieceTemplates(skin)` +
+  `scripts/export-models.ts` write any skin's pieces as glTF templates;
+  sample i4 models in demo/models (CC0), "glTF models (sample)" in /render.
+- Next (in order): alg notation extras + synced alg text, light/dark skin
+  themes, smart-cube skin presets (+ auto-pick from the connected cube),
+  leftovers (compress pauses, cubing.js parity test, table cache, more
+  trainer stages), React bindings, overall README.
 
 ### Gyroscope (planned)
 - `setOrientation(q, smoothing)` is the whole renderer-side API: the cube's

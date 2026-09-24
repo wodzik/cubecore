@@ -37,6 +37,7 @@ function apply() {
   $("shareBox").hidden = timing !== "share";
   $("tempoOut").textContent = val("tempo");
   document.documentElement.dataset.theme = val("theme");
+  player.setAttribute("theme", val("theme")); // the skin's light / dark adjustments (masked greys, back stickers)
 
   // Look
   const base = SKINS[val("skin") as keyof typeof SKINS] as Skin;
@@ -86,6 +87,7 @@ function snippet(timing: string, method: Method | null): string {
     timing === "tempo" && on("solves") && `anchor="end"`,
     timing === "tempo" && `tempo="${val("tempo")}"`,
     `skin="${val("skin")}"`,
+    `theme="${val("theme")}"`,
     val("viz") !== "3d" && `visualization="${val("viz")}"`,
     val("back") !== "none" && `back-view="${val("back")}"`,
     !on("controls") && `controls="none"`,

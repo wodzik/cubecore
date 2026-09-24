@@ -33,6 +33,28 @@ different colour scheme is just another `colors` array (`withColors`).
 | Decals | `decals` | any PNG / SVG on chosen stickers (below) |
 | Features | `features` | extra geometry on chosen stickers (below) |
 
+## Light and dark pages
+
+What reads well on a dark page doesn't always on a light one: grey masked
+stickers, a white back sticker (on white it vanishes — cubing.js #394), the
+background. `skin.themes` holds the adjustments; presets are tuned for dark
+and carry a `light` theme:
+
+```ts
+themes: {
+  light: {
+    mask: { ignored: "#c4c7cd" },
+    hints: { opacity: 0.85, colors: ["#6f7b8a", "#e8322f", "#1fb24a", "#e0bb00", "#ff8a00", "#1e5eff"] },
+  },
+}
+```
+
+`themed(skin, "light")` applies them; `new CubeRenderer(el, { theme })` /
+`renderer.setTheme()`, `renderSvg(state, { theme })`, and
+`<cube-player theme="light | dark | auto">` (auto = the system setting,
+followed live) do it for you. `hints.colors` is a back-sticker palette of its
+own (any theme).
+
 ## Choosing stickers
 
 Decals and features take a `StickerSelector`; all given conditions must hold:

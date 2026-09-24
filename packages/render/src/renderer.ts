@@ -44,7 +44,7 @@ import {
   solvedSpins,
   solvedState,
 } from "@cubecore/core";
-import { SKINS, type Skin, stickerColor } from "@cubecore/skin";
+import { SKINS, type Skin, type Theme, hintColor, stickerColor, themed } from "@cubecore/skin";
 import { layerTurn, defaultDuration } from "./layers";
 import { type AttachmentSet, buildAttachments, placeAttachments } from "./build/attachments";
 import { type TileKit, tileKit } from "./build/tiles";
@@ -65,6 +65,8 @@ export interface CameraOptions {
 
 export interface RendererOptions {
   skin?: Skin;
+  /** Page theme the skin is adjusted for (skin.themes). Default "dark". */
+  theme?: Theme;
   camera?: Partial<CameraOptions>;
   /** Drag with mouse/touch to orbit the camera. Default true. */
   dragToRotate?: boolean;
@@ -109,7 +111,10 @@ export class CubeRenderer {
   /** Cubie group index holding each facelet position. */
   private cubieOfFacelet: number[] = [];
   private materials = new Map<string, MeshBasicMaterial | MeshStandardMaterial>();
+  /** The skin as shown: the given one with its theme adjustments applied. */
   private skin: Skin;
+  private baseSkin: Skin;
+  private theme: Theme;
   private cam: CameraOptions;
   private state: State = solvedState();
   /** Centre spins, tracked through every move so a logo keeps its orientation. */
@@ -126,7 +131,9 @@ export class CubeRenderer {
   private orientationSmoothing = 0;
 
   constructor(private readonly container: HTMLElement, options: RendererOptions = {}) {
-    this.skin = options.skin ?? SKINS.standard;
+    this.baseSkin = options.skin ?? SKINS.standard;
+    this.theme = options.theme ?? "dark";
+    this.skin = themed(this.baseSkin, this.theme);
     this.quarterMs = options.quarterTurnMs ?? 120;
     this.cam = { latitude: 30, longitude: 35, distance: "auto", fov: 34, ...options.camera };
 
@@ -212,7 +219,8 @@ export class CubeRenderer {
   }
 
   setSkin(skin: Skin): void {
-    this.skin = skin;
+    this.baseSkin = skin;
+    this.skin = themed(skin, this.theme);
     this.build();
     this.applyCamera();
     this.requestRender();
@@ -229,6 +237,13 @@ export class CubeRenderer {
     this.backView = mode;
     this.applyCamera();
     this.requestRender();
+  }
+
+  /** Light or dark page: applies the skin's theme adjustments (masked greys, back stickers, background). */
+  setTheme(theme: Theme): void {
+    if (theme === this.theme) return;
+    this.theme = theme;
+    this.setSkin(this.baseSkin);
   }
 
   get cameraOptions(): CameraOptions {
@@ -390,7 +405,8 @@ export class CubeRenderer {
       const hint = this.hintMeshes[i];
       if (hint) {
         hint.visible = color !== null;
-        if (color) hint.material = this.material(color, true, st === "regular" || st === "dim" ? this.skin.hints.opacity : this.skin.hints.ignoredOpacity);
+        const hc = hintColor(this.skin, colorAt(this.state, i), st);
+        if (hc) hint.material = this.material(hc, true, st === "regular" || st === "dim" ? this.skin.hints.opacity : this.skin.hints.ignoredOpacity);
       }
     }
     if (this.attachments) placeAttachments(this.attachments, this.state, this.spins, this.anchors, this.surface, this.mask);

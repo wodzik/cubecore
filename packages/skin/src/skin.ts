@@ -90,12 +90,60 @@ export interface Skin {
   };
   /** Colours for masked stickers. `dim` pulls the sticker colour towards the body by `dimAmount`. */
   mask: { ignored: string; oriented: string; dimAmount: number };
-  /** Floating "back" stickers showing the hidden faces. */
-  hints: { enabled: boolean; distance: number; opacity: number; ignoredOpacity: number };
+  /**
+   * Floating "back" stickers showing the hidden faces. `colors`: a palette of
+   * their own (e.g. white hints turned blue-grey so they show on a light page).
+   */
+  hints: { enabled: boolean; distance: number; opacity: number; ignoredOpacity: number; colors?: readonly [string, string, string, string, string, string] };
   background: string | null;
+  /**
+   * Adjustments for light and dark pages — whatever reads badly on one of
+   * them (grey masked stickers, white back stickers, the background). Pick
+   * one with `themed(skin, theme)`; renderers / pictures / the player take a
+   * `theme` option.
+   */
+  themes?: { light?: SkinTheme; dark?: SkinTheme };
+}
+
+export interface SkinTheme {
+  body?: string;
+  background?: string | null;
+  mask?: Partial<Skin["mask"]>;
+  hints?: Partial<Skin["hints"]>;
+}
+
+export type Theme = "light" | "dark";
+
+/** The skin as it should look on a `theme` page (its `themes` overrides applied). */
+export function themed(skin: Skin, theme: Theme): Skin {
+  const t = skin.themes?.[theme];
+  if (!t) return skin;
+  return {
+    ...skin,
+    ...(t.body !== undefined ? { body: t.body } : {}),
+    ...(t.background !== undefined ? { background: t.background } : {}),
+    mask: { ...skin.mask, ...t.mask },
+    hints: { ...skin.hints, ...t.hints },
+  };
+}
+
+/** Back-sticker colour: the hint palette if the skin has one, else the sticker's own. */
+export function hintColor(skin: Skin, colorClass: number, state: MaskState): string | null {
+  const own = skin.hints.colors?.[colorClass];
+  return own && state === "regular" ? own : stickerColor(skin, colorClass, state);
 }
 
 const WESTERN = ["#ffffff", "#e8322f", "#1fb24a", "#ffd500", "#ff8a00", "#1e5eff"] as const;
+
+/**
+ * Presets are tuned for dark pages; on light ones the greys of masked
+ * stickers go lighter and a white back sticker becomes blue-grey (on white it
+ * would vanish — cubing.js #394).
+ */
+const LIGHT_PAGE: SkinTheme = {
+  mask: { ignored: "#c4c7cd" },
+  hints: { opacity: 0.85, ignoredOpacity: 0.55, colors: ["#6f7b8a", "#e8322f", "#1fb24a", "#e0bb00", "#ff8a00", "#1e5eff"] },
+};
 
 export const SKINS = {
   /** Black plastic, rounded stickers — a typical modern speed cube. */
@@ -107,6 +155,7 @@ export const SKINS = {
     mask: { ignored: "#5a5a5a", oriented: "#39c7d4", dimAmount: 0.55 },
     hints: { enabled: false, distance: 1.4, opacity: 0.75, ignoredOpacity: 0.35 },
     background: null,
+    themes: { light: LIGHT_PAGE },
   },
   /** Stickerless look: tiles fill the face, small radius, dark grey core. */
   stickerless: {
@@ -118,6 +167,7 @@ export const SKINS = {
     mask: { ignored: "#4a4a4a", oriented: "#39c7d4", dimAmount: 0.55 },
     hints: { enabled: false, distance: 1.4, opacity: 0.75, ignoredOpacity: 0.35 },
     background: null,
+    themes: { light: LIGHT_PAGE },
   },
   /**
    * GAN-style stickerless: tiles almost fill each cubie face; corner tiles
@@ -144,6 +194,7 @@ export const SKINS = {
     mask: { ignored: "#5a5a5a", oriented: "#39c7d4", dimAmount: 0.55 },
     hints: { enabled: false, distance: 1.4, opacity: 0.75, ignoredOpacity: 0.35 },
     background: null,
+    themes: { light: LIGHT_PAGE },
   },
   /**
    * GAN i4-style smart cube (from product photos): light translucent-grey
@@ -174,6 +225,7 @@ export const SKINS = {
     mask: { ignored: "#6a6d72", oriented: "#39c7d4", dimAmount: 0.55 },
     hints: { enabled: false, distance: 1.4, opacity: 0.75, ignoredOpacity: 0.35 },
     background: null,
+    themes: { light: LIGHT_PAGE },
   },
 } satisfies Record<string, Skin>;
 

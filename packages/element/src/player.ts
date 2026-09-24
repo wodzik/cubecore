@@ -10,7 +10,8 @@
  * Attributes: alg, setup, anchor ("start": play the algorithm from the
  * (set-up) cube — default; "end": the algorithm SOLVES it, so the cube
  * starts at setup + inverse of the algorithm), tempo (moves per second,
- * default 2), skin (preset name), back-view, visualization ("3d" | "net" |
+ * default 2), skin (preset name), theme ("light" | "dark" | "auto" — the
+ * skin's adjustments for the page; auto follows the system), back-view, visualization ("3d" | "net" |
  * "top" — the 2D views are SVG pictures from @cubecore/image), controls
  * ("default" | "none"), progress (show the bar), markers (ticks at section
  * ends), segment-labels (section names under the bar — click one to jump to
@@ -48,7 +49,7 @@ export interface LiveSource {
 import { type Mask, type Method, type Move, type State, applyMoves, parseAlg, solvedState, spinsAfter } from "@cubecore/core";
 import { renderSvg } from "@cubecore/image";
 import { type BackView, CubeRenderer, showPosition } from "@cubecore/render";
-import { SKINS, type Skin } from "@cubecore/skin";
+import { SKINS, type Skin, type Theme } from "@cubecore/skin";
 import { type Position, type Recording, ReplayClock, type Segment, segmentAt, segmentPlayed, stageSegments } from "@cubecore/timeline";
 import { type Marker, formatTime, fraction, segmentText, startMoves, stepTime, tempoRecording } from "./model";
 import { ICONS, STYLES } from "./styles";
@@ -81,7 +82,9 @@ const TEMPLATE = `
 </slot>`;
 
 export class CubePlayer extends HTMLElement {
-  static observedAttributes = ["alg", "setup", "anchor", "tempo", "skin", "back-view", "visualization"];
+  static observedAttributes = ["alg", "setup", "anchor", "tempo", "skin", "back-view", "visualization", "theme"];
+  private readonly darkQuery = typeof matchMedia === "function" ? matchMedia("(prefers-color-scheme: dark)") : null;
+  private readonly onScheme = () => this.applyTheme();
 
   private readonly root: ShadowRoot;
   private _renderer: CubeRenderer | null = null;
@@ -118,7 +121,8 @@ export class CubePlayer extends HTMLElement {
   connectedCallback(): void {
     if (!this.hasAttribute("tabindex")) this.tabIndex = 0;
     if (!this._renderer) {
-      this._renderer = new CubeRenderer(this.$(".stage"), { skin: this.resolveSkin() });
+      this._renderer = new CubeRenderer(this.$(".stage"), { skin: this.resolveSkin(), theme: this.resolvedTheme() });
+      this.darkQuery?.addEventListener("change", this.onScheme);
       const bv = this.getAttribute("back-view") as BackView | null;
       if (bv) this._renderer.setBackView(bv);
       if (this._mask) this._renderer.setMask(this._mask);
@@ -127,6 +131,7 @@ export class CubePlayer extends HTMLElement {
   }
 
   disconnectedCallback(): void {
+    this.darkQuery?.removeEventListener("change", this.onScheme);
     this.clock?.pause();
     this.unsubscribe?.();
     this._renderer?.dispose();
@@ -139,6 +144,7 @@ export class CubePlayer extends HTMLElement {
       this._renderer.setSkin(this.resolveSkin());
       this.redraw();
     } else if (name === "visualization") this.redraw();
+    else if (name === "theme") this.applyTheme();
     else if (name === "back-view") this._renderer.setBackView((this.getAttribute("back-view") as BackView) ?? "none");
     else this.load();
   }
@@ -414,6 +420,18 @@ export class CubePlayer extends HTMLElement {
     }
   }
 
+  /** "light" / "dark" from the theme attribute; "auto" (default) follows the system setting. */
+  private resolvedTheme(): Theme {
+    const t = this.getAttribute("theme");
+    if (t === "light" || t === "dark") return t;
+    return this.darkQuery && !this.darkQuery.matches ? "light" : "dark";
+  }
+
+  private applyTheme(): void {
+    this._renderer?.setTheme(this.resolvedTheme());
+    this.redraw();
+  }
+
   /** 2D visualizations: an SVG of the position (moves applied so far) with the same skin and mask. */
   private redraw(): void {
     const kind = this.getAttribute("visualization") ?? "3d";
@@ -426,7 +444,7 @@ export class CubePlayer extends HTMLElement {
     const played = this.rec.moves.slice(0, this.lastPos.applied).map((m) => m.move);
     const state = applyMoves(this.start, played);
     const spins = spinsAfter(solvedState(), [...this.startMoves, ...played]);
-    flat.innerHTML = renderSvg(state, { view: kind, skin: this.resolveSkin(), spins, ...(this._mask ? { mask: this._mask } : {}) });
+    flat.innerHTML = renderSvg(state, { view: kind, skin: this.resolveSkin(), theme: this.resolvedTheme(), spins, ...(this._mask ? { mask: this._mask } : {}) });
   }
 
   private updateUi(time: number): void {

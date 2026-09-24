@@ -383,8 +383,11 @@ re-export shims in core — they would make core depend on the method packages
   ranges — repeats / commutator inverses point at the original — pauses,
   comments), player `seekToMove`, `applied`, `moves`, `load` event;
   `<cube-alg for>` highlights the move playing, click to jump.
-- Next (in order): light/dark skin
-  themes, smart-cube skin presets (+ auto-pick from the connected cube),
+- 2026-09-25 — **light / dark skin themes**: `skin.themes` (+ `themed`,
+  `hintColor`, `hints.colors`), presets carry a light-page theme (lighter
+  masked greys, blue-grey white back sticker); renderer `theme` /
+  `setTheme`, `renderSvg({ theme })`, `<cube-player theme="light|dark|auto">`.
+- Next (in order): smart-cube skin presets (+ auto-pick from the connected cube),
   leftovers (compress pauses, cubing.js parity test, table cache, more
   trainer stages), React bindings, overall README.
 

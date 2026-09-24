@@ -42,6 +42,7 @@ import {
   SKINS,
   type Skin,
   type StickerShape,
+  type Theme,
   featureDef,
   imageUrl,
   roundedOutline,
@@ -49,6 +50,7 @@ import {
   stickerColor,
   stickerLayout,
   stickerlessOutline,
+  themed,
 } from "@cubecore/skin";
 
 export type View = "iso" | "top" | "net";
@@ -62,8 +64,10 @@ export interface SvgOptions {
   mask?: Mask;
   /** Draw the cube as held in this frame (e.g. to show a case with the cross on D whatever face it was solved on). */
   frame?: Frame;
-  /** Centre spins (see `spinsAfter`) — only matter for the skin's logo. Default: all upright. */
+  /** Centre spins (see `spinsAfter`) — only matter for decals on centres. Default: all upright. */
   spins?: CenterSpins;
+  /** Page theme the skin is adjusted for (skin.themes). Default "dark". */
+  theme?: Theme;
 }
 
 type Pt = [number, number];
@@ -193,7 +197,7 @@ const attr = (v: string) => v.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 export function renderSvg(state: State, options: SvgOptions = {}): string {
   const viewName = options.view ?? "iso";
   const size = options.size ?? 160;
-  const skin: Skin = options.skin ?? SKINS.standard;
+  const skin: Skin = themed(options.skin ?? SKINS.standard, options.theme ?? "dark");
   const v = VIEWS[viewName];
   const s = options.frame && options.frame !== IDENTITY_FRAME ? frameView(state, options.frame) : state;
   const side = skin.stickers.size * skin.cubieSize;

@@ -2,3 +2,7 @@ export * from "./geometry";
 export * from "./moves";
 export * from "./notation";
 export * from "./state";
+export * from "./frames";
+export * as checks from "./checks";
+export * from "./methods";
+export * from "./tracker";

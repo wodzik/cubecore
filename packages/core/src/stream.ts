@@ -7,7 +7,7 @@
 
 import { type Move, amountQuarters, toAmount } from "./moves";
 
-export interface TimedMove {
+export interface LoggedMove {
   move: Move;
   /** Time of the latest turn merged into it (ms, your clock). */
   time: number;
@@ -17,12 +17,12 @@ export interface TimedMove {
 export type LogChange = "append" | "merge" | "remove";
 
 export class MoveCollapser {
-  private log: (TimedMove & { unit: Move; count: number })[] = [];
+  private log: (LoggedMove & { unit: Move; count: number })[] = [];
 
   /** @param windowMs merge only turns at most this far apart (default: always, like a written solve). */
   constructor(private readonly windowMs = Infinity) {}
 
-  get moves(): readonly TimedMove[] {
+  get moves(): readonly LoggedMove[] {
     return this.log.map(({ move, time }) => ({ move, time }));
   }
 

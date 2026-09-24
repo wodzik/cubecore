@@ -6,3 +6,4 @@ export * from "./frames";
 export * as checks from "./checks";
 export * from "./methods";
 export * from "./tracker";
+export * from "./masks";

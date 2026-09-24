@@ -15,7 +15,7 @@ stageScramble({ stage: STAGES.xcross("FR"), length: 8 });
 
 Presets: `full`, `f2l` (cross solved), `ls`, `ll`, `zbll`, `pll`, `ell`, `cmll`;
 or your own `solved` / `oriented` piece rules. Stages: `cross`, `eocross`,
-`xcross(slot)`, `xxcross(a, b)`, `slot(slot)`, `roux-fb` — or any `StageDef`
+`xcross(slot)`, `xxcross(a, b)`, `slot(slot)`, `roux-fb`, `roux-blocks` — or any `StageDef`
 (a set of pieces + tables).
 
 ## Stage solvers
@@ -36,6 +36,10 @@ const solver = createSolverWorker();          // Vite / webpack / bun build pick
 await solver.warmUp([STAGES.cross(), STAGES.xcross("FR")]);
 const { moves } = await solver.stageScramble({ stage: STAGES.cross(), length: 5, from: cube.state, seed: 42 });
 ```
+
+Tables survive reloads: the worker's `warmUp` keeps them in IndexedDB
+(`preloadStageTables(stages, indexedDbTableStore())` does the same on the
+main thread), so the ~1.5 s per table is paid once per device.
 
 Dev servers that don't rewrite `new URL("./worker.ts", import.meta.url)` (Bun's
 HTML dev server) can build the worker themselves and pass its URL:

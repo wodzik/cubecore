@@ -147,3 +147,22 @@ export class ReplayClock {
     for (const l of this.listeners) l(this.time, pos);
   }
 }
+
+/**
+ * A recording with every pause longer than `maxPauseMs` shortened to it —
+ * long recognitions (or a break mid-solve) don't drag the replay. Moves keep
+ * their order and the gaps up to the cap; the total shrinks accordingly.
+ */
+export function compressPauses(rec: Recording, maxPauseMs: number): Recording {
+  let removed = 0;
+  let prev = 0;
+  const moves = rec.moves.map((m) => {
+    const gap = m.t - prev;
+    prev = m.t;
+    if (gap > maxPauseMs) removed += gap - maxPauseMs;
+    return { move: m.move, t: m.t - removed };
+  });
+  const tail = rec.totalMs - prev;
+  if (tail > maxPauseMs) removed += tail - maxPauseMs;
+  return { scramble: rec.scramble, moves, totalMs: rec.totalMs - removed };
+}

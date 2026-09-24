@@ -59,9 +59,12 @@ const next = (p: Piece, value: number, m: number) => (p.kind === "edge" ? EDGE_N
 // ─── distance tables for groups of pieces ───
 
 const tableCache = new Map<string, Int8Array>();
+/** Bump when table contents change, so stored copies are rebuilt. */
+const TABLE_VERSION = 1;
+const groupKey = (pieces: readonly Piece[]) => `v${TABLE_VERSION}:${pieces.map((p) => `${p.kind[0]}${p.id}`).join(",")}`;
 
 function groupTable(pieces: readonly Piece[]): Int8Array {
-  const key = pieces.map((p) => `${p.kind[0]}${p.id}`).join(",");
+  const key = groupKey(pieces);
   const cached = tableCache.get(key);
   if (cached) return cached;
   const k = pieces.length;
@@ -161,6 +164,16 @@ export const STAGES = {
   slot: (slot: Slot = "FR"): StageDef => ({ name: `slot-${slot}`, pieces: [SLOT[slot].edge, SLOT[slot].corner], groups: [[0, 1]] }),
   /** Roux first block: DL, FL, BL edges and the DLF, DBL corners. */
   "roux-fb": (): StageDef => ({ name: "roux-fb", pieces: [E(6), E(9), E(10), C(5), C(6)], groups: [[0, 1, 2, 3, 4]] }),
+  /**
+   * Both Roux blocks (first + second: DR, FR, BR edges, DFR, DRB corners) —
+   * for second-block practice from a solved first block. From a full
+   * scramble the optimum is long (~15+) and the search slow.
+   */
+  "roux-blocks": (): StageDef => ({
+    name: "roux-blocks",
+    pieces: [E(6), E(9), E(10), C(5), C(6), E(4), E(8), E(11), C(4), C(7)],
+    groups: [[0, 1, 2, 3, 4], [5, 6, 7, 8, 9]],
+  }),
 } as const;
 
 export interface StageSolveOptions {
@@ -184,7 +197,7 @@ export class StageSolver {
   }
 
   /** Values of the tracked pieces (and flip) in `state`, seen through `frame`. */
-  private read(state: State, frame: Frame): { vals: number[]; flip: number } | null {
+  private read(state: State, frame: Frame): { vals: number[]; flip: number; centres: Frame } | null {
     const c = toCubies(reframe(state, frame));
     if (!c) return null;
     const vals = this.def.pieces.map((p) => {
@@ -196,7 +209,9 @@ export class StageSolver {
       return pos * 3 + c.co[pos];
     });
     const flip = c.eo.slice(0, 11).reduce((a, x) => a * 2 + x, 0);
-    return { vals, flip };
+    // Pieces are read relative to the centres (after slices / rotations they're not at home): solutions
+    // come back in that frame and have to be said in the cube's own terms.
+    return { vals, flip, centres: c.frame };
   }
 
   private h(vals: readonly number[], flip: number): number {
@@ -268,7 +283,8 @@ export class StageSolver {
     if (!r) return [];
     const sols = this.optimal(r.vals, r.flip, options.maxDepth ?? 20, options.all ?? false, options.limit ?? 256);
     return sols.map((s) => {
-      const moves = s.map((m) => MOVES[m]);
+      let moves = s.map((m) => MOVES[m]);
+      if (r.centres !== IDENTITY_FRAME) moves = transformMoves(moves, r.centres);
       return frame === IDENTITY_FRAME ? moves : transformMoves(moves, frame);
     });
   }
@@ -347,6 +363,51 @@ export function flipBits(flip: number): number[] {
 export interface Placement {
   pieces: Map<Piece, number>;
   flip?: number;
+}
+
+// ─── keeping tables across sessions ───
+
+/** Somewhere to keep distance tables between sessions (IndexedDB in browsers — see indexedDbTableStore). */
+export interface TableStore {
+  get(key: string): Promise<Int8Array | null>;
+  set(key: string, table: Int8Array): Promise<void>;
+}
+
+/** Load the tables these stages need from `store`, or build and save them. Afterwards the solvers start instantly. */
+export async function preloadStageTables(stages: readonly StageDef[], store: TableStore): Promise<void> {
+  for (const def of stages) {
+    for (const g of def.groups) {
+      const pieces = g.map((i) => def.pieces[i]);
+      const key = groupKey(pieces);
+      if (tableCache.has(key)) continue;
+      const saved = await store.get(key).catch(() => null);
+      if (saved && saved.length === 24 ** pieces.length) tableCache.set(key, saved);
+      else await store.set(key, groupTable(pieces)).catch(() => undefined);
+    }
+  }
+}
+
+/** A TableStore in IndexedDB (works in pages and workers). */
+export function indexedDbTableStore(dbName = "cubecore-tables"): TableStore {
+  const db = new Promise<IDBDatabase>((resolve, reject) => {
+    const req = indexedDB.open(dbName, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore("tables");
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+  const run = <T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest): Promise<T> =>
+    db.then(
+      (d) =>
+        new Promise<T>((resolve, reject) => {
+          const r = fn(d.transaction("tables", mode).objectStore("tables"));
+          r.onsuccess = () => resolve(r.result as T);
+          r.onerror = () => reject(r.error);
+        }),
+    );
+  return {
+    get: (key) => run<ArrayBuffer | undefined>("readonly", (s) => s.get(key)).then((b) => (b ? new Int8Array(b) : null)),
+    set: (key, table) => run<unknown>("readwrite", (s) => s.put(table.buffer.slice(0), key)).then(() => undefined),
+  };
 }
 
 const solvers = new Map<string, StageSolver>();

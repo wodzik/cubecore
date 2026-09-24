@@ -25,6 +25,7 @@
 | `progress` | show the progress bar (seek by click / drag / arrow keys) |
 | `segment-labels`, `tooltips`, `markers` | section names under the bar · the section popup (`off` hides it) · tick marks at section ends |
 | `controls` | `default` or `none` |
+| `max-pause` | ms — recorded pauses longer than this are shortened in the replay (`compressPauses`) |
 | `mask`, `speeds`, `rate` | properties |
 
 API: `play()`, `pause()`, `toggle()`, `seek(ms)`, `stepForward()`, `stepBack()`,

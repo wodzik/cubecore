@@ -13,7 +13,8 @@
  * default 2), skin (preset name), theme ("light" | "dark" | "auto" — the
  * skin's adjustments for the page; auto follows the system), back-view, visualization ("3d" | "net" |
  * "top" — the 2D views are SVG pictures from @cubecore/image), controls
- * ("default" | "none"), progress (show the bar), markers (ticks at section
+ * ("default" | "none"), max-pause (ms: recorded pauses longer than this are
+ * shortened in the replay), progress (show the bar), markers (ticks at section
  * ends), segment-labels (section names under the bar — click one to jump to
  * it), tooltips ("off" to hide the section popup).
  *
@@ -52,7 +53,7 @@ import { type Mask, type Method, type Move, type State, applyMoves, parseAlg, so
 import { renderSvg } from "@cubecore/image";
 import { type BackView, CubeRenderer, showPosition } from "@cubecore/render";
 import { SKINS, type Skin, type Theme } from "@cubecore/skin";
-import { type Position, type Recording, ReplayClock, type Segment, segmentAt, segmentPlayed, stageSegments } from "@cubecore/timeline";
+import { type Position, type Recording, ReplayClock, type Segment, compressPauses, segmentAt, segmentPlayed, stageSegments } from "@cubecore/timeline";
 import { type Marker, formatTime, fraction, segmentText, startMoves, stepTime, tempoRecording } from "./model";
 import { ICONS, STYLES } from "./styles";
 
@@ -84,7 +85,7 @@ const TEMPLATE = `
 </slot>`;
 
 export class CubePlayer extends HTMLElement {
-  static observedAttributes = ["alg", "setup", "anchor", "tempo", "skin", "back-view", "visualization", "theme"];
+  static observedAttributes = ["alg", "setup", "anchor", "tempo", "skin", "back-view", "visualization", "theme", "max-pause"];
   private readonly darkQuery = typeof matchMedia === "function" ? matchMedia("(prefers-color-scheme: dark)") : null;
   private readonly onScheme = () => this.applyTheme();
 
@@ -378,7 +379,9 @@ export class CubePlayer extends HTMLElement {
     let solves: Move[] = [];
     try {
       if (this._recording) {
-        this.rec = this._recording;
+        // max-pause: long recognitions shortened (ms), so replays keep moving.
+        const cap = Number(this.getAttribute("max-pause"));
+        this.rec = cap > 0 ? compressPauses(this._recording, cap) : this._recording;
       } else {
         const tempo = Number(this.getAttribute("tempo") ?? 2) || 2;
         const t = tempoRecording(this.alg, tempo);

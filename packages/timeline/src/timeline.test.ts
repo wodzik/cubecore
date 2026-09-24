@@ -172,3 +172,13 @@ describe("segments", async () => {
     expect(segmentPlayed(segs[1], 200)).toBe(0.5);
   });
 });
+
+describe("compressPauses", async () => {
+  const { compressPauses } = await import("./index");
+  it("caps every gap (and the tail) at the limit, keeping shorter ones", () => {
+    const rec = recording("", [["R", 3000], ["U", 3200], ["F", 9000]], 12000);
+    const c = compressPauses(rec, 1000);
+    expect(c.moves.map((m) => m.t)).toEqual([1000, 1200, 2200]);
+    expect(c.totalMs).toBe(3200);
+  });
+});

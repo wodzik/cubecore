@@ -16,6 +16,7 @@
     "@types/bun": "latest",
     "@types/three": "^0.186.0",
     "@types/web-bluetooth": "^0.0.21",
+    "cubing": "0.63.4",
     "three": "^0.186.1",
     "typescript": "^5.6.0"
   }

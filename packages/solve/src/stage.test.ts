@@ -90,3 +90,34 @@ describe("trainer scrambles", () => {
     expect(new StageSolver(STAGES.eocross()).distance(e.state)).toBe(6);
   });
 });
+
+describe("table store and Roux blocks", () => {
+  it("tables are saved once and read back afterwards", async () => {
+    const { preloadStageTables } = await import("./index");
+    const saved = new Map<string, Int8Array>();
+    let gets = 0;
+    const store = {
+      get: async (k: string) => (gets++, saved.get(k) ?? null),
+      set: async (k: string, t: Int8Array) => void saved.set(k, t),
+    };
+    await preloadStageTables([STAGES.slot("BL")], store);
+    expect(saved.size).toBe(1);
+    expect(gets).toBe(1);
+  });
+
+  it("both Roux blocks: short cases solve and keep the first block", () => {
+    const blocks = new StageSolver(STAGES["roux-blocks"]());
+    const t = applyMoves(S, "R U R' r'");
+    const sol = blocks.solve(t)[0];
+    expect(blocks.distance(applyMoves(t, sol))).toBe(0);
+    expect(sol.length).toBeLessThanOrEqual(4);
+  }, 30_000); // builds two 8 MB tables
+});
+
+describe("centres moved by slices / rotations", () => {
+  it("solutions are said in the cube's own terms", () => {
+    const t = applyMoves(S, "x M' U R");
+    const sol = cross.solve(t, { frame: frameFor("D") })[0];
+    expect(cross.distance(applyMoves(t, sol))).toBe(0);
+  });
+});

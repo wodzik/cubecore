@@ -9,10 +9,10 @@ import type { Envelope, Response } from "./protocol";
 
 declare const self: { onmessage: ((e: MessageEvent<Envelope>) => void) | null; postMessage(r: Response): void };
 
-self.onmessage = (e) => {
+self.onmessage = async (e) => {
   const { id, request } = e.data;
   try {
-    self.postMessage({ id, ok: true, value: handle(request) });
+    self.postMessage({ id, ok: true, value: await handle(request) });
   } catch (err) {
     self.postMessage({ id, ok: false, error: err instanceof Error ? err.message : String(err) });
   }

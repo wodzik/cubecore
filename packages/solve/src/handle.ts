@@ -6,14 +6,18 @@
 import { FRAMES } from "@cubecore/core";
 import { type Request, seededRandom } from "./protocol";
 import { randomScramble, sharedSolver, stageScramble } from "./scramble";
-import { stageSolver } from "./stage";
+import { indexedDbTableStore, preloadStageTables, stageSolver } from "./stage";
 
-export function handle(r: Request): unknown {
+/** Tables kept across sessions when the environment has IndexedDB (browsers, workers). */
+const store = typeof indexedDB !== "undefined" ? indexedDbTableStore() : null;
+
+export async function handle(r: Request): Promise<unknown> {
   const frame = "frameId" in r && r.frameId !== undefined ? FRAMES[r.frameId] : undefined;
   const random = "seed" in r && r.seed !== undefined ? seededRandom(r.seed) : undefined;
   switch (r.op) {
     case "warmUp":
       sharedSolver();
+      if (store) await preloadStageTables(r.stages, store);
       for (const s of r.stages) stageSolver(s);
       return true;
     case "solve":

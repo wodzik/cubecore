@@ -392,8 +392,14 @@ re-export shims in core — they would make core depend on the method packages
   stickerless), `registerCubeSkin` for app rules, `session.suggestedSkin`,
   `player.attach(…, { autoSkin })`. Per-model skins beyond i4 wait for
   reference photos (to be prepared before act adoption).
-- Next (in order): leftovers (compress pauses, cubing.js parity test, table cache, more
-  trainer stages), React bindings, overall README.
+- 2026-09-25 — **leftovers**: parity test with cubing.js kpuzzle (dev
+  dependency; 40 random 25-move sequences — every piece and orientation
+  identical); `compressPauses` + player `max-pause`; stage tables kept across
+  sessions (`preloadStageTables`, `indexedDbTableStore`; the worker's
+  `warmUp` uses IndexedDB when there is one); `roux-blocks` stage; stage
+  solutions are now said in the cube's own terms when slices / rotations
+  moved the centres (bug found by the Roux test).
+- Next (in order): React bindings, overall README.
 
 ### Gyroscope (planned)
 - `setOrientation(q, smoothing)` is the whole renderer-side API: the cube's

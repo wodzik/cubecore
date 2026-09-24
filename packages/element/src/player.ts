@@ -56,6 +56,7 @@ import { SKINS, type Skin, type Theme } from "@cubecore/skin";
 import { type Position, type Recording, ReplayClock, type Segment, compressPauses, segmentAt, segmentPlayed, stageSegments } from "@cubecore/timeline";
 import { type Marker, formatTime, fraction, segmentText, startMoves, stepTime, tempoRecording } from "./model";
 import { ICONS, STYLES } from "./styles";
+import { ElementBase } from "./base";
 
 const TEMPLATE = `
 <style>${STYLES}</style>
@@ -84,7 +85,7 @@ const TEMPLATE = `
   </div>
 </slot>`;
 
-export class CubePlayer extends HTMLElement {
+export class CubePlayer extends ElementBase {
   static observedAttributes = ["alg", "setup", "anchor", "tempo", "skin", "back-view", "visualization", "theme", "max-pause"];
   private readonly darkQuery = typeof matchMedia === "function" ? matchMedia("(prefers-color-scheme: dark)") : null;
   private readonly onScheme = () => this.applyTheme();

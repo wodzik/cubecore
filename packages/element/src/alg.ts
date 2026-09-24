@@ -15,6 +15,7 @@
 
 import { type AlgDocument, formatAlg, parseAlgDocument } from "@cubecore/core";
 import type { CubePlayer } from "./player";
+import { ElementBase } from "./base";
 
 const STYLES = /* css */ `
 :host {
@@ -35,7 +36,7 @@ const STYLES = /* css */ `
 .comment { color: var(--cc-alg-comment); font-style: italic; }
 `;
 
-export class CubeAlg extends HTMLElement {
+export class CubeAlg extends ElementBase {
   static observedAttributes = ["for", "alg"];
   private readonly root: ShadowRoot;
   private player: CubePlayer | null = null;

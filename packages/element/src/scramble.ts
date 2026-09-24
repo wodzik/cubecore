@@ -19,6 +19,7 @@
  */
 
 import { type Move, type SequenceProgress, SequenceTracker, type State, formatMove, parseAlg, solvedState } from "@cubecore/core";
+import { ElementBase } from "./base";
 
 const STYLES = /* css */ `
 :host {
@@ -59,7 +60,7 @@ export interface MoveSource {
   on(type: "move", listener: (e: { move: Move }) => void): () => void;
 }
 
-export class CubeScramble extends HTMLElement {
+export class CubeScramble extends ElementBase {
   private readonly root: ShadowRoot;
   private tracker: SequenceTracker | null = null;
   private _moves: Move[] = [];

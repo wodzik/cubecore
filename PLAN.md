@@ -399,7 +399,11 @@ re-export shims in core — they would make core depend on the method packages
   `warmUp` uses IndexedDB when there is one); `roux-blocks` stage; stage
   solutions are now said in the cube's own terms when slices / rotations
   moved the centres (bug found by the Roux test).
-- Next (in order): React bindings, overall README.
+- 2026-09-25 — **React** (`@cubecore/react`): `<CubePlayer>`, `<CubeScramble>`,
+  `<CubeAlg>` (props → attributes / properties / events; ref = the element),
+  `useSmartCube()`, `useSolverWorker()`; server-render tests; elements
+  importable without a DOM (SSR). Demo `/react`, guide `docs/react.md`.
+- Next: overall README.
 
 ### Gyroscope (planned)
 - `setOrientation(q, smoothing)` is the whole renderer-side API: the cube's

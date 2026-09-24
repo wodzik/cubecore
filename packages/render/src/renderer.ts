@@ -262,14 +262,15 @@ export class CubeRenderer {
       const key = path ? `p|${layout.kind}|${layout.pathQuarters}` : `r|${layout.radii.join(",")}|${fill ? `${layout.u},${layout.v}` : ""}`;
       let g = geometries.get(key);
       if (!g) {
-        // Stickerless tiles reach past the cubie edge by their own thickness, so neighbouring faces' tiles meet.
+        const edge = size / 2 + 0.002;
         const outline = path
           ? pathOutline(path, side, layout.pathQuarters)
           : fill
-            ? stickerlessOutline(layout, side, size / 2 + thickness + 0.002)
+            ? stickerlessOutline(layout, side, edge)
             : roundedOutline(side, layout.radii);
         const sh = new Shape(outline.map(([x, y]) => new Vector2(x, y)));
         g = thickness > 0 ? new ExtrudeGeometry(sh, { depth: thickness, bevelEnabled: false, curveSegments: 4 }) : new ShapeGeometry(sh);
+        if (fill && thickness > 0) mitreOuterSides(g, layout, edge, thickness);
         geometries.set(key, g);
       }
       return g;
@@ -522,4 +523,29 @@ function pathOutline(d: string, side: number, quarters: number): [number, number
     area += x1 * y2 - x2 * y1;
   }
   return area < 0 ? rotated.reverse() : rotated;
+}
+
+/**
+ * Stickerless tiles: on the sides lying on the cube's edge, push the top face
+ * out by the tile thickness so the side wall slopes at 45°. Tiles of two faces
+ * of one piece then meet along a shared mitre (like a picture frame) — the
+ * colours touch on the edge line instead of overlapping (z-fighting) or
+ * leaving a black notch. Outline points near the edge (rounded corners) are
+ * ramped so the top face stays smooth.
+ */
+function mitreOuterSides(g: BufferGeometry, layout: { u: number; v: number }, edge: number, thickness: number): void {
+  const pos = g.getAttribute("position");
+  const ramp = Math.max(thickness * 4, 0.03);
+  const shift = (c: number, dir: number) => {
+    if (dir === 0) return c;
+    const dist = edge - c * dir; // 0 on the edge
+    const k = Math.max(0, 1 - dist / ramp);
+    return c + dir * thickness * k;
+  };
+  for (let i = 0; i < pos.count; i++) {
+    if (pos.getZ(i) < thickness / 2) continue;
+    pos.setXY(i, shift(pos.getX(i), layout.u), shift(pos.getY(i), layout.v));
+  }
+  pos.needsUpdate = true;
+  g.computeBoundingSphere();
 }

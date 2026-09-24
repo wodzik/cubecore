@@ -144,6 +144,25 @@ export function simplify(moves: readonly Move[]): Move[] {
 const LAYER_MIRROR: Partial<Record<MoveFamily, MoveFamily>> = { R: "L", L: "R", r: "l", l: "r" };
 
 /** Mirror left↔right (the plane between L and R): R ↔ L', U → U', M and x unchanged, … */
+/**
+ * Merge only IDENTICAL consecutive moves: R R → R2, R R R → R'. Unlike
+ * `simplify`, R R' stays — in a recorded solve those are two real turns (a
+ * mistake and its fix), both counted. For showing / counting what was done.
+ */
+export function collapseRepeats(moves: readonly Move[]): Move[] {
+  const out: Move[] = [];
+  let i = 0;
+  while (i < moves.length) {
+    const m = moves[i];
+    let run = 1;
+    while (i + run < moves.length && moves[i + run].family === m.family && moves[i + run].amount === m.amount) run++;
+    const merged = toAmount(amountQuarters(m.amount) * run);
+    if (merged !== null) out.push({ family: m.family, amount: merged });
+    i += run;
+  }
+  return out;
+}
+
 export function mirrorLR(moves: readonly Move[]): Move[] {
   return moves.map((m) => {
     const def = FAMILY[m.family];

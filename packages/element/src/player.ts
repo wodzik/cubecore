@@ -49,9 +49,9 @@ export interface LiveSource {
   on(type: "orientation", listener: (q: { x: number; y: number; z: number; w: number }) => void): () => void;
 }
 
-import { type Mask, type Method, type Move, type State, applyMoves, parseAlg, solvedState, spinsAfter } from "@cubecore/core";
+import { type Mask, type Method, type Move, type State, type TurnArrow, applyMoves, parseAlg, solvedState, spinsAfter } from "@cubecore/core";
 import { renderSvg } from "@cubecore/image";
-import { type BackView, CubeRenderer, showPosition } from "@cubecore/render";
+import { type ArrowStyle, type BackView, CubeRenderer, showPosition } from "@cubecore/render";
 import { SKINS, type Skin, type Theme } from "@cubecore/skin";
 import { type Position, type Recording, ReplayClock, type Segment, compressPauses, segmentAt, segmentPlayed, stageSegments } from "@cubecore/timeline";
 import { type Marker, formatTime, fraction, segmentText, startMoves, stepTime, tempoRecording } from "./model";
@@ -92,6 +92,7 @@ export class CubePlayer extends ElementBase {
 
   private readonly root: ShadowRoot;
   private _renderer: CubeRenderer | null = null;
+  private turnArrows: { arrows: readonly TurnArrow[]; style: ArrowStyle; owner: unknown } | null = null;
   private clock: ReplayClock | null = null;
   private unsubscribe: (() => void) | null = null;
   private rec: Recording = { scramble: [], moves: [], totalMs: 0 };
@@ -130,6 +131,7 @@ export class CubePlayer extends ElementBase {
       const bv = this.getAttribute("back-view") as BackView | null;
       if (bv) this._renderer.setBackView(bv);
       if (this._mask) this._renderer.setMask(this._mask);
+      if (this.turnArrows) this._renderer.setTurnArrows(this.turnArrows.arrows, this.turnArrows.style);
     }
     this.load();
   }
@@ -352,6 +354,17 @@ export class CubePlayer extends ElementBase {
     this.removeAttribute("live");
     this._renderer?.setOrientation(null);
     this.load();
+  }
+
+  /**
+   * Arrows for the next turn on the 3D cube (a tracker's `nextTurn().arrows`).
+   * `owner` (e.g. the <cube-scramble> setting them): clearing with null only
+   * works for the one that set them last, so two elements can share a player.
+   */
+  showTurnArrows(arrows: readonly TurnArrow[] | null, style: ArrowStyle = {}, owner: unknown = null): void {
+    if (!arrows && this.turnArrows && owner !== null && this.turnArrows.owner !== owner) return;
+    this.turnArrows = arrows?.length ? { arrows, style, owner } : null;
+    this._renderer?.setTurnArrows(arrows, style);
   }
 
   /** Animate one move now (live input without a session). */

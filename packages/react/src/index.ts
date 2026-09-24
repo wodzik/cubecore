@@ -31,6 +31,7 @@ import type {
   CubeAlgPractice as CubeAlgPracticeElement,
   CubePlayer as CubePlayerElement,
   CubeScramble as CubeScrambleElement,
+  ArrowTarget,
   LiveSource,
   MoveSource,
   PracticeMessages,
@@ -160,6 +161,10 @@ export interface CubeScrambleProps {
   scramble: string | readonly Move[];
   /** Follow a smart cube (a SmartCubeSession). */
   source?: MoveSource | null;
+  /** Arrows on a player's 3D cube for the next turn (with `player`). */
+  arrows?: boolean;
+  /** The <CubePlayer> ref the arrows go to. */
+  player?: { current: ArrowTarget | null };
   /** Show an input to paste or type your own scramble (fires onChange). */
   editable?: boolean;
   messages?: Partial<ScrambleMessages>;
@@ -184,8 +189,11 @@ export const CubeScramble = forwardRef<CubeScrambleElement | null, CubeScrambleP
   useEffect(() => {
     if (el.current && p.messages) el.current.messages = p.messages;
   }, [p.messages]);
+  useEffect(() => {
+    if (el.current) el.current.player = p.player?.current ?? null;
+  });
   useEvents(el, { progress: p.onProgress, complete: p.onComplete, change: p.onChange } as Record<string, Handler<never> | undefined>);
-  return createElement("cube-scramble", { ref: el, editable: p.editable ? "" : undefined, id: p.id, className: p.className, style: p.style });
+  return createElement("cube-scramble", { ref: el, editable: p.editable ? "" : undefined, arrows: p.arrows ? "" : undefined, id: p.id, className: p.className, style: p.style });
 });
 
 // ─── <CubeAlgPractice> ───
@@ -194,6 +202,10 @@ export interface CubeAlgPracticeProps {
   alg: string | readonly Move[];
   /** Follow a smart cube (a SmartCubeSession); tracking starts from its current state. */
   source?: MoveSource | null;
+  /** Arrows on a player's 3D cube for the next turn (with `player`). */
+  arrows?: boolean;
+  /** The <CubePlayer> ref the arrows go to. */
+  player?: { current: ArrowTarget | null };
   /** "all" every move shown, "done" dots until done (default), "none" dots only. */
   reveal?: "all" | "done" | "none";
   /** Show the next move after a slip (default true). */
@@ -225,12 +237,16 @@ export const CubeAlgPractice = forwardRef<CubeAlgPracticeElement | null, CubeAlg
   useEffect(() => {
     if (el.current && p.messages) el.current.messages = p.messages;
   }, [p.messages]);
+  useEffect(() => {
+    if (el.current) el.current.player = p.player?.current ?? null;
+  });
   useEvents(el, { progress: p.onProgress, mistake: p.onMistake, complete: p.onComplete } as Record<string, Handler<never> | undefined>);
   return createElement(
     "cube-alg-practice",
     {
       ref: el,
       reveal: p.reveal,
+      arrows: p.arrows ? "" : undefined,
       "hint-on-mistake": p.hintOnMistake === false ? "off" : undefined,
       controls: p.controls,
       headless: p.headless ? "" : undefined,

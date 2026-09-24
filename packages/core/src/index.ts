@@ -15,3 +15,4 @@ export * from "./cubies";
 export * from "./stateCodec";
 export * from "./sequence";
 export * from "./practice";
+export * from "./arrows";

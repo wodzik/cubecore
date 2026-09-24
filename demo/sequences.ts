@@ -1,34 +1,36 @@
 import "./nav";
-import { type PracticeProgress, formatMove, invert, parseAlg, toFaceTurns } from "../packages/core/src/index";
+import { type PracticeProgress, invert, parseAlg, toFaceTurns } from "../packages/core/src/index";
 import { createSolverWorker } from "../packages/solve/src/index";
 import { SimulatedCube, SmartCubeSession } from "../packages/bluetooth/src/index";
 import "../packages/element/src/index"; // registers the elements
-import type { CubeAlgPractice, CubePlayer, CubeScramble, ShownToken } from "../packages/element/src/index";
+import type { CubeAlgPractice, CubePlayer, CubeScramble } from "../packages/element/src/index";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const player = $<CubePlayer>("player");
 const scrambleEl = $<CubeScramble>("scramble");
+const setupEl = $<CubeScramble>("setup");
 const practiceEl = $<CubeAlgPractice>("practice");
-const mirrors = [...document.querySelectorAll<CubeAlgPractice>("cube-alg-practice.mirror")];
-const practices = [practiceEl, ...mirrors];
 const solver = createSolverWorker("/solver-worker.js"); // see demo/serve.ts
 let session: SmartCubeSession | null = null;
 let simulated: SimulatedCube | null = null;
-let settingUp = false;
+let mode: "scramble" | "alg" = "scramble";
 
 // ─── cube ───
 
 function use(s: SmartCubeSession) {
   session = s;
   player.attach(s, { autoSkin: true });
-  scrambleEl.attach(s);
-  for (const p of practices) p.attach(s);
   $("info").textContent = `${s.info.name} · ${s.info.protocol.name}`;
-  for (const id of ["solved", "newScramble", "setup"]) $<HTMLButtonElement>(id).disabled = false;
+  for (const id of ["solved", "newScramble", "setupCase"]) $<HTMLButtonElement>(id).disabled = false;
   $<HTMLButtonElement>("connect").disabled = $<HTMLButtonElement>("simulate").disabled = true;
   s.on("state", (e) => {
-    if (e.reason !== "move") for (const p of practices) p.reset(e.state);
+    if (e.reason === "move") return;
+    // Resync / marked solved: start the current thing again from here.
+    if (mode === "alg") practiceEl.reset(e.state);
+    else scrambleEl.reset(e.state);
   });
+  setMode(mode);
+  if (!scrambleEl.scramble) void newScramble();
 }
 
 $("connect").onclick = async () => {
@@ -54,88 +56,83 @@ addEventListener("keydown", (e) => {
   simulated.turn(parseAlg(face + (e.shiftKey ? "'" : ""))[0]);
 });
 
+// ─── mode: only the visible thing follows the cube (and owns the arrows) ───
+
+function setMode(m: typeof mode) {
+  mode = m;
+  $("tabScramble").setAttribute("aria-selected", String(m === "scramble"));
+  $("tabAlg").setAttribute("aria-selected", String(m === "alg"));
+  $("scramblePanel").hidden = m !== "scramble";
+  $("algPanel").hidden = m !== "alg";
+  scrambleEl.detach();
+  setupEl.detach();
+  practiceEl.detach();
+  $("setupBox").hidden = true;
+  if (!session) return;
+  if (m === "scramble") scrambleEl.attach(session);
+  else practiceEl.attach(session);
+}
+$("tabScramble").onclick = () => setMode("scramble");
+$("tabAlg").onclick = () => setMode("alg");
+
+$("arrows").onchange = () => {
+  const on = $<HTMLInputElement>("arrows").checked;
+  for (const el of [scrambleEl, setupEl, practiceEl]) el.toggleAttribute("arrows", on);
+};
+$("arrows").dispatchEvent(new Event("change"));
+
 // ─── scramble ───
 
-$("newScramble").onclick = async () => {
+async function newScramble() {
   if (!session) return;
   $("scrambleInfo").textContent = "Generating…";
-  const r = await solver.randomScramble({ preset: $<HTMLSelectElement>("scrambleKind").value as "full" | "ll", from: session.state });
-  settingUp = false;
+  const r = await solver.randomScramble({ preset: "full", from: session.state });
   scrambleEl.scramble = r.moves;
-  $("scrambleInfo").textContent = `${r.moves.length} moves, from the cube's current state.`;
-};
-scrambleEl.addEventListener("change", () => {
-  settingUp = false;
-  $("scrambleInfo").textContent = "Your scramble — follow it on the cube.";
-});
-scrambleEl.addEventListener("complete", () => {
-  if (!settingUp) return void ($("scrambleInfo").textContent = "Scrambled ✓");
-  settingUp = false;
-  $("scrambleInfo").textContent = "Case set up ✓";
-  $("practiceInfo").textContent = "Go!";
-  // Start the attempt after this move has reached every listener.
-  queueMicrotask(() => session && practices.forEach((p) => p.attach(session!)));
-});
+  $("scrambleInfo").textContent = "From the cube's current state — or paste your own above.";
+}
+$("newScramble").onclick = () => void newScramble();
+scrambleEl.addEventListener("change", () => ($("scrambleInfo").textContent = "Your scramble."));
+scrambleEl.addEventListener("complete", () => ($("scrambleInfo").textContent = "Scrambled ✓"));
 
-// ─── practice ───
+// ─── algorithm ───
 
 function setAlg(text: string) {
   try {
-    const moves = parseAlg(text);
-    for (const p of practices) p.alg = moves;
+    practiceEl.alg = parseAlg(text);
     $("alg").style.borderColor = "";
   } catch {
     $("alg").style.borderColor = "#ff8a4c";
   }
 }
 $<HTMLInputElement>("alg").value = $<HTMLSelectElement>("preset").value;
+setAlg($<HTMLSelectElement>("preset").value);
 $("preset").onchange = () => {
   $<HTMLInputElement>("alg").value = $<HTMLSelectElement>("preset").value;
   setAlg($<HTMLSelectElement>("preset").value);
 };
 $("alg").oninput = () => setAlg($<HTMLInputElement>("alg").value);
 $("reveal").onchange = () => practiceEl.setAttribute("reveal", $<HTMLSelectElement>("reveal").value);
-$("hintOnMistake").onchange = () => {
-  if ($<HTMLInputElement>("hintOnMistake").checked) practiceEl.removeAttribute("hint-on-mistake");
-  else practiceEl.setAttribute("hint-on-mistake", "off");
-  practiceEl.reset(session?.state);
-};
-$("setup").onclick = () => {
-  settingUp = true;
-  for (const p of practices) p.detach(); // the setup moves aren't an attempt
-  scrambleEl.scramble = invert(toFaceTurns(practiceEl.alg).moves);
-  $("scrambleInfo").textContent = "Case setup — start from solved.";
-  $("practiceInfo").textContent = "Do the setup moves in the scramble box first.";
-};
 
-const attempts: string[] = [];
-practiceEl.addEventListener("mistake", () => ($("practiceInfo").textContent = "Slip — undo it (orange) and carry on."));
+$("setupCase").onclick = () => {
+  if (!session) return;
+  practiceEl.detach(); // the setup moves aren't an attempt
+  setupEl.scramble = invert(toFaceTurns(practiceEl.alg).moves);
+  setupEl.attach(session);
+  $("setupBox").hidden = false;
+  $("practiceInfo").textContent = "Do the setup first (from solved).";
+};
+setupEl.addEventListener("complete", () => {
+  // After this move has reached every listener, the attempt starts here.
+  queueMicrotask(() => {
+    if (!session) return;
+    setupEl.detach();
+    $("setupBox").hidden = true;
+    practiceEl.attach(session);
+    $("practiceInfo").textContent = "Go!";
+  });
+});
+practiceEl.addEventListener("mistake", () => ($("practiceInfo").textContent = "Slip — undo it and carry on."));
 practiceEl.addEventListener("complete", (e) => {
   const { practice } = (e as CustomEvent<PracticeProgress>).detail;
-  $("practiceInfo").textContent = practice.differentAlg ? "Solved — with a different algorithm." : "Done ✓ — Set up case to go again.";
-  attempts.unshift(
-    `<tr><td>${(practice.elapsedMs / 1000).toFixed(2)} s</td><td>${practice.tps.toFixed(1)} TPS</td><td>${practice.mistakes} mistake${practice.mistakes === 1 ? "" : "s"}</td><td>${practice.differentAlg ? "other alg" : ""}</td></tr>`,
-  );
-  $("attempts").innerHTML = attempts.slice(0, 5).join("");
+  $("practiceInfo").textContent = practice.differentAlg ? "Solved — with a different algorithm." : "Done ✓ — set up the case again.";
 });
-
-// 2. own controls in the slot: plain buttons calling the element's methods
-const slotted = $<CubeAlgPractice>("slotted");
-slotted.addEventListener("click", (e) => {
-  const action = (e.target as HTMLElement).closest<HTMLElement>("[data-do]")?.dataset.do;
-  if (action === "hint") slotted.hint();
-  else if (action === "toggleShown") slotted.toggleShown();
-  else if (action === "reset") slotted.reset(session?.state);
-});
-
-// 3. headless: the whole UI from the progress event
-$("headless").addEventListener("progress", (e) => {
-  const p = (e as CustomEvent<PracticeProgress & { shown: ShownToken[] }>).detail;
-  const ui = $("customUi");
-  ui.querySelector<HTMLElement>(".bar i")!.style.width = `${(100 * p.done) / Math.max(1, p.total)}%`;
-  ui.querySelector(".chips")!.innerHTML = p.shown.map((t) => `<span class="chip ${t.status}">${t.visible ? t.text : "?"}</span>`).join("");
-  ui.querySelector(".undo")!.textContent = p.undo.length ? `undo: ${p.undo.map(formatMove).join(" ")}` : p.complete ? "✓" : "";
-});
-
-// Now that every listener is in place, show the first algorithm.
-setAlg($<HTMLInputElement>("alg").value);

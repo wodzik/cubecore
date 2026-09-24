@@ -12,6 +12,8 @@
  * slip, simplified: R R' cancels) and `needsReset` says it's too long.
  */
 
+import { type TurnArrow, turnArrow } from "./arrows";
+import type { Frame } from "./frames";
 import type { Move } from "./moves";
 import { invert, parseAlg, simplify } from "./notation";
 import { OrientationTracker } from "./physical";
@@ -41,6 +43,16 @@ export interface SequenceProgress {
   complete: boolean;
 }
 
+/** What to turn now — for arrows on a 3D cube (see arrows.ts). */
+export interface NextTurn {
+  /** "next": the next move of the sequence; "undo": the first move back after a slip. */
+  kind: "next" | "undo";
+  /** In the cube's own coordinates. Usually one; the rest of an M done half-way can be two. */
+  arrows: TurnArrow[];
+  /** The written move it belongs to (null for undo). */
+  token: number | null;
+}
+
 export interface SequenceOptions {
   /** Longest undo worth showing (act's rule: 25). */
   maxCorrection?: number;
@@ -49,6 +61,8 @@ export interface SequenceOptions {
 export class SequenceTracker {
   readonly written: Move[];
   readonly steps: SequenceStep[];
+  /** How the cube is held before each written move (rotations and slices change it). */
+  readonly frames: Frame[];
   private readonly path: State[]; // state after k steps
   private cur: State;
   private anchor = 0; // last matching step index
@@ -60,7 +74,11 @@ export class SequenceTracker {
     this.written = typeof target === "string" ? parseAlg(target) : [...target];
     this.maxCorrection = options.maxCorrection ?? 25;
     const grip = new OrientationTracker();
-    this.steps = this.written.flatMap((m, token) => grip.push(m).map((move) => ({ move, token })));
+    this.frames = [];
+    this.steps = this.written.flatMap((m, token) => {
+      this.frames.push(grip.frame);
+      return grip.push(m).map((move) => ({ move, token }));
+    });
     this.path = [new Uint8Array(start)];
     for (const s of this.steps) this.path.push(applyMove(this.path[this.path.length - 1], s.move));
     this.cur = new Uint8Array(start);
@@ -99,6 +117,37 @@ export class SequenceTracker {
       return first === done ? "current" : "todo";
     });
     return { done, total, partial, tokens, undo, needsReset: undo.length > this.maxCorrection, complete: done === total && !this.offPath.length };
+  }
+
+  /**
+   * What to turn now, for an arrow: after a slip the first undo move; half way
+   * through a half turn the remaining quarter (the way it was started); else
+   * the next written move as written — a wide r stays two layers, an M the
+   * middle one — placed where it is on the cube as now held. Null when complete.
+   */
+  get nextTurn(): NextTurn | null {
+    const p = this.progress;
+    if (p.complete) return null;
+    if (p.undo.length) return { kind: "undo", arrows: [turnArrow(p.undo[0])], token: null };
+    const k = p.done;
+    const step = this.steps[k];
+    if (!step) return null;
+    const next = (moves: Move[]): NextTurn => ({ kind: "next", arrows: moves.map((m) => turnArrow(m)), token: step.token });
+    if (p.partial) {
+      if (step.move.amount === 2) {
+        for (const amount of [1, -1] as const) {
+          const half = { family: step.move.family, amount };
+          if (statesEqual(applyMove(this.path[k], half), this.cur)) return next([half]);
+        }
+      }
+      return next([step.move]); // the opposite face went first: this one is left
+    }
+    const first = this.steps.findIndex((s) => s.token === step.token);
+    if (first < k) {
+      // A slice / wide move partly done (its face turns arrive one by one): what's left of it.
+      return next(this.steps.slice(k).filter((s) => s.token === step.token).map((s) => s.move));
+    }
+    return { kind: "next", arrows: [turnArrow(this.written[step.token], this.frames[step.token])], token: step.token };
   }
 
   /** Where the current state is on the path, if anywhere: after `done` steps (+ half of the next one). */

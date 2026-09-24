@@ -19,11 +19,22 @@
  *      from the `progress` event (tokens with text / status / visibility,
  *      undo, needsReset, complete, …) and call the element's methods.
  *
+ * Arrows: with `arrows` set and a player (`player="id"` of a <cube-player>,
+ * or the `player` property), the 3D cube shows the next turn — one arrow per
+ * turning layer (two for a wide r), a longer one with two heads for a
+ * double, in --cc-arrow (after a slip: the undo move, in --cc-arrow-undo).
+ *
  * Events: progress (detail: the progress), complete.
  */
 
-import { type Move, type SequenceProgress, type State, formatMove, solvedState } from "@cubecore/core";
+import { type Move, type NextTurn, type SequenceProgress, type State, type TurnArrow, formatMove, solvedState } from "@cubecore/core";
+import type { ArrowStyle } from "@cubecore/render";
 import { ElementBase } from "./base";
+
+/** Where turn arrows go — a <cube-player> fits. */
+export interface ArrowTarget {
+  showTurnArrows(arrows: readonly TurnArrow[] | null, style?: ArrowStyle, owner?: unknown): void;
+}
 
 /** What `attach` needs: the cube's current state and its moves (a SmartCubeSession fits). */
 export interface MoveSource {
@@ -56,6 +67,8 @@ export const SEQUENCE_STYLES = /* css */ `
   --cc-seq-todo: color-mix(in srgb, currentColor 82%, transparent);
   --cc-seq-hidden: color-mix(in srgb, currentColor 45%, transparent);
   --cc-seq-undo: #ff8a4c;
+  --cc-arrow: #ff2d95;
+  --cc-arrow-undo: var(--cc-seq-undo);
   --cc-accent: #4f8cff;
   --cc-control-bg: color-mix(in srgb, currentColor 8%, transparent);
   --cc-control-bg-hover: color-mix(in srgb, currentColor 15%, transparent);
@@ -95,6 +108,13 @@ export abstract class CubeSequenceElement extends ElementBase {
   private off: (() => void) | null = null;
   protected messagesBase: SequenceMessages = { undo: "Undo", reset: "Too far off — solve the cube and start again", complete: "" };
   private completed = false;
+  private _player: ArrowTarget | null = null;
+
+  static observedAttributes = ["arrows", "player"];
+
+  attributeChangedCallback(): void {
+    this.update();
+  }
 
   constructor(extraStyles = "", controlsHtml = "") {
     super();
@@ -122,6 +142,8 @@ export abstract class CubeSequenceElement extends ElementBase {
   abstract get progress(): SequenceProgress | null;
   /** The moves as shown. */
   protected abstract tokens(): ShownToken[];
+  /** What to turn now (null: nothing, or nothing to give away). */
+  protected abstract nextTurn(): NextTurn | null;
   /** Extra message (e.g. stats) when nothing else is said. */
   protected extraMessage(): string {
     return "";
@@ -140,6 +162,7 @@ export abstract class CubeSequenceElement extends ElementBase {
   }
 
   detach(): void {
+    this.arrowTarget()?.showTurnArrows(null, {}, this);
     this.off?.();
     this.off = null;
     this.source = null;
@@ -162,6 +185,33 @@ export abstract class CubeSequenceElement extends ElementBase {
       this.completed = true;
       this.dispatchEvent(new CustomEvent("complete", { detail: p }));
     }
+  }
+
+  /** Player for the arrows (else the `player` attribute's id). */
+  get player(): ArrowTarget | null {
+    return this.arrowTarget();
+  }
+  set player(p: ArrowTarget | null) {
+    this.arrowTarget()?.showTurnArrows(null, {}, this);
+    this._player = p;
+    this.update();
+  }
+
+  private arrowTarget(): ArrowTarget | null {
+    if (this._player) return this._player;
+    const id = this.getAttribute("player");
+    const el = id ? (this.getRootNode() as Document | ShadowRoot).getElementById?.(id) : null;
+    return el && "showTurnArrows" in el ? (el as unknown as ArrowTarget) : null;
+  }
+
+  private syncArrows(): void {
+    const target = this.arrowTarget();
+    if (!target) return;
+    const turn = this.hasAttribute("arrows") && this.source ? this.nextTurn() : null;
+    if (!turn) return target.showTurnArrows(null, {}, this);
+    const css = getComputedStyle(this);
+    const color = css.getPropertyValue(turn.kind === "undo" ? "--cc-arrow-undo" : "--cc-arrow").trim();
+    target.showTurnArrows(turn.arrows, { color: color || undefined }, this);
   }
 
   get messages(): SequenceMessages {
@@ -198,6 +248,7 @@ export abstract class CubeSequenceElement extends ElementBase {
       message.textContent = text;
       message.classList.toggle("on", !!text);
     }
+    this.syncArrows();
     if (p) this.dispatchEvent(new CustomEvent("progress", { detail: { ...p, shown: this.tokens() } }));
   }
 }

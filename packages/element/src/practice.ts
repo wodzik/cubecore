@@ -20,7 +20,7 @@
  * `formatStats(practice)` for the line under the moves.
  */
 
-import { type Move, type PracticeProgress, PracticeTracker, type Reveal, type State, formatMove, parseAlg } from "@cubecore/core";
+import { type Move, type NextTurn, type PracticeProgress, PracticeTracker, type Reveal, type State, formatMove, parseAlg } from "@cubecore/core";
 import { CubeSequenceElement, type SequenceMessages, type ShownToken } from "./sequence";
 
 export interface PracticeMessages extends SequenceMessages {
@@ -32,7 +32,7 @@ export interface PracticeMessages extends SequenceMessages {
 }
 
 export class CubeAlgPractice extends CubeSequenceElement {
-  static observedAttributes = ["reveal", "hint-on-mistake"];
+  static observedAttributes = [...CubeSequenceElement.observedAttributes, "reveal", "hint-on-mistake"];
   private tracker: PracticeTracker | null = null;
   private moves: Move[] = [];
   private shownAll = false;
@@ -57,7 +57,7 @@ export class CubeAlgPractice extends CubeSequenceElement {
 
   attributeChangedCallback(): void {
     this.tracker?.setReveal(this.revealMode());
-    this.update();
+    super.attributeChangedCallback();
   }
 
   get alg(): string {
@@ -106,6 +106,10 @@ export class CubeAlgPractice extends CubeSequenceElement {
     const p = this.tracker!.push(move, time);
     if (p.practice.mistakes > before) this.dispatchEvent(new CustomEvent("mistake", { detail: p }));
     return p;
+  }
+
+  protected nextTurn(): NextTurn | null {
+    return this.tracker?.nextTurn ?? null;
   }
 
   protected tokens(): ShownToken[] {

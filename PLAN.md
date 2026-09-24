@@ -448,3 +448,11 @@ Still open:
   hint on mistake, mistakes, time, TPS, `differentAlg`; core
   `PracticeTracker`). A finished sequence ignores further turns. React
   `<CubeAlgPractice>` + `editable` / `onChange`. Demo `/sequences`.
+- 2026-09-25 — **Turn arrows**: core `turnArrow` + trackers' `nextTurn`
+  (layers / direction in the cube's own frame, through rotations and wide
+  moves; the rest of a half-done half turn; the undo move after a slip;
+  hidden practice moves stay hidden), renderer `setTurnArrows` (tube + head
+  around each layer facing the camera; double = half way, two heads),
+  `player.showTurnArrows`, `arrows` + `player` on both sequence elements.
+  `/sequences` reworked into a plain tester: Scramble | Algorithm, cube below,
+  arrows toggle.

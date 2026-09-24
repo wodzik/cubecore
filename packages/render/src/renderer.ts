@@ -37,6 +37,7 @@ import {
   type Mask,
   type Move,
   type State,
+  type TurnArrow,
   advanceSpins,
   applyMove,
   colorAt,
@@ -51,6 +52,7 @@ import { type TileKit, tileKit } from "./build/tiles";
 import { loadModel, readyModel } from "./build/models";
 import { PLACEMENTS, stickerFaceOf } from "./pieceModels";
 import { type BackView, backPosition, viewports } from "./viewports";
+import { type ArrowStyle, buildArrows, disposeArrows, facingT } from "./arrows";
 
 export interface CameraOptions {
   /** Degrees above the horizon. */
@@ -127,6 +129,7 @@ export class CubeRenderer {
   private active: { move: Move; ms: number; start: number; resolve: () => void } | null = null;
   private quarterMs: number;
   private disposed = false;
+  private arrows: { arrows: TurnArrow[]; style: ArrowStyle; group: Group | null; key: string } | null = null;
   private targetOrientation = new Quaternion();
   private orientationSmoothing = 0;
 
@@ -258,12 +261,28 @@ export class CubeRenderer {
   setOrientation(q: Quat | null, smoothing = 0): void {
     this.targetOrientation.set(q?.x ?? 0, q?.y ?? 0, q?.z ?? 0, q?.w ?? 1).normalize();
     this.orientationSmoothing = Math.min(Math.max(smoothing, 0), 0.99);
-    if (this.orientationSmoothing === 0) this.root.quaternion.copy(this.targetOrientation);
+    if (this.orientationSmoothing === 0) {
+      this.root.quaternion.copy(this.targetOrientation);
+      this.placeArrows();
+    }
+    this.requestRender();
+  }
+
+  /**
+   * Arrows for the next turn (core `turnArrow` / a tracker's `nextTurn`): one
+   * around each turning layer, on the side facing the camera — they follow
+   * the gyro and camera drags. Null to hide.
+   */
+  setTurnArrows(arrows: readonly TurnArrow[] | null, style: ArrowStyle = {}): void {
+    if (this.arrows?.group) disposeArrows(this.arrows.group);
+    this.arrows = arrows?.length ? { arrows: [...arrows], style, group: null, key: "" } : null;
+    this.placeArrows();
     this.requestRender();
   }
 
   dispose(): void {
     this.disposed = true;
+    if (this.arrows?.group) disposeArrows(this.arrows.group);
     this.resizeObserver.disconnect();
     this.finishAll(true);
     this.renderer.dispose();
@@ -419,6 +438,20 @@ export class CubeRenderer {
     });
   }
 
+  /** (Re)build the arrows when the side facing the camera changed. */
+  private placeArrows(): void {
+    const a = this.arrows;
+    if (!a) return;
+    const eye = this.camera.position.clone().applyQuaternion(this.root.quaternion.clone().invert());
+    const centres = a.arrows.map((arrow) => facingT(arrow.axis, eye));
+    const key = centres.join(",");
+    if (a.group && key === a.key && a.group.parent === this.root) return;
+    if (a.group) disposeArrows(a.group);
+    a.group = buildArrows(a.arrows, centres, a.style);
+    a.key = key;
+    this.root.add(a.group);
+  }
+
   private applyCamera(): void {
     const lat = (this.cam.latitude * Math.PI) / 180;
     const lon = (this.cam.longitude * Math.PI) / 180;
@@ -441,6 +474,7 @@ export class CubeRenderer {
       this.backCamera.lookAt(0, 0, 0);
       this.backCamera.updateProjectionMatrix();
     }
+    this.placeArrows();
   }
 
   /** Distance at which a sphere around the cube (and its back stickers) fits the narrower field of view, with a margin. */
@@ -499,6 +533,7 @@ export class CubeRenderer {
       this.root.quaternion.slerp(this.targetOrientation, 1 - this.orientationSmoothing);
       if (this.root.quaternion.angleTo(this.targetOrientation) < 1e-4) this.root.quaternion.copy(this.targetOrientation);
       else again = true;
+      this.placeArrows();
     }
 
     this.paint();

@@ -17,7 +17,7 @@
  * What happens when it's done (inspection, timer…) is the app's call.
  */
 
-import { type Move, type SequenceProgress, SequenceTracker, type State, formatMove, parseAlg } from "@cubecore/core";
+import { type Move, type NextTurn, type SequenceProgress, SequenceTracker, type State, formatMove, parseAlg } from "@cubecore/core";
 import { CubeSequenceElement, type SequenceMessages, type ShownToken } from "./sequence";
 
 export interface ScrambleMessages extends SequenceMessages {
@@ -39,7 +39,7 @@ const STYLES = /* css */ `
 `;
 
 export class CubeScramble extends CubeSequenceElement {
-  static observedAttributes = ["editable"];
+  static observedAttributes = [...CubeSequenceElement.observedAttributes, "editable"];
   private tracker: SequenceTracker | null = null;
   private moves: Move[] = [];
   private extra = { placeholder: "Paste or type your own scramble", invalid: "Not a scramble:" };
@@ -49,10 +49,6 @@ export class CubeScramble extends CubeSequenceElement {
     const input = this.root.querySelector("input")!;
     input.placeholder = this.extra.placeholder;
     input.addEventListener("input", () => this.fromText(input.value));
-  }
-
-  attributeChangedCallback(): void {
-    this.update();
   }
 
   /** The scramble (written notation or moves). */
@@ -92,6 +88,10 @@ export class CubeScramble extends CubeSequenceElement {
 
   protected track(move: Move): SequenceProgress {
     return this.tracker!.push(move);
+  }
+
+  protected nextTurn(): NextTurn | null {
+    return this.tracker?.nextTurn ?? null;
   }
 
   protected tokens(): ShownToken[] {

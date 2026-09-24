@@ -11,7 +11,7 @@
  */
 
 import type { Move } from "./moves";
-import { SequenceTracker, type SequenceOptions, type SequenceProgress, type TokenStatus } from "./sequence";
+import { type NextTurn, SequenceTracker, type SequenceOptions, type SequenceProgress, type TokenStatus } from "./sequence";
 import type { State } from "./state";
 
 export type Reveal = "all" | "done" | "none";
@@ -93,6 +93,13 @@ export class PracticeTracker {
     }
     this.wasOff = off;
     return this.progress;
+  }
+
+  /** What to turn now (see SequenceTracker.nextTurn); null for a hidden next move — Hint or a slip shows it. */
+  get nextTurn(): NextTurn | null {
+    const t = this.tracker.nextTurn;
+    if (!t || t.token === null) return t;
+    return this.progress.practice.tokens[t.token]?.visible ? t : null;
   }
 
   get progress(): PracticeProgress {

@@ -13,6 +13,12 @@ export interface Skin {
   cubieSize: number;
   /** Rounding of the cubie edges, 0..0.5. */
   cubieRadius: number;
+  /**
+   * Shrinks the black body under the tiles (cubie units per side): thick
+   * stickerless tiles then form the piece's outside and the core shows only
+   * deep in the gaps. Tiles reach down to meet it. Default 0.
+   */
+  bodyInset?: number;
   stickers: {
     /** Colour of each colour class, U R F D L B home-face order. */
     colors: readonly [string, string, string, string, string, string];
@@ -26,6 +32,13 @@ export interface Skin {
     paths?: StickerPaths;
     /** How far a tile stands out from the plastic (cubie units) — stickerless tiles are thicker. */
     thickness?: number;
+    /** Radius of the rounded top edge of a tile (cubie units, ≤ thickness). Default 0 (sharp). */
+    bevel?: number;
+    /**
+     * "flat" — unlit, exact colours (printed-sticker look, default);
+     * "plastic" — lit with a soft highlight, so thick bevelled tiles read as moulded plastic.
+     */
+    material?: "flat" | "plastic";
     /**
      * Stickerless: tile sides on the cube's outer edge reach the edge, so two
      * faces' colours meet directly on edges and corners (no black line there);
@@ -65,7 +78,8 @@ export const SKINS = {
     body: "#1c1c1c",
     cubieSize: 0.97,
     cubieRadius: 0.08,
-    stickers: { colors: WESTERN, size: 0.94, radius: 0.1, fillOuter: true },
+    bodyInset: 0.015,
+    stickers: { colors: WESTERN, size: 0.94, radius: 0.1, fillOuter: true, thickness: 0.03, bevel: 0.02, material: "plastic" },
     mask: { ignored: "#4a4a4a", oriented: "#39c7d4", dimAmount: 0.55 },
     hints: { enabled: false, distance: 1.4, opacity: 0.75, ignoredOpacity: 0.35 },
     background: null,
@@ -79,12 +93,15 @@ export const SKINS = {
     body: "#0a0a0a",
     cubieSize: 0.985,
     cubieRadius: 0.06,
+    bodyInset: 0.02,
     stickers: {
       colors: ["#f7f7f5", "#f5303a", "#1fc25a", "#ffe01a", "#ff8a1f", "#1f73ea"],
       size: 0.955,
       radius: 0.08,
       shape: { corner: { inner: 0.34, outer: 0.07 }, edge: { inner: 0.3, outer: 0.07 }, center: 0.36 },
-      thickness: 0.012,
+      thickness: 0.035,
+      bevel: 0.024,
+      material: "plastic",
       fillOuter: true,
     },
     mask: { ignored: "#5a5a5a", oriented: "#39c7d4", dimAmount: 0.55 },

@@ -292,6 +292,15 @@ re-export shims in core — they would make core depend on the method packages
   `MethodTracker`, exported check primitives (`cubieSolved`, `allSolved`,
   `upToAuf`, `cubieAt`…) and generic masks (`full`, `first-layer`, `ll`).
   `@cubecore/core/testing` has `runSegments` for method-package tests.
+- 2026-09-24 — **tile profiles (level 1 of per-model geometry)**: tiles
+  are solids from `tile.ts` — outline (shape / SVG path / stickerless) swept
+  through a cross-section: wall sunk into the body, rounded top edge
+  (`stickers.bevel`), 45° mitre on the cube's outer edges so stickerless
+  colours still meet. `stickers.material: "plastic"` (lit, emissive lift so
+  colours stay vivid) vs "flat" (exact colours); `bodyInset` shrinks the black
+  core under thick tiles. `gan` / `stickerless` presets use it; `standard`
+  keeps flat stickers. Next levels: a custom cross-section curve, then glTF
+  piece models per cube model (materials named sticker-U/F/R, body).
 - Next: per-theme skins, gyroscope adapter from smart-cube drivers, then
   `solve` (cross/xcross).
 

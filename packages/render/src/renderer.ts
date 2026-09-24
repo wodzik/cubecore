@@ -25,7 +25,8 @@ import {
   Scene,
   Shape,
   ShapeGeometry,
-  ExtrudeGeometry,
+  Float32BufferAttribute,
+  ShapeUtils,
   Matrix4,
   MultiplyBlending,
   NormalBlending,
@@ -36,7 +37,7 @@ import {
   SRGBColorSpace,
   Vector3,
   WebGLRenderer,
-  type BufferGeometry,
+  BufferGeometry,
 } from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
@@ -57,6 +58,7 @@ import {
 } from "@cubecore/core";
 import { SKINS, type Skin, type StickerShape, roundedOutline, stickerColor, stickerLayout, stickerlessOutline } from "@cubecore/skin";
 import { layerTurn, defaultDuration } from "./layers";
+import { type Mitre, type TileProfile, tileSolid } from "./tile";
 import { type BackView, backPosition, viewports } from "./viewports";
 
 export interface CameraOptions {
@@ -112,7 +114,7 @@ export class CubeRenderer {
   private logoTexture: Texture | null = null;
   /** Cubie group index holding each facelet position. */
   private cubieOfFacelet: number[] = [];
-  private materials = new Map<string, MeshBasicMaterial>();
+  private materials = new Map<string, MeshBasicMaterial | MeshStandardMaterial>();
   private skin: Skin;
   private cam: CameraOptions;
   private state: State = solvedState();
@@ -262,17 +264,22 @@ export class CubeRenderer {
 
   // ─── scene ───
 
-  private material(color: string, hint: boolean, opacity = 1): MeshBasicMaterial {
-    const key = `${color}|${hint}|${opacity}`;
+  private material(color: string, hint: boolean, opacity = 1): MeshBasicMaterial | MeshStandardMaterial {
+    // Tiles of a "plastic" skin are lit; hint stickers always stay flat (they're a see-through aid, not plastic).
+    const lit = !hint && this.skin.stickers.material === "plastic";
+    const key = `${color}|${hint}|${opacity}|${lit}`;
     let m = this.materials.get(key);
     if (!m) {
-      m = new MeshBasicMaterial({
-        color: new Color(color),
-        side: hint ? BackSide : FrontSide,
-        transparent: hint,
-        opacity: hint ? opacity : 1,
-        depthWrite: !hint,
-      });
+      m = lit
+        ? // A little of the tile's own colour as emission keeps shaded faces from going muddy; the highlight stays.
+          new MeshStandardMaterial({ color: new Color(color), emissive: new Color(color), emissiveIntensity: 0.32, roughness: 0.4, metalness: 0 })
+        : new MeshBasicMaterial({
+            color: new Color(color),
+            side: hint ? BackSide : FrontSide,
+            transparent: hint,
+            opacity: hint ? opacity : 1,
+            depthWrite: !hint,
+          });
       this.materials.set(key, m);
     }
     return m;
@@ -286,7 +293,9 @@ export class CubeRenderer {
     this.logoMesh = null;
     const s = this.skin;
     const size = s.cubieSize;
-    const bodyGeo = new RoundedBoxGeometry(size, size, size, 3, s.cubieRadius * size);
+    const inset = s.bodyInset ?? 0;
+    const bodySize = size - 2 * inset;
+    const bodyGeo = new RoundedBoxGeometry(bodySize, bodySize, bodySize, 3, Math.min(s.cubieRadius * size, bodySize / 2));
     const bodyMat = new MeshStandardMaterial({ color: new Color(s.body), roughness: 0.85, metalness: 0 });
     const side = s.stickers.size * size;
     const shape: StickerShape = s.stickers.shape ?? {
@@ -295,6 +304,7 @@ export class CubeRenderer {
       center: s.stickers.radius,
     };
     const thickness = s.stickers.thickness ?? 0;
+    const bevel = Math.min(s.stickers.bevel ?? 0, thickness);
     const geometries = new Map<string, BufferGeometry>();
     const geometryFor = (fi: number): BufferGeometry => {
       const layout = stickerLayout(fi, shape);
@@ -309,9 +319,10 @@ export class CubeRenderer {
           : fill
             ? stickerlessOutline(layout, side, edge)
             : roundedOutline(side, layout.radii);
-        const sh = new Shape(outline.map(([x, y]) => new Vector2(x, y)));
-        g = thickness > 0 ? new ExtrudeGeometry(sh, { depth: thickness, bevelEnabled: false, curveSegments: 4 }) : new ShapeGeometry(sh);
-        if (fill && thickness > 0) mitreOuterSides(g, layout, edge, thickness);
+        g =
+          thickness > 0
+            ? solidGeometry(outline, { thickness, bevel, segments: 4, sink: inset + 0.002 }, fill ? { u: layout.u, v: layout.v, edge, ramp: Math.max(thickness * 4, 0.03) } : null)
+            : new ShapeGeometry(new Shape(outline.map(([x, y]) => new Vector2(x, y))));
         geometries.set(key, g);
       }
       return g;
@@ -620,27 +631,16 @@ function pathOutline(d: string, side: number, quarters: number): [number, number
   return area < 0 ? rotated.reverse() : rotated;
 }
 
-/**
- * Stickerless tiles: on the sides lying on the cube's edge, push the top face
- * out by the tile thickness so the side wall slopes at 45°. Tiles of two faces
- * of one piece then meet along a shared mitre (like a picture frame) — the
- * colours touch on the edge line instead of overlapping (z-fighting) or
- * leaving a black notch. Outline points near the edge (rounded corners) are
- * ramped so the top face stays smooth.
- */
-function mitreOuterSides(g: BufferGeometry, layout: { u: number; v: number }, edge: number, thickness: number): void {
-  const pos = g.getAttribute("position");
-  const ramp = Math.max(thickness * 4, 0.03);
-  const shift = (c: number, dir: number) => {
-    if (dir === 0) return c;
-    const dist = edge - c * dir; // 0 on the edge
-    const k = Math.max(0, 1 - dist / ramp);
-    return c + dir * thickness * k;
-  };
-  for (let i = 0; i < pos.count; i++) {
-    if (pos.getZ(i) < thickness / 2) continue;
-    pos.setXY(i, shift(pos.getX(i), layout.u), shift(pos.getY(i), layout.v));
-  }
-  pos.needsUpdate = true;
+/** three.js geometry of a tile solid (see tile.ts): sides plus a triangulated flat top. */
+function solidGeometry(outline: readonly (readonly [number, number])[], profile: TileProfile, mitre: Mitre | null): BufferGeometry {
+  const solid = tileSolid(outline, profile, mitre);
+  const cap = ShapeUtils.triangulateShape(solid.topRing.map(([x, y]) => new Vector2(x, y)), []);
+  const index = [...solid.sides];
+  for (const [a, b, c] of cap) index.push(solid.topStart + a, solid.topStart + b, solid.topStart + c);
+  const g = new BufferGeometry();
+  g.setAttribute("position", new Float32BufferAttribute(solid.positions, 3));
+  g.setAttribute("normal", new Float32BufferAttribute(solid.normals, 3));
+  g.setIndex(index);
   g.computeBoundingSphere();
+  return g;
 }

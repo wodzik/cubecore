@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
-import { CubeAlg, CubePlayer, CubeScramble } from "./index";
+import { CubeAlg, CubeAlgPractice, CubePlayer, CubeScramble } from "./index";
 
 describe("React bindings (server render)", () => {
   it("attributes reach the element: flags only when on, tooltips off, dashed names", () => {
@@ -22,5 +22,8 @@ describe("React bindings (server render)", () => {
   it("scramble and alg elements render too", () => {
     expect(renderToString(createElement(CubeScramble, { scramble: "R U" }))).toContain("<cube-scramble");
     expect(renderToString(createElement(CubeAlg, { for: "p" }))).toContain('<cube-alg for="p"');
+    expect(renderToString(createElement(CubeScramble, { scramble: "R U", editable: true }))).toContain('editable=""');
+    const practice = renderToString(createElement(CubeAlgPractice, { alg: "R U R'", reveal: "none", hintOnMistake: false, controls: "none" }));
+    expect(practice).toContain('<cube-alg-practice reveal="none" hint-on-mistake="off" controls="none"');
   });
 });

@@ -60,20 +60,63 @@ cube.on("move", ({ move }) => {
 });
 ```
 
-`<cube-scramble>` shows it:
+## Elements: `<cube-scramble>` and `<cube-alg-practice>`
+
+Two elements on one base (`CubeSequenceElement`): both follow a move list
+on a smart cube (done moves fade, the next is highlighted, half of a half
+turn shows as partial, a slip shows what to undo), and share styling, slots
+and events. They differ where a scramble and an algorithm differ:
+
+| | `<cube-scramble>` | `<cube-alg-practice>` |
+|---|---|---|
+| moves shown | always all | `reveal="all"` / `"done"` (dots until done, default) / `"none"` |
+| your own moves | `editable`: paste or type a scramble (validated, `change` event) | — |
+| controls | — | Hint, Show / Hide, Restart |
+| extra | — | mistakes, time from the first turn, TPS, `differentAlg`; slices, wide moves and rotations in the algorithm |
+| events | `progress`, `complete`, `change` | `progress`, `mistake`, `complete` |
 
 ```html
-<cube-scramble></cube-scramble>
+<cube-scramble editable></cube-scramble>
+<cube-alg-practice reveal="done"></cube-alg-practice>
 <script type="module">
-  const el = document.querySelector("cube-scramble");
-  el.scramble = moves;               // string or Move[]
-  el.attach(session);                // follows the smart cube from its current state
-  el.messages = { undo: "Cofnij", reset: "Za daleko — ułóż kostkę i zacznij od nowa" };
-  el.addEventListener("complete", () => { /* inspection, timer… — the app decides */ });
+  import "@cubecore/element";
+  const scramble = document.querySelector("cube-scramble");
+  scramble.scramble = moves;                 // string or Move[]
+  scramble.attach(session);                  // follows the cube from its current state
+  scramble.addEventListener("change", (e) => e.detail.moves);   // pasted / typed
+  scramble.addEventListener("complete", () => { /* inspection, timer… — the app decides */ });
+
+  const practice = document.querySelector("cube-alg-practice");
+  practice.alg = "R U R' U R U2 R'";
+  practice.attach(session);                  // attempt starts from the cube's current state
+  practice.addEventListener("complete", (e) => e.detail.practice); // { elapsedMs, turns, tps, mistakes, differentAlg }
+  practice.hint(); practice.toggleShown(); practice.reset();
 </script>
 ```
 
-Styling: `--cc-scramble-size`, `--cc-scramble-font`, `--cc-scramble-gap`,
-`--cc-done`, `--cc-current`, `--cc-current-bg`, `--cc-partial`, `--cc-todo`,
-`--cc-undo`; parts `moves`, `move`, `move-done`, `move-current`,
-`move-partial`, `move-todo`, `undo`, `undo-label`, `undo-move`, `message`.
+Once complete, an element ignores further turns until a new sequence or
+`reset()`. Texts: `el.messages = { undo: "Cofnij", reset: "…", hint: "Podpowiedź", … }`
+(scramble: `placeholder`, `invalid`; practice: `hint`, `show`, `hide`,
+`restart`, `differentAlg`; `practice.formatStats` for the stats line).
+The core behind them: `SequenceTracker` and `PracticeTracker`.
+
+### Styling and your own controls
+
+1. **CSS variables**: `--cc-seq-font`, `--cc-seq-size`, `--cc-seq-gap`,
+   `--cc-seq-done`, `--cc-seq-current`, `--cc-seq-current-bg`,
+   `--cc-seq-partial`, `--cc-seq-todo`, `--cc-seq-hidden` (dots),
+   `--cc-seq-undo`, `--cc-accent`, `--cc-control-bg`, `--cc-control-radius`.
+2. **`::part()`**: `container`, `moves`, `move`, `move-done` / `-current` /
+   `-partial` / `-todo` / `-hidden`, `undo`, `undo-label`, `undo-move`,
+   `message`, `controls`, `button`, `button-hint` / `-reveal` / `-restart`;
+   scramble: `input`, `error`.
+3. **Slots**: children with `slot="controls"`, `slot="undo"` or
+   `slot="message"` replace those pieces (e.g. your buttons calling
+   `hint()` / `toggleShown()` / `reset()`); `controls="none"` just hides the
+   default controls (for the scramble that includes the input).
+4. **`headless`**: no built-in view at all; build your own from the
+   `progress` event — `detail` is the progress (`done`, `total`, `undo`,
+   `needsReset`, `complete`, practice stats) plus `shown`:
+   `[{ text, status, visible }]`.
+
+Demo: `/sequences` (all four ways side by side, with a simulated cube).

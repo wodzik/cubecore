@@ -14,3 +14,4 @@ export * from "./bytes";
 export * from "./cubies";
 export * from "./stateCodec";
 export * from "./sequence";
+export * from "./practice";

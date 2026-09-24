@@ -40,3 +40,10 @@ function Solve() {
 `live` (+ `autoSkin`), and `onTimeUpdate`, `onPlay`, `onPause`, `onEnded`,
 `onSegmentChange`, `onError`. The `ref` is the element (play(), seek()…).
 Children go in as they are — e.g. your own controls with `slot="controls"`.
+
+`<CubeScramble>`: `scramble`, `source`, `editable`, `messages`, `onProgress`,
+`onComplete`, `onChange` (pasted / typed: `{ moves, text }`).
+
+`<CubeAlgPractice>`: `alg`, `source`, `reveal` (`"all" | "done" | "none"`),
+`hintOnMistake`, `controls="none"`, `headless`, `messages`, `onProgress`,
+`onMistake`, `onComplete`; children for the slots (see scrambles.md).

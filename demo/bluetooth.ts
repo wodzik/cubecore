@@ -1,13 +1,15 @@
 import "./nav";
-import { MethodTracker, MoveCollapser, type State, formatMove, frameFor, parseAlg } from "../packages/core/src/index";
+import { MethodTracker, MoveCollapser, type State, formatMove, frameFor, invert, parseAlg, toFaceTurns } from "../packages/core/src/index";
 import { STAGES, createSolverWorker } from "../packages/solve/src/index";
 import { CFOP } from "../packages/cfop/src/index";
 import { SimulatedCube, SmartCubeSession } from "../packages/bluetooth/src/index";
-import { type CubePlayer, type CubeScramble, formatTime } from "../packages/element/src/index";
+import { type CubeAlgPractice, type CubePlayer, type CubeScramble, formatTime } from "../packages/element/src/index";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const player = $<CubePlayer>("player");
 const scrambleEl = $<CubeScramble>("scramble");
+const practiceEl = $<CubeAlgPractice>("practice");
+let settingUpCase = false; // the scramble box is holding a case setup, not a solve scramble
 const solver = createSolverWorker("/solver-worker.js"); // see demo/serve.ts
 solver.warmUp([STAGES.cross(), STAGES.xcross("FR")]); // tables build in the worker while you connect
 let session: SmartCubeSession | null = null;
@@ -52,6 +54,7 @@ function use(s: SmartCubeSession) {
   session = s;
   detachPlayer = player.attach(s, { gyro: $<HTMLInputElement>("gyro").checked, autoSkin: true }); // skin picked for this cube
   scrambleEl.attach(s);
+  practiceEl.attach(s);
   restart(s.state);
   const info = () => {
     const i = s.info;
@@ -74,7 +77,7 @@ function use(s: SmartCubeSession) {
     s.on("hardware", info),
     s.on("disconnect", () => disconnected()),
   );
-  for (const id of ["disconnect", "solved", "calibrate", "newScramble"]) $<HTMLButtonElement>(id).disabled = false;
+  for (const id of ["disconnect", "solved", "calibrate", "newScramble", "setupCase"]) $<HTMLButtonElement>(id).disabled = false;
   $<HTMLButtonElement>("connect").disabled = true;
   $<HTMLButtonElement>("simulate").disabled = true;
 }
@@ -86,8 +89,9 @@ function disconnected() {
   simulated = null;
   $("info").textContent = "Disconnected.";
   $("keys").hidden = true;
-  for (const id of ["disconnect", "solved", "calibrate", "newScramble"]) $<HTMLButtonElement>(id).disabled = true;
+  for (const id of ["disconnect", "solved", "calibrate", "newScramble", "setupCase"]) $<HTMLButtonElement>(id).disabled = true;
   scrambleEl.detach();
+  practiceEl.detach();
   $<HTMLButtonElement>("connect").disabled = false;
   $<HTMLButtonElement>("simulate").disabled = false;
 }
@@ -130,18 +134,46 @@ $("newScramble").onclick = async () => {
     : kind === "xcross-7" ? await solver.stageScramble({ stage: STAGES.xcross("FR"), length: 7, frame: white, from })
     : await solver.randomScramble({ preset: kind === "ll" ? "ll" : "full", from });
   if (!r) return void ($("scrambleInfo").textContent = "No case found — try again.");
+  settingUpCase = false;
   scrambleEl.scramble = r.moves;
   $("scrambleInfo").textContent = `${r.moves.length} moves · ${Math.round(performance.now() - t)} ms (from the cube's current state)`;
 };
+scrambleEl.addEventListener("change", () => {
+  settingUpCase = false;
+  $("scrambleInfo").textContent = "Your scramble — follow it on the cube.";
+});
 scrambleEl.addEventListener("complete", () => {
+  if (settingUpCase) {
+    $("practiceInfo").textContent = "Case set up — go!";
+    settingUpCase = false;
+    queueMicrotask(() => session && practiceEl.attach(session)); // tracks from here, after this move has gone round
+    return;
+  }
   $("scrambleInfo").textContent = "Scrambled ✓ — solve away (log and stages restarted)";
   // After this move reaches every listener (the last scramble move belongs to the scramble, not the solve).
   queueMicrotask(() => session && restart(session.state));
 });
 
-// Keyboard for the simulated cube.
+// ─── algorithm practice ───
+practiceEl.alg = $<HTMLSelectElement>("practiceAlg").value;
+$("practiceAlg").onchange = () => (practiceEl.alg = $<HTMLSelectElement>("practiceAlg").value);
+$("practiceReveal").onchange = () => practiceEl.setAttribute("reveal", $<HTMLSelectElement>("practiceReveal").value);
+$("setupCase").onclick = () => {
+  settingUpCase = true;
+  practiceEl.detach(); // the setup moves aren't an attempt
+  scrambleEl.scramble = invert(toFaceTurns(practiceEl.alg).moves); // setup = the algorithm backwards, as face turns
+  $("scrambleInfo").textContent = "Case setup (start from solved).";
+  $("practiceInfo").textContent = "Do the setup moves above first.";
+};
+practiceEl.addEventListener("complete", (e) => {
+  const { practice } = (e as CustomEvent).detail;
+  $("practiceInfo").textContent = practice.differentAlg ? "Solved — with a different algorithm." : "Done ✓ — Set up case to go again.";
+});
+
+// Keyboard for the simulated cube (not while typing a scramble).
 addEventListener("keydown", (e) => {
   if (!simulated || e.metaKey || e.altKey) return;
+  if (e.composedPath()[0] instanceof HTMLInputElement) return;
   const face = e.key.toUpperCase();
   if (!"URFDLB".includes(face) || face.length !== 1) return;
   e.preventDefault();

@@ -21,7 +21,8 @@
       button:disabled { opacity: 0.45; cursor: default; }
       .kv { color: var(--muted); font-size: 12px; }
       .kv b { color: var(--text); font-weight: 600; }
-      cube-scramble { --cc-scramble-size: 18px; min-height: 2em; }
+      cube-scramble, cube-alg-practice { --cc-seq-size: 18px; --cc-accent: var(--accent); min-height: 2em; }
+      cube-alg-practice::part(message) { font-variant-numeric: tabular-nums; }
       #log { font: 14px/1.7 ui-monospace, monospace; min-height: 3em; word-spacing: 0.25em; }
       #log .late { color: var(--late); }
       #stages { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -56,7 +57,7 @@
         </section>
         <section>
           <h2>Scramble (followed on the cube)</h2>
-          <cube-scramble id="scramble"></cube-scramble>
+          <cube-scramble id="scramble" editable></cube-scramble>
           <div class="row" style="margin-top:10px">
             <button id="newScramble" disabled>New scramble</button>
             <select id="scrambleKind" style="background:#0f0f11;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px">
@@ -66,7 +67,26 @@
               <option value="ll">Last layer</option>
             </select>
           </div>
-          <p class="kv" id="scrambleInfo" style="margin:8px 0 0">Generated from the cube's current state in a worker — no need to solve it first.</p>
+          <p class="kv" id="scrambleInfo" style="margin:8px 0 0">Generated from the cube's current state in a worker — no need to solve it first. Or paste your own above.</p>
+        </section>
+        <section>
+          <h2>Algorithm practice</h2>
+          <div class="row" style="margin-bottom:10px">
+            <select id="practiceAlg" style="background:#0f0f11;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px">
+              <option value="R U R' U R U2 R'">Sune</option>
+              <option value="R U R' U' R' F R2 U' R' U' R U R' F'">T-perm</option>
+              <option value="M2 U M2 U2 M2 U M2">H-perm (M slices)</option>
+              <option value="r U R' U' r' F R F'">OLL 33 (wide r)</option>
+            </select>
+            <select id="practiceReveal" style="background:#0f0f11;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px">
+              <option value="all">Show all (learning)</option>
+              <option value="done" selected>Dots, show when done</option>
+              <option value="none">Dots only (test)</option>
+            </select>
+            <button id="setupCase" disabled>Set up case</button>
+          </div>
+          <cube-alg-practice id="practice" reveal="done"></cube-alg-practice>
+          <p class="kv" id="practiceInfo" style="margin:8px 0 0">"Set up case" puts the setup moves in the scramble above (start from solved); once done, practise here.</p>
         </section>
         <section>
           <h2>Moves (as written: R R → R2, R L' → M)</h2>

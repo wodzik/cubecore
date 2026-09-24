@@ -1,157 +1,120 @@
 /**
- * <cube-scramble> — shows a scramble (or an algorithm) and follows it on a
- * smart cube: done moves fade, the next one is highlighted, half of a half
- * turn shows as partial, and after a slip it shows what to undo.
+ * <cube-scramble> — shows a scramble and follows it on a smart cube: done
+ * moves fade, the next one is highlighted, half of a half turn shows as
+ * partial, after a slip it shows what to undo. The scramble is always shown
+ * in full (never hidden).
  *
- *   const el = document.querySelector("cube-scramble");
- *   el.scramble = "R U2 F' …";
- *   el.attach(session);            // a @cubecore/bluetooth SmartCubeSession (or anything with state + "move" events)
+ *   el.scramble = "R U2 F' …";      // or Move[]
+ *   el.attach(session);             // a SmartCubeSession, or anything with state + "move" events
  *   el.addEventListener("complete", startInspection);
  *
- * What happens when it's done (inspection, timer…) is the app's call — the
- * element only reports `progress` and `complete`.
+ * `editable`: an input to paste or type your own scramble (competition,
+ * another timer…) — validated as you type; a valid one replaces the
+ * scramble and fires `change` (detail: { moves, text }).
  *
- * Styling: CSS variables --cc-scramble-font, --cc-scramble-size,
- * --cc-scramble-gap, --cc-done, --cc-current, --cc-current-bg, --cc-partial,
- * --cc-todo, --cc-undo; parts moves, move, move-done, move-current,
- * move-partial, move-todo, undo, undo-label, undo-move, message.
- * Text: the `messages` property (e.g. translations).
+ * Customising: see sequence.ts (CSS variables, ::part, slots, headless).
+ * Own parts: input, error. Messages: undo, reset, complete, placeholder, invalid.
+ * What happens when it's done (inspection, timer…) is the app's call.
  */
 
-import { type Move, type SequenceProgress, SequenceTracker, type State, formatMove, parseAlg, solvedState } from "@cubecore/core";
-import { ElementBase } from "./base";
+import { type Move, type SequenceProgress, SequenceTracker, type State, formatMove, parseAlg } from "@cubecore/core";
+import { CubeSequenceElement, type SequenceMessages, type ShownToken } from "./sequence";
+
+export interface ScrambleMessages extends SequenceMessages {
+  placeholder: string;
+  invalid: string;
+}
 
 const STYLES = /* css */ `
-:host {
-  --cc-scramble-font: ui-monospace, "SF Mono", Menlo, monospace;
-  --cc-scramble-size: 22px;
-  --cc-scramble-gap: 0.35em;
-  --cc-done: color-mix(in srgb, currentColor 35%, transparent);
-  --cc-current: currentColor;
-  --cc-current-bg: color-mix(in srgb, #4f8cff 22%, transparent);
-  --cc-partial: #4f8cff;
-  --cc-todo: color-mix(in srgb, currentColor 80%, transparent);
-  --cc-undo: #ff8a4c;
-  display: block;
-  font: 600 var(--cc-scramble-size) / 1.5 var(--cc-scramble-font);
+.input { flex: 1; min-width: 12em; display: none; }
+:host([editable]) .input { display: block; }
+.input input {
+  width: 100%; box-sizing: border-box;
+  background: color-mix(in srgb, currentColor 6%, transparent); color: inherit;
+  border: 1px solid color-mix(in srgb, currentColor 20%, transparent); border-radius: var(--cc-control-radius);
+  padding: 7px 9px; font: 13px var(--cc-seq-font);
 }
-.moves { display: flex; flex-wrap: wrap; gap: 0.1em var(--cc-scramble-gap); }
-.move { padding: 0 0.18em; border-radius: 0.25em; transition: color 0.15s ease, background 0.15s ease; }
-.done { color: var(--cc-done); }
-.current { color: var(--cc-current); background: var(--cc-current-bg); }
-.partial { color: var(--cc-partial); background: var(--cc-current-bg); }
-.todo { color: var(--cc-todo); }
-.undo { display: none; margin-top: 0.4em; color: var(--cc-undo); gap: var(--cc-scramble-gap); flex-wrap: wrap; align-items: baseline; }
-.undo.on { display: flex; }
-.undo-label { font: 600 0.6em/1 system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.06em; margin-right: 0.3em; }
-.message { display: none; margin-top: 0.4em; font: 500 0.6em/1.4 system-ui, sans-serif; opacity: 0.8; }
-.message.on { display: block; }
+.error { display: none; color: var(--cc-seq-undo); font: 500 12px/1.3 system-ui, sans-serif; width: 100%; }
+.error.on { display: block; }
 `;
 
-export interface ScrambleMessages {
-  undo: string;
-  reset: string;
-  complete: string;
-}
-
-/** What `attach` needs: the cube's current state and its moves. */
-export interface MoveSource {
-  readonly state: State;
-  on(type: "move", listener: (e: { move: Move }) => void): () => void;
-}
-
-export class CubeScramble extends ElementBase {
-  private readonly root: ShadowRoot;
+export class CubeScramble extends CubeSequenceElement {
+  static observedAttributes = ["editable"];
   private tracker: SequenceTracker | null = null;
-  private _moves: Move[] = [];
-  private source: MoveSource | null = null;
-  private off: (() => void) | null = null;
-  private _messages: ScrambleMessages = { undo: "Undo", reset: "Too far off — solve the cube and start again", complete: "" };
+  private moves: Move[] = [];
+  private extra = { placeholder: "Paste or type your own scramble", invalid: "Not a scramble:" };
 
   constructor() {
-    super();
-    this.root = this.attachShadow({ mode: "open" });
-    this.root.innerHTML = `<style>${STYLES}</style>
-      <div class="moves" part="moves"></div>
-      <div class="undo" part="undo"><span class="undo-label" part="undo-label"></span><span class="undo-moves"></span></div>
-      <div class="message" part="message" role="status"></div>`;
+    super(STYLES, `<div class="input" part="input-container"><input part="input" type="text" spellcheck="false" autocomplete="off" /></div><div class="error" part="error"></div>`);
+    const input = this.root.querySelector("input")!;
+    input.placeholder = this.extra.placeholder;
+    input.addEventListener("input", () => this.fromText(input.value));
   }
 
-  /** The scramble / algorithm to show and follow (written notation or moves). */
+  attributeChangedCallback(): void {
+    this.update();
+  }
+
+  /** The scramble (written notation or moves). */
   get scramble(): string {
-    return this._moves.map(formatMove).join(" ");
+    return this.moves.map(formatMove).join(" ");
   }
   set scramble(v: string | readonly Move[]) {
-    this._moves = typeof v === "string" ? parseAlg(v) : [...v];
+    this.setMoves(typeof v === "string" ? parseAlg(v) : [...v]);
+    // Set from outside (a new generated one): the typed text is stale.
+    this.root.querySelector("input")!.value = "";
+    this.root.querySelector(".error")!.classList.remove("on");
+  }
+
+  private setMoves(moves: Move[]): void {
+    this.moves = moves;
     this.reset();
   }
 
   get messages(): ScrambleMessages {
-    return { ...this._messages };
+    return { ...this.messagesBase, ...this.extra };
   }
   set messages(m: Partial<ScrambleMessages>) {
-    this._messages = { ...this._messages, ...m };
-    this.render();
+    const { placeholder, invalid, ...base } = m;
+    if (placeholder !== undefined) this.extra.placeholder = placeholder;
+    if (invalid !== undefined) this.extra.invalid = invalid;
+    this.root.querySelector("input")!.placeholder = this.extra.placeholder;
+    this.setMessages(base);
   }
 
   get progress(): SequenceProgress | null {
     return this.tracker?.progress ?? null;
   }
 
-  /** Follow a smart cube from its current state. Returns detach. */
-  attach(source: MoveSource): () => void {
-    this.detach();
-    this.source = source;
-    this.off = source.on("move", (e) => this.push(e.move));
-    this.reset();
-    return () => this.detach();
+  protected startTracking(start: State): void {
+    this.tracker = new SequenceTracker(this.moves, start);
   }
 
-  detach(): void {
-    this.off?.();
-    this.off = null;
-    this.source = null;
+  protected track(move: Move): SequenceProgress {
+    return this.tracker!.push(move);
   }
 
-  /** Start following again from `start` (default: the attached cube's state, else solved). */
-  reset(start?: State): void {
-    this.tracker = new SequenceTracker(this._moves, start ?? this.source?.state ?? solvedState());
-    this.render();
-    this.dispatchEvent(new CustomEvent("progress", { detail: this.tracker.progress }));
-  }
-
-  /** A face turn from the cube (called for you when attached). */
-  push(move: Move): void {
-    if (!this.tracker) return;
-    const wasComplete = this.tracker.progress.complete;
-    const p = this.tracker.push(move);
-    this.render();
-    this.dispatchEvent(new CustomEvent("progress", { detail: p }));
-    if (p.complete && !wasComplete) this.dispatchEvent(new CustomEvent("complete", { detail: p }));
-  }
-
-  private render(): void {
+  protected tokens(): ShownToken[] {
     const p = this.tracker?.progress;
-    const moves = this.root.querySelector(".moves")!;
-    moves.innerHTML = this._moves
-      .map((m, i) => {
-        const status = p?.tokens[i] ?? "todo";
-        return `<span class="move ${status}" part="move move-${status}">${formatMove(m)}</span>`;
-      })
-      .join("");
-    const undo = this.root.querySelector(".undo")!;
-    const showUndo = !!p && p.undo.length > 0 && !p.needsReset;
-    undo.classList.toggle("on", showUndo);
-    this.root.querySelector(".undo-label")!.textContent = this._messages.undo;
-    this.root.querySelector(".undo-moves")!.innerHTML = showUndo ? p!.undo.map((m) => `<span class="move" part="undo-move">${formatMove(m)}</span>`).join(" ") : "";
-    const message = this.root.querySelector(".message")!;
-    const text = p?.needsReset ? this._messages.reset : p?.complete ? this._messages.complete : "";
-    message.textContent = text;
-    message.classList.toggle("on", !!text);
+    return this.moves.map((m, i) => ({ text: formatMove(m), status: p?.tokens[i] ?? "todo", visible: true }));
+  }
+
+  /** A pasted / typed scramble: take it if it parses (and isn't empty). */
+  private fromText(text: string): void {
+    const error = this.root.querySelector(".error")!;
+    try {
+      const moves = parseAlg(text);
+      error.classList.remove("on");
+      if (!moves.length) return;
+      this.setMoves(moves);
+      this.dispatchEvent(new CustomEvent("change", { detail: { moves, text } }));
+    } catch (e) {
+      error.textContent = `${this.extra.invalid} ${e instanceof Error ? e.message : String(e)}`;
+      error.classList.add("on");
+    }
   }
 }
 
-/** Register the element (idempotent). */
 export function defineCubeScramble(tag = "cube-scramble"): void {
   if (!customElements.get(tag)) customElements.define(tag, class extends CubeScramble {});
 }

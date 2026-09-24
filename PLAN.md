@@ -440,3 +440,11 @@ Still open:
   before porting anything from them.
 - npm: claim `cubecore` / `@cubecore/*` before publishing (`cubecore` looked
   free on 2026-09-24).
+- 2026-09-25 — **Scramble vs algorithm practice split**: one base
+  (`CubeSequenceElement`: tracking, undo line, messages, `--cc-seq-*`
+  variables, parts, `controls` / `undo` / `message` slots, `headless`) and
+  two elements — `<cube-scramble>` (always shown; `editable` = paste / type
+  your own) and `<cube-alg-practice>` (`reveal` all / done / none, hints,
+  hint on mistake, mistakes, time, TPS, `differentAlg`; core
+  `PracticeTracker`). A finished sequence ignores further turns. React
+  `<CubeAlgPractice>` + `editable` / `onChange`. Demo `/sequences`.

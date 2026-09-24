@@ -10,6 +10,7 @@ export const DEMOS = [
   { path: "/playground", title: "Playground", hint: "Every <cube-player> option: setup, 'algorithm solves the cube', timing, skins, theme, 2D views, masks — with the code" },
   { path: "/player", title: "Player", hint: "<cube-player>: controls, progress bar, theming, your own controls" },
   { path: "/react", title: "React", hint: "@cubecore/react: <CubePlayer>, <CubeAlg>, <CubeScramble>, useSmartCube, useSolverWorker" },
+  { path: "/sequences", title: "Scramble & practice", hint: "<cube-scramble> (paste your own) and <cube-alg-practice> (hidden moves, hints, mistakes, TPS) on a smart cube — styling, own controls, headless" },
   { path: "/bluetooth", title: "Smart cube", hint: "Bluetooth cubes live: moves with the cube's clock, written log, stages, gyro — or a simulated cube" },
 ] as const;
 

@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>cubecore scramble &amp; practice demo</title>
+    <style>
+      :root { color-scheme: dark; --bg: #0b0b0c; --panel: #151517; --line: #2a2a2e; --text: #e6e6e6; --muted: #8b8b93; --accent: #7aa2ff; }
+      * { box-sizing: border-box; }
+      body { margin: 0; font: 14px/1.45 system-ui, sans-serif; background: var(--bg); color: var(--text); }
+      main { max-width: 1150px; margin: 0 auto; padding: 16px; display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+      @media (min-width: 900px) { main { grid-template-columns: 340px minmax(0, 1fr); } .side { position: sticky; top: 56px; align-self: start; } }
+      section { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+      section + section { margin-top: 12px; }
+      h1 { font-size: 18px; margin: 0 0 4px; } p.sub { margin: 0 0 12px; color: var(--muted); }
+      h2 { font-size: 13px; margin: 0 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+      h3 { font-size: 13px; margin: 14px 0 6px; }
+      cube-player { height: 300px; }
+      .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+      button, select, input[type="text"] { background: #232327; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 7px 11px; font: 13px system-ui; }
+      input[type="text"] { font-family: ui-monospace, monospace; flex: 1; min-width: 14em; }
+      button { cursor: pointer; }
+      button:hover:not(:disabled) { border-color: var(--accent); }
+      button.primary { background: var(--accent); color: #0b0b0c; border-color: var(--accent); font-weight: 600; }
+      button:disabled { opacity: 0.45; cursor: default; }
+      .kv { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
+      .keys { font: 12px ui-monospace, monospace; color: var(--muted); }
+      pre { background: #0f0f11; border: 1px solid var(--line); border-radius: 8px; padding: 10px; font: 12px/1.5 ui-monospace, monospace; overflow-x: auto; margin: 8px 0 0; color: #b9bcc6; }
+      cube-scramble, cube-alg-practice { --cc-accent: var(--accent); margin-top: 10px; }
+      #attempts { width: 100%; border-collapse: collapse; font: 12px ui-monospace, monospace; margin-top: 8px; }
+      #attempts td { padding: 3px 4px; border-bottom: 1px solid var(--line); }
+
+      /* 1. CSS variables only */
+      #themed {
+        --cc-seq-font: Georgia, serif; --cc-seq-size: 26px; --cc-seq-gap: 0.5em;
+        --cc-seq-done: #3d8b5a; --cc-seq-current: #111; --cc-seq-current-bg: #ffd24a; --cc-seq-partial: #b8860b;
+        --cc-seq-todo: #555; --cc-seq-hidden: #999; --cc-seq-undo: #d33;
+        --cc-control-bg: #e6e2d8; --cc-control-radius: 999px;
+        background: #faf7ef; color: #222; padding: 12px 14px; border-radius: 10px;
+      }
+      /* 2. ::part() for what variables don't reach */
+      #themed::part(move-hidden) { font-size: 0.6em; }
+      #themed::part(button-hint) { background: #ffd24a; }
+
+      /* 3. own controls in the slot */
+      .mine { display: flex; gap: 6px; }
+      .mine button { border-radius: 50%; width: 38px; height: 38px; padding: 0; font-size: 17px; }
+
+      /* 4. headless: own UI from the progress event */
+      #customUi { margin-top: 10px; }
+      #customUi .bar { height: 8px; background: #232327; border-radius: 4px; overflow: hidden; }
+      #customUi .bar i { display: block; height: 100%; background: var(--accent); transition: width 0.15s; }
+      #customUi .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+      #customUi .chip { font: 600 13px ui-monospace, monospace; padding: 4px 7px; border-radius: 6px; background: #232327; }
+      #customUi .chip.done { background: #1f3a2a; color: #7fd49b; }
+      #customUi .chip.current, #customUi .chip.partial { background: var(--accent); color: #0b0b0c; }
+      #customUi .undo { color: #ff8a4c; font: 600 13px ui-monospace, monospace; margin-top: 6px; min-height: 1.2em; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="side">
+        <h1>Scramble &amp; practice</h1>
+        <p class="sub">&lt;cube-scramble&gt; follows a scramble (always shown, paste your own); &lt;cube-alg-practice&gt; follows an algorithm (moves can hide). Both share one base: same styling, slots, events.</p>
+        <section>
+          <h2>Cube</h2>
+          <div class="row">
+            <button id="connect" class="primary">Connect cube</button>
+            <button id="simulate">Simulated cube</button>
+            <button id="solved" disabled>Mark solved</button>
+          </div>
+          <p class="kv" id="info">Not connected.</p>
+          <p class="keys" id="keys" hidden>Keys: U R F D L B turn · Shift = prime</p>
+          <cube-player id="player" controls="none"></cube-player>
+        </section>
+      </div>
+      <div>
+        <section>
+          <h2>&lt;cube-scramble editable&gt;</h2>
+          <div class="row">
+            <button id="newScramble" disabled>New scramble</button>
+            <select id="scrambleKind">
+              <option value="full">Random state</option>
+              <option value="ll">Last layer</option>
+            </select>
+            <span class="kv" id="scrambleInfo" style="margin:0">Generated from the cube's current state — or paste / type your own below.</span>
+          </div>
+          <cube-scramble id="scramble" editable></cube-scramble>
+          <pre>&lt;cube-scramble editable&gt;&lt;/cube-scramble&gt;
+el.scramble = moves;  el.attach(session);
+el.addEventListener("change", (e) =&gt; e.detail.moves);   // typed / pasted
+el.addEventListener("complete", startInspection);</pre>
+        </section>
+
+        <section>
+          <h2>&lt;cube-alg-practice&gt;</h2>
+          <div class="row">
+            <select id="preset">
+              <option value="R U R' U R U2 R'">Sune</option>
+              <option value="R U R' U' R' F R2 U' R' U' R U R' F'">T-perm</option>
+              <option value="M2 U M2 U2 M2 U M2">H-perm (slices)</option>
+              <option value="r U R' U' r' F R F'">OLL 33 (wide)</option>
+              <option value="F R U R' U' F'">OLL 45</option>
+            </select>
+            <input type="text" id="alg" spellcheck="false" />
+          </div>
+          <div class="row" style="margin-top:8px">
+            <select id="reveal">
+              <option value="all">reveal="all" — learning</option>
+              <option value="done" selected>reveal="done" — dots until done</option>
+              <option value="none">reveal="none" — dots only</option>
+            </select>
+            <label class="kv" style="margin:0"><input type="checkbox" id="hintOnMistake" checked /> hint on mistake</label>
+            <button id="setup" disabled>Set up case</button>
+          </div>
+          <p class="kv" id="practiceInfo">Solve the cube, "Set up case" (the setup goes into the scramble box), then do the algorithm. Another algorithm that gets there counts too.</p>
+          <cube-alg-practice id="practice"></cube-alg-practice>
+          <table id="attempts"></table>
+          <pre>&lt;cube-alg-practice reveal="done"&gt;&lt;/cube-alg-practice&gt;
+el.alg = "R U R' U R U2 R'";  el.attach(session);
+el.addEventListener("mistake", …);
+el.addEventListener("complete", (e) =&gt; e.detail.practice);  // { elapsedMs, turns, tps, mistakes, differentAlg }</pre>
+        </section>
+
+        <section>
+          <h2>Styling and your own controls</h2>
+          <p class="kv" style="margin-top:0">The same algorithm, tracked by three more elements on the same cube.</p>
+
+          <h3>1. CSS variables + ::part()</h3>
+          <cube-alg-practice id="themed" class="mirror"></cube-alg-practice>
+          <pre>#themed { --cc-seq-font: Georgia, serif; --cc-seq-size: 26px; --cc-seq-current-bg: #ffd24a; --cc-control-radius: 999px; … }
+#themed::part(move-hidden) { font-size: 0.6em; }
+#themed::part(button-hint) { background: #ffd24a; }</pre>
+
+          <h3>2. Your controls in the slot</h3>
+          <cube-alg-practice id="slotted" class="mirror" reveal="none">
+            <div slot="controls" class="mine">
+              <button data-do="hint" title="Hint">💡</button>
+              <button data-do="toggleShown" title="Show / hide">👁</button>
+              <button data-do="reset" title="Restart">↺</button>
+            </div>
+          </cube-alg-practice>
+          <pre>&lt;cube-alg-practice reveal="none"&gt;
+  &lt;div slot="controls"&gt;&lt;button onclick="el.hint()"&gt;💡&lt;/button&gt; … el.toggleShown() · el.reset()&lt;/div&gt;
+&lt;/cube-alg-practice&gt;</pre>
+
+          <h3>3. headless — your whole UI from the progress event</h3>
+          <cube-alg-practice id="headless" class="mirror" headless reveal="all"></cube-alg-practice>
+          <div id="customUi"><div class="bar"><i style="width:0"></i></div><div class="chips"></div><div class="undo"></div></div>
+          <pre>&lt;cube-alg-practice headless&gt;&lt;/cube-alg-practice&gt;
+el.addEventListener("progress", (e) =&gt; {
+  const { done, total, shown, undo } = e.detail;   // shown: [{ text, status, visible }]
+  render(…);
+});</pre>
+        </section>
+      </div>
+    </main>
+    <script type="module" src="./sequences.ts"></script>
+  </body>
+</html>

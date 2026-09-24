@@ -6,7 +6,8 @@
  *   <CubePlayer alg="R U R' U'" progress segmentLabels onEnded={…} ref={player} />
  *   const cube = useSmartCube();   // cube.connect() / cube.simulate(); cube.state, cube.session
  *   <CubePlayer live={cube.session} autoSkin />
- *   <CubeScramble scramble={moves} source={cube.session} onComplete={start} />
+ *   <CubeScramble scramble={moves} source={cube.session} editable onComplete={start} />
+ *   <CubeAlgPractice alg="R U R' U R U2 R'" source={cube.session} reveal="done" onComplete={…} />
  *
  * Works with React 18 and 19: attributes are passed as attributes (booleans
  * only when true), objects are set as properties from effects, events are
@@ -25,7 +26,16 @@ import {
   useState,
 } from "react";
 import type { Mask, Method, Move, State } from "@cubecore/core";
-import type { CubeAlg as CubeAlgElement, CubePlayer as CubePlayerElement, CubeScramble as CubeScrambleElement, LiveSource, MoveSource, ScrambleMessages } from "@cubecore/element";
+import type {
+  CubeAlg as CubeAlgElement,
+  CubeAlgPractice as CubeAlgPracticeElement,
+  CubePlayer as CubePlayerElement,
+  CubeScramble as CubeScrambleElement,
+  LiveSource,
+  MoveSource,
+  PracticeMessages,
+  ScrambleMessages,
+} from "@cubecore/element";
 import type { SmartCubeSession } from "@cubecore/bluetooth";
 import type { Skin } from "@cubecore/skin";
 import type { SolverClient } from "@cubecore/solve";
@@ -150,9 +160,12 @@ export interface CubeScrambleProps {
   scramble: string | readonly Move[];
   /** Follow a smart cube (a SmartCubeSession). */
   source?: MoveSource | null;
+  /** Show an input to paste or type your own scramble (fires onChange). */
+  editable?: boolean;
   messages?: Partial<ScrambleMessages>;
   onProgress?: Handler<unknown>;
   onComplete?: Handler<unknown>;
+  onChange?: Handler<{ moves: Move[]; text: string }>;
   id?: string;
   className?: string;
   style?: CSSProperties;
@@ -171,8 +184,62 @@ export const CubeScramble = forwardRef<CubeScrambleElement | null, CubeScrambleP
   useEffect(() => {
     if (el.current && p.messages) el.current.messages = p.messages;
   }, [p.messages]);
-  useEvents(el, { progress: p.onProgress, complete: p.onComplete } as Record<string, Handler<never> | undefined>);
-  return createElement("cube-scramble", { ref: el, id: p.id, className: p.className, style: p.style });
+  useEvents(el, { progress: p.onProgress, complete: p.onComplete, change: p.onChange } as Record<string, Handler<never> | undefined>);
+  return createElement("cube-scramble", { ref: el, editable: p.editable ? "" : undefined, id: p.id, className: p.className, style: p.style });
+});
+
+// ─── <CubeAlgPractice> ───
+
+export interface CubeAlgPracticeProps {
+  alg: string | readonly Move[];
+  /** Follow a smart cube (a SmartCubeSession); tracking starts from its current state. */
+  source?: MoveSource | null;
+  /** "all" every move shown, "done" dots until done (default), "none" dots only. */
+  reveal?: "all" | "done" | "none";
+  /** Show the next move after a slip (default true). */
+  hintOnMistake?: boolean;
+  /** "none" hides the built-in Hint / Show / Restart buttons. */
+  controls?: "none";
+  /** Hide the whole built-in view (build your own from onProgress). */
+  headless?: boolean;
+  messages?: Partial<PracticeMessages>;
+  onProgress?: Handler<unknown>;
+  onMistake?: Handler<unknown>;
+  onComplete?: Handler<unknown>;
+  id?: string;
+  className?: string;
+  style?: CSSProperties;
+  children?: ReactNode;
+}
+
+export const CubeAlgPractice = forwardRef<CubeAlgPracticeElement | null, CubeAlgPracticeProps>(function CubeAlgPractice(p, ref) {
+  const el = useRef<CubeAlgPracticeElement | null>(null);
+  useImperativeHandle(ref, () => el.current!, []);
+  useEffect(() => {
+    if (!el.current || !p.source) return;
+    return el.current.attach(p.source);
+  }, [p.source]);
+  useEffect(() => {
+    if (el.current) el.current.alg = p.alg;
+  }, [p.alg]);
+  useEffect(() => {
+    if (el.current && p.messages) el.current.messages = p.messages;
+  }, [p.messages]);
+  useEvents(el, { progress: p.onProgress, mistake: p.onMistake, complete: p.onComplete } as Record<string, Handler<never> | undefined>);
+  return createElement(
+    "cube-alg-practice",
+    {
+      ref: el,
+      reveal: p.reveal,
+      "hint-on-mistake": p.hintOnMistake === false ? "off" : undefined,
+      controls: p.controls,
+      headless: p.headless ? "" : undefined,
+      id: p.id,
+      className: p.className,
+      style: p.style,
+    },
+    p.children,
+  );
 });
 
 // ─── <CubeAlg> ───

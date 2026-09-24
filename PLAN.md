@@ -403,7 +403,15 @@ re-export shims in core — they would make core depend on the method packages
   `<CubeAlg>` (props → attributes / properties / events; ref = the element),
   `useSmartCube()`, `useSolverWorker()`; server-render tests; elements
   importable without a DOM (SSR). Demo `/react`, guide `docs/react.md`.
-- Next: overall README.
+- 2026-09-25 — **plan complete** (library phases 1–8; README). Left, by
+  decision or outside the library:
+  - **Adoption in act** (phase 9) — after a few skins for real cubes are
+    prepared (reference photos needed per model; `ganI4` exists).
+  - **Before publishing**: licence; claim the npm name; a build step
+    (packages export TypeScript sources today — emit JS + .d.ts); a built
+    smartcube-web-bluetooth (fork with dist, or bundle it).
+  - Skipped by decision: drag-to-turn (focus is smart cubes); `solve-wasm`
+    (two-phase in TS is fast enough).
 
 ### Gyroscope (planned)
 - `setOrientation(q, smoothing)` is the whole renderer-side API: the cube's

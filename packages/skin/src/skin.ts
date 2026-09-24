@@ -4,6 +4,7 @@
  */
 
 import type { MaskState } from "@cubecore/core";
+import type { Decal, FeatureUse } from "./attachments";
 import type { StickerPaths, StickerShape } from "./shapes";
 
 export interface Skin {
@@ -56,12 +57,6 @@ export interface Skin {
      */
     edgeRadius?: number;
     /**
-     * Small holes in the centre tiles (e.g. the tension-adjustment holes of
-     * some smart cubes): `radius` as a fraction of the tile side, `offset`
-     * from the tile centre towards each corner as a fraction of the half side.
-     */
-    centerHoles?: { radius: number; offset: number };
-    /**
      * Stickerless: tile sides on the cube's outer edge reach the edge, so two
      * faces' colours meet directly on edges and corners (no black line there);
      * gaps remain only between neighbouring pieces on a face.
@@ -69,12 +64,13 @@ export interface Skin {
     fillOuter?: boolean;
   };
   /**
-   * A picture on one sticker, e.g. a brand logo on a centre. It follows that
-   * sticker (by home facelet index). `image` is a URL, data: URL or an SVG
-   * string. `blend: "multiply"` lets a logo drawn on white sit on any colour.
-   * Brand logos are trademarks — apps supply their own, the library ships none.
+   * Images on stickers — logos, symbols, printed patterns (see
+   * attachments.ts). They follow their sticker. Brand logos are trademarks:
+   * apps supply their own, the library ships none.
    */
-  logo?: { sticker: number; image: string; size: number; blend?: "normal" | "multiply" };
+  decals?: readonly Decal[];
+  /** Extra geometry on stickers — holes, charging slots, your own types (see `defineFeature`). */
+  features?: readonly FeatureUse[];
   /** Colours for masked stickers. `dim` pulls the sticker colour towards the body by `dimAmount`. */
   mask: { ignored: string; oriented: string; dimAmount: number };
   /** Floating "back" stickers showing the hidden faces. */
@@ -109,7 +105,7 @@ export const SKINS = {
   /**
    * GAN-style stickerless: tiles almost fill each cubie face; corner tiles
    * round off the corner facing the centre, edge tiles round their inner side
-   * into a tongue, centre tiles are nearly round. Add a logo with `logo`.
+   * into a tongue, centre tiles are nearly round. Add a logo as a decal.
    */
   gan: {
     body: "#0a0a0a",
@@ -136,7 +132,7 @@ export const SKINS = {
    * GAN i4-style smart cube (from product photos): light translucent-grey
    * internals showing in minimal gaps, thick matte tiles with soft edges, the
    * cube's edges rounded so colour runs round them, squarish centres with
-   * four adjustment holes. The brand logo is up to the app (`logo`).
+   * four adjustment holes. The brand logo is up to the app (a decal).
    */
   ganI4: {
     body: "#cfd3d9",
@@ -155,8 +151,9 @@ export const SKINS = {
       material: "plastic",
       roughness: 0.55,
       fillOuter: true,
-      centerHoles: { radius: 0.045, offset: 0.64 },
     },
+    // Tension-adjustment holes near the corners of every centre cap.
+    features: [{ select: { kinds: ["center"] }, type: "holes", params: { radius: 0.045, at: [[0.64, 0.64], [-0.64, 0.64], [-0.64, -0.64], [0.64, -0.64]] } }],
     mask: { ignored: "#6a6d72", oriented: "#39c7d4", dimAmount: 0.55 },
     hints: { enabled: false, distance: 1.4, opacity: 0.75, ignoredOpacity: 0.35 },
     background: null,

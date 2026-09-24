@@ -49,13 +49,31 @@ describe("renderSvg", () => {
     expect(count(svg, 'd="M0.5,0 L1,0.5 L0.5,1 L0,0.5 Z" transform="matrix(')).toBe(6);
   });
 
+  it("decals follow their sticker: on a corner it moves with the piece and leaves the picture with it", () => {
+    const skin: Skin = { ...STD, decals: [{ select: { stickers: [8] }, image: "<svg xmlns='http://www.w3.org/2000/svg'/>", size: 0.5 }] };
+    const solved = renderSvg(S, { view: "net", skin });
+    expect(count(solved, "<image")).toBe(1);
+    // After R the UFR corner's U sticker sits elsewhere: still one decal, drawn somewhere else.
+    const moved = renderSvg(applyMoves(S, "R"), { view: "net", skin });
+    expect(count(moved, "<image")).toBe(1);
+    expect(moved.match(/<image[^>]*transform="([^"]+)"/)![1]).not.toBe(solved.match(/<image[^>]*transform="([^"]+)"/)![1]);
+    // The top view has no room for it once it's on a side strip.
+    expect(count(renderSvg(applyMoves(S, "R"), { view: "top", skin }), "<image")).toBe(0);
+  });
+
+  it("features from a skin: a slot only on the D (yellow) centre", () => {
+    const skin: Skin = { ...STD, features: [{ select: { faces: ["D"], kinds: ["center"] }, type: "slot", params: { width: 0.4, height: 0.1 } }] };
+    expect(count(renderSvg(S, { view: "net", skin }), "<rect")).toBe(1);
+    expect(count(renderSvg(S, { view: "iso", skin }), "<rect")).toBe(0); // D isn't in the iso picture
+  });
+
   it("centre holes from the skin: four per centre tile", () => {
     expect(count(renderSvg(S, { view: "net", skin: SKINS.ganI4 }), 'fill-opacity="0.38"')).toBe(6 * 4);
     expect(count(renderSvg(S, { view: "net", skin: SKINS.gan }), 'fill-opacity="0.38"')).toBe(0);
   });
 
   it("draws the logo on its sticker, turned by the centre's spin", () => {
-    const skin: Skin = { ...STD, logo: { sticker: 4, image: "logo.png", size: 0.7 } };
+    const skin: Skin = { ...STD, decals: [{ select: { stickers: [4] }, image: "logo.png", size: 0.7 }] };
     const upright = renderSvg(S, { view: "top", skin });
     expect(count(upright, '<image href="logo.png"')).toBe(1);
     // After U the U centre has turned: the logo turns with it; after U4 it is back.

@@ -35,9 +35,21 @@ import {
   faceOfNormal,
   maskStateAt,
   solvedSpins,
+  stickerTurn,
   view as frameView,
 } from "@cubecore/core";
-import { SKINS, type Skin, type StickerShape, roundedOutline, stickerColor, stickerLayout, stickerlessOutline } from "@cubecore/skin";
+import {
+  SKINS,
+  type Skin,
+  type StickerShape,
+  featureDef,
+  imageUrl,
+  roundedOutline,
+  selectedStickers,
+  stickerColor,
+  stickerLayout,
+  stickerlessOutline,
+} from "@cubecore/skin";
 
 export type View = "iso" | "top" | "net";
 
@@ -90,8 +102,8 @@ interface ViewDef {
   project: Projection;
   /** Is this facelet drawn? */
   shows: (f: Facelet) => boolean;
-  /** Faces that get a logo (full-size faces only). */
-  logoFaces: readonly Face[];
+  /** Faces drawn full size — decals and features go only there (not on squashed strips). */
+  fullFaces: readonly Face[];
   /** Body outlines drawn under the tiles. */
   bodies: readonly Face[];
   box: [number, number, number, number];
@@ -99,9 +111,9 @@ interface ViewDef {
 
 const E = STRIP + STRIP_GAP + 0.1;
 const VIEWS: Record<View, ViewDef> = {
-  iso: { project: isoProjection, shows: (f) => f.face === "U" || f.face === "F" || f.face === "R", logoFaces: ["U", "F", "R"], bodies: ["U", "F", "R"], box: [-3 * COS30 - 0.1, -3.1, 6 * COS30 + 0.2, 6.2] },
-  net: { project: netProjection, shows: () => true, logoFaces: ["U", "R", "F", "D", "L", "B"], bodies: ["U", "R", "F", "D", "L", "B"], box: [-0.1, -0.1, 12 + 3 * NET_GAP + 0.2, 9 + 2 * NET_GAP + 0.2] },
-  top: { project: topProjection, shows: (f) => f.face === "U" || (f.pos[1] === 1 && f.face !== "D"), logoFaces: ["U"], bodies: ["U"], box: [-E, -E, 3 + 2 * E, 3 + 2 * E] },
+  iso: { project: isoProjection, shows: (f) => f.face === "U" || f.face === "F" || f.face === "R", fullFaces: ["U", "F", "R"], bodies: ["U", "F", "R"], box: [-3 * COS30 - 0.1, -3.1, 6 * COS30 + 0.2, 6.2] },
+  net: { project: netProjection, shows: () => true, fullFaces: ["U", "R", "F", "D", "L", "B"], bodies: ["U", "R", "F", "D", "L", "B"], box: [-0.1, -0.1, 12 + 3 * NET_GAP + 0.2, 9 + 2 * NET_GAP + 0.2] },
+  top: { project: topProjection, shows: (f) => f.face === "U" || (f.pos[1] === 1 && f.face !== "D"), fullFaces: ["U"], bodies: ["U"], box: [-E, -E, 3 + 2 * E, 3 + 2 * E] },
 };
 
 // ─── drawing helpers ───
@@ -133,12 +145,17 @@ function onFace(f: Facelet, x: number, y: number): Vec3 {
 
 /**
  * SVG `matrix(...)` mapping a unit box (0..1, y down — SVG convention) of side
- * `side`, turned `quarters` CCW, onto facelet `f` in the picture.
+ * `side` onto facelet `f` in the picture: turned `spin` quarters about its
+ * own centre, moved by `offset` (tile-local, cubie units), then turned
+ * `quarters` CCW with the sticker.
  */
-function boxTransform(f: Facelet, side: number, quarters: number, project: Projection): string {
+function boxTransform(f: Facelet, side: number, quarters: number, project: Projection, offset: Pt = [0, 0], spin = 0): string {
   const c = Math.cos((quarters * Math.PI) / 2), s = Math.sin((quarters * Math.PI) / 2);
+  const c2 = Math.cos((spin * Math.PI) / 2), s2 = Math.sin((spin * Math.PI) / 2);
   const at = (px: number, py: number): Pt => {
-    const lx = (px - 0.5) * side, ly = (0.5 - py) * side;
+    // Box point → turned by its own `spin` → moved by `offset` (sticker frame) → turned with the sticker.
+    const bx = (px - 0.5) * side, by = (0.5 - py) * side;
+    const lx = bx * c2 - by * s2 + offset[0], ly = bx * s2 + by * c2 + offset[1];
     return project(f.face, onFace(f, lx * c - ly * s, lx * s + ly * c));
   };
   const o = at(0, 0), x = at(1, 0), y = at(0, 1);
@@ -169,7 +186,6 @@ function spinInFrame(spins: CenterSpins, state: State, centre: number, frame: Fr
   return 0;
 }
 
-const imageHref = (image: string) => (image.trimStart().startsWith("<svg") ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(image)}` : image);
 const attr = (v: string) => v.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 
 // ─── render ───
@@ -207,29 +223,37 @@ export function renderSvg(state: State, options: SvgOptions = {}): string {
     // Stickerless: outer sides reach the cube edge (a hair past it, so neighbouring faces overlap instead of leaving an anti-aliased seam).
     const outline = skin.stickers.fillOuter ? stickerlessOutline(layout, side, 0.506, 6) : roundedOutline(side, layout.radii, 6);
     out += `<path d="${polygon(outline.map(([x, y]) => v.project(f.face, onFace(f, x, y))))}" fill="${fill}"/>`;
-    // Centre-tile holes, as in 3D: translucent black, so they darken any colour.
-    const holes = skin.stickers.centerHoles;
-    if (holes && layout.kind === "center") {
-      const r = holes.radius * side, o = (holes.offset * side) / 2;
-      for (const [sx, sy] of [[1, 1], [-1, 1], [-1, -1], [1, -1]]) {
-        const ring = Array.from({ length: 12 }, (_, k): Pt => {
-          const a = (k / 12) * Math.PI * 2;
-          return v.project(f.face, onFace(f, sx * o + r * Math.cos(a), sy * o + r * Math.sin(a)));
-        });
-        out += `<path d="${polygon(ring)}" fill="#000" fill-opacity="0.38"/>`;
-      }
-    }
   }
 
-  const logo = skin.logo;
-  if (logo) {
-    const pos = s.indexOf(logo.sticker);
+  // Decals and features ride on their sticker, turned with it — as in 3D.
+  const spins = options.spins ?? solvedSpins();
+  const turnOf = (sticker: number) =>
+    sticker % 9 === 4 ? spinInFrame(spins, state, Math.floor(sticker / 9), options.frame) : stickerTurn(s, sticker);
+  const placed = (sticker: number, regularOnly: boolean): Facelet | null => {
+    const pos = s.indexOf(sticker);
     const f = FACELETS[pos];
-    const visible = pos >= 0 && v.shows(f) && v.logoFaces.includes(f.face) && (!options.mask || maskStateAt(options.mask, s, pos) === "regular");
-    if (visible) {
-      const spin = logo.sticker % 9 === 4 ? spinInFrame(options.spins ?? solvedSpins(), state, Math.floor(logo.sticker / 9), options.frame) : 0;
-      const blend = logo.blend === "multiply" ? ` style="mix-blend-mode:multiply"` : "";
-      out += `<image href="${attr(imageHref(logo.image))}" width="1" height="1" preserveAspectRatio="xMidYMid meet" transform="${boxTransform(f, side * logo.size, spin, v.project)}"${blend}/>`;
+    if (!v.shows(f) || !v.fullFaces.includes(f.face)) return null; // not on squashed strips
+    const st = options.mask ? maskStateAt(options.mask, s, pos) : "regular";
+    if (st === "invisible" || (regularOnly && st !== "regular")) return null;
+    return f;
+  };
+  for (const use of skin.features ?? []) {
+    const def = featureDef(use.type);
+    if (!def?.svg) continue;
+    const markup = def.svg({ side, thickness: skin.stickers.thickness ?? 0, params: use.params ?? {} });
+    for (const sticker of selectedStickers(use.select)) {
+      const f = placed(sticker, false);
+      if (f) out += `<g transform="${boxTransform(f, side, turnOf(sticker), v.project)}">${markup}</g>`;
+    }
+  }
+  for (const decal of skin.decals ?? []) {
+    const blend = decal.blend === "multiply" ? ` style="mix-blend-mode:multiply"` : "";
+    const offset: Pt = [((decal.offset?.[0] ?? 0) * side) / 2, ((decal.offset?.[1] ?? 0) * side) / 2];
+    for (const sticker of selectedStickers(decal.select)) {
+      const f = placed(sticker, decal.onlyRegular ?? true);
+      if (!f) continue;
+      const t = boxTransform(f, side * decal.size, turnOf(sticker), v.project, offset, decal.rotate ?? 0);
+      out += `<image href="${attr(imageUrl(decal.image))}" width="1" height="1" preserveAspectRatio="xMidYMid meet" transform="${t}"${blend}/>`;
     }
   }
 

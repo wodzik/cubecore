@@ -62,8 +62,27 @@ $("scrub").oninput = () => {
 // Demo-only skins: a brand logo supplied by the app (the library ships none), and custom SVG tile outlines.
 const DEMO_SKINS: Record<string, Skin> = {
   ...SKINS,
-  "gan + logo": { ...SKINS.gan, logo: { sticker: 4, image: "/assets/gan-logo.png", size: 0.72, blend: "multiply" } },
-  "gan i4 + logo": { ...SKINS.ganI4, logo: { sticker: 4, image: "/assets/gan-logo.png", size: 0.62, blend: "multiply" } },
+  "gan + logo": { ...SKINS.gan, decals: [{ select: { stickers: [4] }, image: "/assets/gan-logo.png", size: 0.72, blend: "multiply" }] },
+  "gan i4 + logo": { ...SKINS.ganI4, decals: [{ select: { stickers: [4] }, image: "/assets/gan-logo.png", size: 0.62, blend: "multiply" }] },
+  // Per-face geometry: a charging port on the yellow (D) centre only — it stays on that sticker whatever you turn.
+  "charging port on yellow": {
+    ...SKINS.stickerless,
+    features: [
+      { select: { faces: ["D"], kinds: ["center"] }, type: "slot", params: { width: 0.42, height: 0.11, radius: 0.055 } },
+      { select: { faces: ["D"], kinds: ["center"] }, type: "holes", params: { radius: 0.035, at: [[-0.55, -0.45], [0.55, -0.45]] } },
+    ],
+  },
+  // Your own images on stickers: an SVG arrow on every red sticker — turn R / U to see them ride along and turn.
+  "custom SVG decals": {
+    ...SKINS.stickerless,
+    decals: [
+      {
+        select: { faces: ["R"] },
+        image: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><path d="M5 1 L9 6 H6.5 V9 H3.5 V6 H1 Z" fill="#fff" fill-opacity="0.85"/></svg>`,
+        size: 0.5,
+      },
+    ],
+  },
   "custom SVG tiles": {
     ...SKINS.stickerless,
     stickers: {

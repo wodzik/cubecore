@@ -10,7 +10,7 @@
  * the sticker's "up" points along that face's `b` axis.
  */
 
-import { FACE_BASIS, FACELETS, type Face, type Vec3, faceOfNormal, rotate } from "./geometry";
+import { CUBIE_OF_FACELET, FACE_BASIS, FACELETS, type Face, type Vec3, faceOfNormal, rotate } from "./geometry";
 import { FAMILY, type Move } from "./moves";
 import { parseAlg } from "./notation";
 import { type State, applyMove } from "./state";
@@ -57,4 +57,32 @@ export function spinsAfter(start: State, moves: readonly Move[] | string, spins:
     s = applyMove(s, m);
   }
   return out;
+}
+
+/**
+ * How far sticker `sticker` (a home facelet index) is turned in its face's
+ * plane — counter-clockwise quarter turns relative to `FACE_BASIS` of the
+ * face it currently sits on, compared with how it sat at home. Anything drawn
+ * on a sticker (a logo, a decal, holes) turns by this much.
+ *
+ * Centres: their spin (`spins`, see above). Edges and corners: read off the
+ * piece itself — the direction towards one of its other stickers.
+ */
+export function stickerTurn(state: State, sticker: number, spins: CenterSpins = solvedSpins()): number {
+  if (sticker % 9 === 4) return spins[Math.floor(sticker / 9)];
+  const home = FACELETS[sticker];
+  const partner = CUBIE_OF_FACELET[sticker].facelets.find((f) => f !== sticker)!;
+  const now = FACELETS[state.indexOf(sticker)];
+  const partnerNow = FACELETS[state.indexOf(partner)];
+  const inPlane = (face: Face, dir: Vec3): [number, number] => {
+    const { a, b } = FACE_BASIS[face];
+    return [dir[0] * a[0] + dir[1] * a[1] + dir[2] * a[2], dir[0] * b[0] + dir[1] * b[1] + dir[2] * b[2]];
+  };
+  let d = inPlane(home.face, FACELETS[partner].normal);
+  const target = inPlane(now.face, partnerNow.normal);
+  for (let k = 0; k < 4; k++) {
+    if (d[0] === target[0] && d[1] === target[1]) return k;
+    d = [-d[1], d[0]];
+  }
+  return 0;
 }

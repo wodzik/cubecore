@@ -12,7 +12,6 @@
 
 import {
   BackSide,
-  CircleGeometry,
   Color,
   FrontSide,
   Group,
@@ -24,24 +23,11 @@ import {
   PerspectiveCamera,
   Quaternion,
   Scene,
-  Shape,
-  ShapeGeometry,
-  Float32BufferAttribute,
-  ShapeUtils,
   Matrix4,
-  MultiplyBlending,
-  NormalBlending,
-  PlaneGeometry,
-  TextureLoader,
-  type Texture,
-  Vector2,
   SRGBColorSpace,
   Vector3,
   WebGLRenderer,
-  BufferGeometry,
 } from "three";
-import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
-import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
 import {
   CUBIES,
   type CenterSpins,
@@ -57,9 +43,10 @@ import {
   solvedSpins,
   solvedState,
 } from "@cubecore/core";
-import { SKINS, type Skin, type StickerShape, roundedOutline, stickerColor, stickerLayout, stickerlessOutline } from "@cubecore/skin";
+import { SKINS, type Skin, stickerColor } from "@cubecore/skin";
 import { layerTurn, defaultDuration } from "./layers";
-import { type Mitre, type TileProfile, type TileSolid, skirtSolid, tileSolid } from "./tile";
+import { type AttachmentSet, buildAttachments, placeAttachments } from "./build/attachments";
+import { type TileKit, tileKit } from "./build/tiles";
 import { type BackView, backPosition, viewports } from "./viewports";
 
 export interface CameraOptions {
@@ -96,8 +83,6 @@ interface Partial3 {
   progress: number;
 }
 
-const Z = new Vector3(0, 0, 1);
-
 export class CubeRenderer {
   readonly canvas: HTMLCanvasElement;
   private renderer: WebGLRenderer;
@@ -111,8 +96,8 @@ export class CubeRenderer {
   private cubieGroups: Group[] = [];
   private stickerMeshes: Mesh[] = []; // by facelet position
   private hintMeshes: Mesh[] = [];
-  private logoMesh: Mesh | null = null;
-  private logoTexture: Texture | null = null;
+  private kit: TileKit | null = null;
+  private attachments: AttachmentSet | null = null;
   /** Cubie group index holding each facelet position. */
   private cubieOfFacelet: number[] = [];
   private materials = new Map<string, MeshBasicMaterial | MeshStandardMaterial>();
@@ -260,6 +245,8 @@ export class CubeRenderer {
     this.finishAll(true);
     this.renderer.dispose();
     for (const m of this.materials.values()) m.dispose();
+    this.kit?.dispose();
+    this.attachments?.dispose();
     this.canvas.remove();
   }
 
@@ -289,70 +276,19 @@ export class CubeRenderer {
 
   private build(): void {
     this.root.clear();
+    this.kit?.dispose();
+    this.attachments?.dispose();
     this.cubieGroups = [];
     this.stickerMeshes = [];
     this.hintMeshes = [];
-    this.logoMesh = null;
     const s = this.skin;
-    const size = s.cubieSize;
-    const inset = s.bodyInset ?? 0;
-    const bodySize = size - 2 * inset;
-    // With shaped pieces the box is only the hidden core; the visible plastic is the skirts under the tiles.
-    const coreSize = s.pieces ? s.pieces.core * size : bodySize;
-    const bodyGeo = new RoundedBoxGeometry(coreSize, coreSize, coreSize, 3, Math.min(s.cubieRadius * size, coreSize / 2));
+    const kit = tileKit(s);
+    this.kit = kit;
     const bodyMat = new MeshStandardMaterial({ color: new Color(s.body), roughness: 0.85, metalness: 0 });
-    const side = s.stickers.size * size;
-    const shape: StickerShape = s.stickers.shape ?? {
-      corner: { inner: s.stickers.radius, outer: s.stickers.radius },
-      edge: { inner: s.stickers.radius, outer: s.stickers.radius },
-      center: s.stickers.radius,
-    };
-    const thickness = s.stickers.thickness ?? 0;
-    const bevel = Math.min(s.stickers.bevel ?? 0, thickness);
-    const geometries = new Map<string, BufferGeometry>();
-    const skirts = new Map<string, BufferGeometry>();
-    const edge = size / 2 + 0.002;
-    const tileOutline = (fi: number) => {
-      const layout = stickerLayout(fi, shape);
-      const path = s.stickers.paths?.[layout.kind];
-      const fill = !path && s.stickers.fillOuter === true;
-      const outline = path ? pathOutline(path, side, layout.pathQuarters) : fill ? stickerlessOutline(layout, side, edge) : roundedOutline(side, layout.radii);
-      const mitre: Mitre | null = fill ? { u: layout.u, v: layout.v, edge, ramp: Math.max(thickness * 4, 0.03) } : null;
-      const key = path ? `p|${layout.kind}|${layout.pathQuarters}` : `r|${layout.radii.join(",")}|${fill ? `${layout.u},${layout.v}` : ""}`;
-      return { outline, mitre, key };
-    };
-    const skirtFor = (fi: number, pieces: { depth: number; taper: number }): BufferGeometry => {
-      const { outline, mitre, key } = tileOutline(fi);
-      let g = skirts.get(key);
-      if (!g) skirts.set(key, (g = solidToGeometry(skirtSolid(outline, { top: inset + 0.002, depth: pieces.depth, taper: pieces.taper }, mitre))));
-      return g;
-    };
-    const geometryFor = (fi: number): BufferGeometry => {
-      // Outlines are computed per facelet but cached by shape: one geometry per distinct tile.
-      const { outline, mitre, key } = tileOutline(fi);
-      let g = geometries.get(key);
-      if (!g) {
-        g =
-          thickness > 0
-            ? solidGeometry(outline, { thickness, bevel, segments: 4, sink: inset + 0.002, edgeRadius: s.stickers.edgeRadius ?? 0 }, mitre)
-            : new ShapeGeometry(new Shape(outline.map(([x, y]) => new Vector2(x, y))));
-        geometries.set(key, g);
-      }
-      return g;
-    };
-    const holes = s.stickers.centerHoles;
-    const flat = new Map<string, BufferGeometry>();
-    const hintGeometryFor = (fi: number): BufferGeometry => {
-      const layout = stickerLayout(fi, shape);
-      const key = layout.radii.join(",");
-      let g = flat.get(key);
-      if (!g) flat.set(key, (g = new ShapeGeometry(new Shape(roundedOutline(side * 0.92, layout.radii).map(([x, y]) => new Vector2(x, y))))));
-      return g;
-    };
 
     CUBIES.forEach((cubie, ci) => {
       const g = new Group();
-      const body = new Mesh(bodyGeo, bodyMat);
+      const body = new Mesh(kit.body, bodyMat);
       body.position.set(...cubie.pos);
       g.add(body);
       for (const fi of cubie.facelets) {
@@ -360,21 +296,21 @@ export class CubeRenderer {
         const { a, b, n } = FACE_BASIS[f.face];
         const basis = new Matrix4().makeBasis(new Vector3(...a), new Vector3(...b), new Vector3(...n));
         const normal = new Vector3(...n);
-        const mesh = new Mesh(geometryFor(fi), this.material("#000000", false));
-        mesh.position.set(...f.pos).addScaledVector(normal, size / 2 + 0.002);
+        const mesh = new Mesh(kit.tile(fi), this.material("#000000", false));
+        mesh.position.set(...f.pos).addScaledVector(normal, kit.faceOffset);
         mesh.quaternion.setFromRotationMatrix(basis);
         g.add(mesh);
-        if (holes && fi % 9 === 4) addHoles(mesh, side, thickness, holes);
-        if (s.pieces) {
-          const skirt = new Mesh(skirtFor(fi, s.pieces), bodyMat);
-          skirt.position.copy(mesh.position);
-          skirt.quaternion.copy(mesh.quaternion);
-          g.add(skirt);
+        const skirt = kit.skirt(fi);
+        if (skirt) {
+          const m = new Mesh(skirt, bodyMat);
+          m.position.copy(mesh.position);
+          m.quaternion.copy(mesh.quaternion);
+          g.add(m);
         }
         this.stickerMeshes[fi] = mesh;
         this.cubieOfFacelet[fi] = ci;
         if (s.hints.enabled) {
-          const hint = new Mesh(hintGeometryFor(fi), this.material("#000000", true));
+          const hint = new Mesh(kit.hint(fi), this.material("#000000", true));
           hint.position.set(...f.pos).addScaledVector(normal, 0.5 + s.hints.distance);
           hint.quaternion.setFromRotationMatrix(basis);
           g.add(hint);
@@ -384,32 +320,8 @@ export class CubeRenderer {
       this.root.add(g);
       this.cubieGroups.push(g);
     });
-    this.buildLogo(side, thickness);
+    this.attachments = buildAttachments(s, kit, () => this.requestRender());
     this.renderer.setClearColor(s.background ? new Color(s.background) : new Color(0x000000), s.background ? 1 : 0);
-  }
-
-  private buildLogo(side: number, thickness: number): void {
-    const logo = this.skin.logo;
-    this.logoTexture?.dispose();
-    this.logoTexture = null;
-    if (!logo) return;
-    const url = logo.image.trimStart().startsWith("<svg") ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(logo.image)}` : logo.image;
-    const texture = new TextureLoader().load(url, () => this.requestRender());
-    texture.colorSpace = SRGBColorSpace;
-    texture.anisotropy = 4;
-    this.logoTexture = texture;
-    const multiply = logo.blend === "multiply";
-    const material = new MeshBasicMaterial({
-      map: texture,
-      transparent: true,
-      depthWrite: false,
-      blending: multiply ? MultiplyBlending : NormalBlending,
-      premultipliedAlpha: multiply,
-    });
-    const mesh = new Mesh(new PlaneGeometry(side * logo.size, side * logo.size), material);
-    mesh.userData.lift = thickness + 0.0015;
-    mesh.renderOrder = 2;
-    this.logoMesh = mesh;
   }
 
   private paint(): void {
@@ -425,7 +337,7 @@ export class CubeRenderer {
         if (color) hint.material = this.material(color, true, st === "regular" || st === "dim" ? this.skin.hints.opacity : this.skin.hints.ignoredOpacity);
       }
     }
-    this.placeLogo();
+    if (this.attachments && this.kit) placeAttachments(this.attachments, this.state, this.spins, this.stickerMeshes, this.kit.thickness, this.mask);
     const turn = this.partial ? layerTurn(this.partial.move) : null;
     const axis = turn ? new Vector3(turn.axis === 0 ? 1 : 0, turn.axis === 1 ? 1 : 0, turn.axis === 2 ? 1 : 0) : null;
     CUBIES.forEach((c, i) => {
@@ -433,24 +345,6 @@ export class CubeRenderer {
       if (turn && axis && turn.turns(c.pos)) g.quaternion.setFromAxisAngle(axis, turn.angle * this.partial!.progress);
       else g.quaternion.identity();
     });
-  }
-
-  /** The logo rides on whatever position its sticker currently occupies (inside that cubie's group, so layer turns carry it). */
-  private placeLogo(): void {
-    const logo = this.logoMesh;
-    if (!logo || !this.skin.logo) return;
-    const pos = this.state.indexOf(this.skin.logo.sticker);
-    const sticker = this.stickerMeshes[pos];
-    const visible = pos >= 0 && sticker.visible && (!this.mask || maskStateAt(this.mask, this.state, pos) === "regular");
-    logo.visible = visible;
-    if (!visible) return;
-    this.cubieGroups[this.cubieOfFacelet[pos]].add(logo);
-    // A centre's spin isn't in the permutation — turn the logo by the tracked spin.
-    const id = this.skin.logo.sticker;
-    const spin = id % 9 === 4 ? this.spins[Math.floor(id / 9)] : 0;
-    logo.quaternion.copy(sticker.quaternion).multiply(new Quaternion().setFromAxisAngle(Z, (spin * Math.PI) / 2));
-    const n = new Vector3(0, 0, 1).applyQuaternion(sticker.quaternion);
-    logo.position.copy(sticker.position).addScaledVector(n, logo.userData.lift as number);
   }
 
   private applyCamera(): void {
@@ -633,54 +527,4 @@ export function showPosition(
   }
   const active = position.active ? moves[position.active.index] : null;
   renderer.showPartial(s, active, position.active?.progress ?? 0, spins);
-}
-
-/** Outline of a custom SVG path (0..1 box, y down) scaled to `side`, rotated by `quarters` CCW, centred. */
-function pathOutline(d: string, side: number, quarters: number): [number, number][] {
-  const data = new SVGLoader().parse(`<svg xmlns="http://www.w3.org/2000/svg"><path d="${d}"/></svg>`);
-  const shape = SVGLoader.createShapes(data.paths[0])[0];
-  if (!shape) throw new Error("Sticker path has no closed shape");
-  const pts = shape.getPoints(8).map((p) => [(p.x - 0.5) * side, (0.5 - p.y) * side] as [number, number]);
-  const c = Math.cos((quarters * Math.PI) / 2), s = Math.sin((quarters * Math.PI) / 2);
-  const rotated = pts.map(([x, y]) => [Math.round((x * c - y * s) * 1e6) / 1e6, Math.round((x * s + y * c) * 1e6) / 1e6] as [number, number]);
-  // Keep the outline counter-clockwise (y flip reversed SVG's winding).
-  let area = 0;
-  for (let i = 0; i < rotated.length; i++) {
-    const [x1, y1] = rotated[i], [x2, y2] = rotated[(i + 1) % rotated.length];
-    area += x1 * y2 - x2 * y1;
-  }
-  return area < 0 ? rotated.reverse() : rotated;
-}
-
-/** three.js geometry of a tile solid (see tile.ts): sides plus a triangulated flat top. */
-function solidGeometry(outline: readonly (readonly [number, number])[], profile: TileProfile, mitre: Mitre | null): BufferGeometry {
-  return solidToGeometry(tileSolid(outline, profile, mitre));
-}
-
-function solidToGeometry(solid: TileSolid): BufferGeometry {
-  const cap = solid.topRing.length ? ShapeUtils.triangulateShape(solid.topRing.map(([x, y]) => new Vector2(x, y)), []) : [];
-  const index = [...solid.sides];
-  for (const [a, b, c] of cap) index.push(solid.topStart + a, solid.topStart + b, solid.topStart + c);
-  const g = new BufferGeometry();
-  g.setAttribute("position", new Float32BufferAttribute(solid.positions, 3));
-  g.setAttribute("normal", new Float32BufferAttribute(solid.normals, 3));
-  g.setIndex(index);
-  g.computeBoundingSphere();
-  return g;
-}
-
-/**
- * Holes in a centre tile: small discs of translucent black just above its top,
- * so they darken whatever colour the tile has (and follow it, masks included).
- * Children of the tile mesh — hidden with it.
- */
-const HOLE_MATERIAL = new MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.38, depthWrite: false });
-function addHoles(tile: Mesh, side: number, thickness: number, holes: { radius: number; offset: number }): void {
-  const disc = new CircleGeometry(holes.radius * side, 20);
-  const o = (holes.offset * side) / 2;
-  for (const [sx, sy] of [[1, 1], [-1, 1], [-1, -1], [1, -1]]) {
-    const m = new Mesh(disc, HOLE_MATERIAL);
-    m.position.set(sx * o, sy * o, thickness + 0.001);
-    tile.add(m);
-  }
 }

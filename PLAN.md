@@ -312,6 +312,14 @@ re-export shims in core — they would make core depend on the method packages
   narrows (front larger than back; centres as round as their tiles), around a
   small core, instead of one rounded box. `gan` / `ganI4` use it; i4 tile
   corners less rounded. Demo: "hold a layer part-way" slider (showPartial).
+- 2026-09-24 — **extensible skins**: geometry split out of the renderer
+  (`build/tiles.ts` — tile/piece geometry kit for a skin; `build/attachments.ts`
+  — things riding on stickers). Sticker selectors (`{ faces, kinds, stickers }`),
+  decals (any PNG/SVG, replaces `logo`), features via a registry
+  (`defineFeature` with `build3d` + optional `svg`; built-ins `holes`, `slot`;
+  replaces `centerHoles`) — per sticker, so e.g. a charging port only on the
+  yellow centre; everything follows its sticker and turns with it (core
+  `stickerTurn`). Same in SVG pictures. Guide: `docs/skins.md`.
 - Next: per-theme skins, gyroscope adapter from smart-cube drivers, then
   `solve` (cross/xcross).
 

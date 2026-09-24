@@ -27,7 +27,7 @@ export function svgKey(state: State, options: SvgOptions = {}): string {
     mask ? hex(mask as Mask) : "",
     frame ? String(frame.id) : "0",
     skin ? JSON.stringify(skin) : "",
-    spins && skin?.logo ? hex(spins) : "",
+    spins && skin?.decals?.length ? hex(spins) : "",
     JSON.stringify(rest, Object.keys(rest).sort()),
   ];
   return `${options.view ?? "iso"}-${fnv(parts.join("|"))}-${fnv(parts.reverse().join("|"))}`;

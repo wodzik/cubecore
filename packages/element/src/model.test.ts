@@ -59,3 +59,11 @@ describe("segment tooltip text", () => {
     expect(segmentText({ start: 0, end: 1500, label: "Cross", moves: 1 })).toBe("Cross · 1.50 s · 1 move");
   });
 });
+
+describe("pauses in a tempo recording", () => {
+  it("each '.' is one beat of stillness", () => {
+    const { recording: rec } = tempoRecording("R . U . . F", 1);
+    expect(rec.moves.map((m) => m.t)).toEqual([1000, 3000, 6000]);
+    expect(rec.totalMs).toBe(6000);
+  });
+});

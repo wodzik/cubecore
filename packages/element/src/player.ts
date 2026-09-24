@@ -28,7 +28,8 @@
  * currentTime, duration, playing, renderer.
  * Events: timeupdate {time, duration, applied}, play, pause, ended,
  * error {message} (e.g. an algorithm that doesn't parse — the cube then shows the setup),
- * segmentchange {index, segment} (the playhead entered another section).
+ * segmentchange {index, segment} (the playhead entered another section),
+ * load (what plays changed — alg, setup, recording…).
  *
  * Live: `attach(session)` follows a smart cube (a @cubecore/bluetooth
  * SmartCubeSession, or anything with the same events) — its moves animate,
@@ -277,6 +278,22 @@ export class CubePlayer extends HTMLElement {
   seek(ms: number): void {
     this.clock?.seek(ms);
   }
+  /** Jump to the moment `k` moves are done (0 = the start). */
+  seekToMove(k: number): void {
+    this.pause();
+    this.seek(k <= 0 ? 0 : (this.rec.moves[Math.min(k, this.rec.moves.length) - 1]?.t ?? 0));
+  }
+
+  /** Moves done at the current time. */
+  get applied(): number {
+    return this.lastPos.applied;
+  }
+
+  /** The moves being played (the algorithm, or the recording's moves). */
+  get moves(): Move[] {
+    return this.rec.moves.map((m) => m.move);
+  }
+
   stepForward(): void {
     this.pause();
     this.seek(stepTime(this.rec, this.currentTime, 1));
@@ -376,6 +393,7 @@ export class CubePlayer extends HTMLElement {
     this.unsubscribe = this.clock.onChange((time, pos) => this.onTime(time, pos));
     this.renderSections();
     this.clock.seek(0);
+    this.dispatchEvent(new Event("load"));
     if (wasPlaying) this.play();
   }
 

@@ -378,7 +378,12 @@ re-export shims in core — they would make core depend on the method packages
   / features on per-facelet anchors; `pieceTemplates(skin)` +
   `scripts/export-models.ts` write any skin's pieces as glTF templates;
   sample i4 models in demo/models (CC0), "glTF models (sample)" in /render.
-- Next (in order): alg notation extras + synced alg text, light/dark skin
+- 2026-09-25 — **notation extras + synced text**: `.` pauses (a beat of
+  stillness in tempo playback), `parseAlgDocument` (moves with source
+  ranges — repeats / commutator inverses point at the original — pauses,
+  comments), player `seekToMove`, `applied`, `moves`, `load` event;
+  `<cube-alg for>` highlights the move playing, click to jump.
+- Next (in order): light/dark skin
   themes, smart-cube skin presets (+ auto-pick from the connected cube),
   leftovers (compress pauses, cubing.js parity test, table cache, more
   trainer stages), React bindings, overall README.

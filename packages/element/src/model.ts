@@ -3,7 +3,7 @@
  * pure functions (tested in bun; the element only wires them to buttons).
  */
 
-import { type Method, type Move, invert, parseAlg } from "@cubecore/core";
+import { type Method, type Move, invert, parseAlg, parseAlgDocument } from "@cubecore/core";
 import { type Recording, type Segment, stageTimings } from "@cubecore/timeline";
 
 /** A mark on the progress bar, e.g. where a stage ends. */
@@ -21,14 +21,19 @@ export function formatTime(ms: number): string {
   return `${m}:${(s - m * 60).toFixed(2).padStart(5, "0")}`;
 }
 
-/** An algorithm played at a steady tempo, as a recording: move i ends at (i + 1) × interval. */
+/**
+ * An algorithm played at a steady tempo, as a recording: each move takes one
+ * beat (1 / movesPerSecond), each pause (`.` in the text) one beat of stillness.
+ */
 export function tempoRecording(alg: string | readonly Move[], movesPerSecond: number): { recording: Recording; interval: number } {
-  const moves = typeof alg === "string" ? parseAlg(alg) : [...alg];
+  const doc = typeof alg === "string" ? parseAlgDocument(alg) : { moves: [...alg], pausesBefore: alg.map(() => 0) };
   const interval = 1000 / Math.max(0.1, movesPerSecond);
-  return {
-    recording: { scramble: [], moves: moves.map((move, i) => ({ move, t: Math.round((i + 1) * interval) })), totalMs: Math.round(moves.length * interval) },
-    interval,
-  };
+  let beats = 0;
+  const moves = doc.moves.map((move, i) => {
+    beats += doc.pausesBefore[i] + 1;
+    return { move, t: Math.round(beats * interval) };
+  });
+  return { recording: { scramble: [], moves, totalMs: Math.round(beats * interval) }, interval };
 }
 
 /** Where each stage of `method` ends in `rec` (skipped stages left out). */

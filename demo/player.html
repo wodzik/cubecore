@@ -81,9 +81,10 @@
       </section>
 
       <section>
-        <h2>4 · An algorithm at a steady tempo, no progress bar</h2>
-        <p><code>&lt;cube-player alg="…" setup="…" tempo="2"&gt;</code> — the default for guides.</p>
-        <cube-player alg="R U R' U R U2 R'" setup="R U2 R' U' R U' R'" tempo="2" skin="standard"></cube-player>
+        <h2>4 · A guide: steady tempo, the text in sync</h2>
+        <p><code>anchor="end"</code> (the algorithm solves the case), pauses <code>.</code> and <code>// comments</code>; <code>&lt;cube-alg for&gt;</code> highlights the move playing — click one to jump there.</p>
+        <cube-player id="guide" alg="R U R' U . R U2 R' // Sune" anchor="end" tempo="2" skin="standard"></cube-player>
+        <cube-alg for="guide" style="font-size:18px"></cube-alg>
       </section>
     </main>
     <script type="module" src="./player.ts"></script>

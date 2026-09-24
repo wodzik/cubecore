@@ -88,6 +88,23 @@ Styling: `--cc-segment-1…8`, `--cc-segment-height`, `--cc-segment-gap`,
 `segment-label`, `segment-label-<id>`, `tooltip`, `tooltip-text`. Per section:
 `cube-player::part(segment-cross) { --seg: white; }`.
 
+## The algorithm text in sync: `<cube-alg>`
+
+```html
+<cube-player id="p" alg="R U R' U . R U2 R' // Sune" anchor="end"></cube-player>
+<cube-alg for="p"></cube-alg>
+```
+
+Shows the algorithm as written — grouping, `(…)3` repeats, `[A, B]`
+commutators, `.` pauses (one beat of stillness when played) and `// comments`
+— highlights the move playing, fades played ones, and jumps there on click
+(`player.seekToMove(k)`). Repeats and commutator inverses light up the move
+they copy. Text: its own `alg`, else the player's, else the player's moves (a
+recorded solve). Styling: `--cc-alg-font`, `--cc-alg-size`, `--cc-alg-done`,
+`--cc-alg-current`, `--cc-alg-current-bg`, `--cc-alg-comment`; parts `alg`,
+`token`, `token-done`, `token-current`, `token-todo`, `comment`. In code:
+`parseAlgDocument(text)` → `{ moves, sources, pausesBefore, comments }`.
+
 ## Three levels of customising the controls
 
 **1. Theme with CSS variables** — on the element or any ancestor:

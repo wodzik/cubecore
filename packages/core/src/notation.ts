@@ -4,8 +4,9 @@
  * Accepted: face turns (R R' R2 R2' R3), wide turns in both spellings
  * (r / Rw, r' / Rw'), slices M E S, rotations x y z, grouping with repetition
  * `(R U R' U')3`, commutators `[A, B]` = A B A' B', conjugates `[A: B]` =
- * A B A'. Typographic apostrophes (’ ′) are accepted, `//` starts a comment.
- * Parsing flattens everything to a Move[].
+ * A B A'. Typographic apostrophes (’ ′) are accepted, `//` starts a comment,
+ * `.` is a pause (one beat). parseAlg flattens everything to a Move[];
+ * parseAlgDocument also says where each move came from in the text.
  */
 
 import { type Amount, type Move, type MoveFamily, FAMILY, amountQuarters, formatMove, invertMove, moveKind, toAmount } from "./moves";
@@ -20,30 +21,41 @@ const FACE_LETTERS = "URFDLB";
 const WIDE_LETTERS = "urfdlb";
 const OTHER_LETTERS = "MESxyz";
 
+/** Where a move (or pause) came from in the text: [start, end) character offsets. */
+export interface SourceRange {
+  start: number;
+  end: number;
+}
+
+type Item = { move: Move; start: number; end: number } | { pause: true; start: number; end: number };
+
 class Parser {
   private pos = 0;
+  readonly comments: (SourceRange & { text: string })[] = [];
   constructor(private readonly text: string) {}
 
-  parse(): Move[] {
-    const moves = this.sequence(null);
+  parse(): Item[] {
+    const items = this.sequence(null);
     this.skipSpace();
     if (this.pos < this.text.length) throw new NotationError(`Unexpected "${this.text[this.pos]}"`, this.pos);
-    return moves;
+    return items;
   }
 
   private skipSpace(): void {
     while (this.pos < this.text.length) {
       const c = this.text[this.pos];
       if (c === "/" && this.text[this.pos + 1] === "/") {
+        const start = this.pos;
         while (this.pos < this.text.length && this.text[this.pos] !== "\n") this.pos++;
+        this.comments.push({ start, end: this.pos, text: this.text.slice(start + 2, this.pos).trim() });
       } else if (/\s/.test(c)) this.pos++;
       else break;
     }
   }
 
-  /** Moves until `stop` (one of the given closing characters) or end of input. */
-  private sequence(stop: string | null): Move[] {
-    const out: Move[] = [];
+  /** Items until `stop` (one of the given closing characters) or end of input. */
+  private sequence(stop: string | null): Item[] {
+    const out: Item[] = [];
     for (;;) {
       this.skipSpace();
       const c = this.text[this.pos];
@@ -61,11 +73,16 @@ class Parser {
         this.pos++;
         const b = this.sequence("]");
         this.expect("]");
-        const group = sep === "," ? [...a, ...b, ...invert(a), ...invert(b)] : [...a, ...b, ...invert(a)];
+        const group = sep === "," ? [...a, ...b, ...invertItems(a), ...invertItems(b)] : [...a, ...b, ...invertItems(a)];
         out.push(...repeat(group, this.count()));
+      } else if (c === ".") {
+        // A pause (one beat, as in cubing.js).
+        out.push({ pause: true, start: this.pos, end: this.pos + 1 });
+        this.pos++;
       } else {
+        const start = this.pos;
         const m = this.move();
-        if (m) out.push(m); // null = a full turn (R4), which does nothing
+        if (m) out.push({ move: m, start, end: this.pos }); // null = a full turn (R4), which does nothing
       }
     }
   }
@@ -109,18 +126,53 @@ class Parser {
   }
 }
 
+function repeat<T>(items: T[], n: number): T[] {
+  const out: T[] = [];
+  for (let i = 0; i < n; i++) out.push(...items);
+  return out;
+}
+
+/** Inverse keeping each move's source (commutators / conjugates point back at what was written). */
+function invertItems(items: Item[]): Item[] {
+  return [...items].reverse().map((it) => ("move" in it ? { ...it, move: invertMove(it.move) } : it));
+}
+
+/**
+ * An algorithm as written: the moves, where each came from in the text
+ * (repeats and commutator inverses point at the move they copy), pauses (`.`,
+ * one beat each — `pausesBefore[k]` counts the beats before move k), and
+ * `// comments`. For showing the text in sync with playback.
+ */
+export interface AlgDocument {
+  moves: Move[];
+  sources: SourceRange[];
+  pausesBefore: number[];
+  comments: (SourceRange & { text: string })[];
+}
+
+export function parseAlgDocument(text: string): AlgDocument {
+  const parser = new Parser(text);
+  const items = parser.parse();
+  const moves: Move[] = [], sources: SourceRange[] = [], pausesBefore: number[] = [];
+  let beats = 0;
+  for (const it of items) {
+    if ("pause" in it) beats++;
+    else {
+      moves.push(it.move);
+      sources.push({ start: it.start, end: it.end });
+      pausesBefore.push(beats);
+      beats = 0;
+    }
+  }
+  return { moves, sources, pausesBefore, comments: parser.comments };
+}
+
 export function parseAlg(text: string): Move[] {
-  return new Parser(text).parse();
+  return parseAlgDocument(text).moves;
 }
 
 export function formatAlg(moves: readonly Move[]): string {
   return moves.map(formatMove).join(" ");
-}
-
-function repeat(moves: Move[], n: number): Move[] {
-  const out: Move[] = [];
-  for (let i = 0; i < n; i++) out.push(...moves);
-  return out;
 }
 
 export function invert(moves: readonly Move[]): Move[] {

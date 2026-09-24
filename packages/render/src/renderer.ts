@@ -59,7 +59,7 @@ import {
 } from "@cubecore/core";
 import { SKINS, type Skin, type StickerShape, roundedOutline, stickerColor, stickerLayout, stickerlessOutline } from "@cubecore/skin";
 import { layerTurn, defaultDuration } from "./layers";
-import { type Mitre, type TileProfile, tileSolid } from "./tile";
+import { type Mitre, type TileProfile, type TileSolid, skirtSolid, tileSolid } from "./tile";
 import { type BackView, backPosition, viewports } from "./viewports";
 
 export interface CameraOptions {
@@ -297,7 +297,9 @@ export class CubeRenderer {
     const size = s.cubieSize;
     const inset = s.bodyInset ?? 0;
     const bodySize = size - 2 * inset;
-    const bodyGeo = new RoundedBoxGeometry(bodySize, bodySize, bodySize, 3, Math.min(s.cubieRadius * size, bodySize / 2));
+    // With shaped pieces the box is only the hidden core; the visible plastic is the skirts under the tiles.
+    const coreSize = s.pieces ? s.pieces.core * size : bodySize;
+    const bodyGeo = new RoundedBoxGeometry(coreSize, coreSize, coreSize, 3, Math.min(s.cubieRadius * size, coreSize / 2));
     const bodyMat = new MeshStandardMaterial({ color: new Color(s.body), roughness: 0.85, metalness: 0 });
     const side = s.stickers.size * size;
     const shape: StickerShape = s.stickers.shape ?? {
@@ -308,22 +310,31 @@ export class CubeRenderer {
     const thickness = s.stickers.thickness ?? 0;
     const bevel = Math.min(s.stickers.bevel ?? 0, thickness);
     const geometries = new Map<string, BufferGeometry>();
-    const geometryFor = (fi: number): BufferGeometry => {
+    const skirts = new Map<string, BufferGeometry>();
+    const edge = size / 2 + 0.002;
+    const tileOutline = (fi: number) => {
       const layout = stickerLayout(fi, shape);
       const path = s.stickers.paths?.[layout.kind];
       const fill = !path && s.stickers.fillOuter === true;
+      const outline = path ? pathOutline(path, side, layout.pathQuarters) : fill ? stickerlessOutline(layout, side, edge) : roundedOutline(side, layout.radii);
+      const mitre: Mitre | null = fill ? { u: layout.u, v: layout.v, edge, ramp: Math.max(thickness * 4, 0.03) } : null;
       const key = path ? `p|${layout.kind}|${layout.pathQuarters}` : `r|${layout.radii.join(",")}|${fill ? `${layout.u},${layout.v}` : ""}`;
+      return { outline, mitre, key };
+    };
+    const skirtFor = (fi: number, pieces: { depth: number; taper: number }): BufferGeometry => {
+      const { outline, mitre, key } = tileOutline(fi);
+      let g = skirts.get(key);
+      if (!g) skirts.set(key, (g = solidToGeometry(skirtSolid(outline, { top: inset + 0.002, depth: pieces.depth, taper: pieces.taper }, mitre))));
+      return g;
+    };
+    const geometryFor = (fi: number): BufferGeometry => {
+      // Outlines are computed per facelet but cached by shape: one geometry per distinct tile.
+      const { outline, mitre, key } = tileOutline(fi);
       let g = geometries.get(key);
       if (!g) {
-        const edge = size / 2 + 0.002;
-        const outline = path
-          ? pathOutline(path, side, layout.pathQuarters)
-          : fill
-            ? stickerlessOutline(layout, side, edge)
-            : roundedOutline(side, layout.radii);
         g =
           thickness > 0
-            ? solidGeometry(outline, { thickness, bevel, segments: 4, sink: inset + 0.002, edgeRadius: s.stickers.edgeRadius ?? 0 }, fill ? { u: layout.u, v: layout.v, edge, ramp: Math.max(thickness * 4, 0.03) } : null)
+            ? solidGeometry(outline, { thickness, bevel, segments: 4, sink: inset + 0.002, edgeRadius: s.stickers.edgeRadius ?? 0 }, mitre)
             : new ShapeGeometry(new Shape(outline.map(([x, y]) => new Vector2(x, y))));
         geometries.set(key, g);
       }
@@ -354,6 +365,12 @@ export class CubeRenderer {
         mesh.quaternion.setFromRotationMatrix(basis);
         g.add(mesh);
         if (holes && fi % 9 === 4) addHoles(mesh, side, thickness, holes);
+        if (s.pieces) {
+          const skirt = new Mesh(skirtFor(fi, s.pieces), bodyMat);
+          skirt.position.copy(mesh.position);
+          skirt.quaternion.copy(mesh.quaternion);
+          g.add(skirt);
+        }
         this.stickerMeshes[fi] = mesh;
         this.cubieOfFacelet[fi] = ci;
         if (s.hints.enabled) {
@@ -637,8 +654,11 @@ function pathOutline(d: string, side: number, quarters: number): [number, number
 
 /** three.js geometry of a tile solid (see tile.ts): sides plus a triangulated flat top. */
 function solidGeometry(outline: readonly (readonly [number, number])[], profile: TileProfile, mitre: Mitre | null): BufferGeometry {
-  const solid = tileSolid(outline, profile, mitre);
-  const cap = ShapeUtils.triangulateShape(solid.topRing.map(([x, y]) => new Vector2(x, y)), []);
+  return solidToGeometry(tileSolid(outline, profile, mitre));
+}
+
+function solidToGeometry(solid: TileSolid): BufferGeometry {
+  const cap = solid.topRing.length ? ShapeUtils.triangulateShape(solid.topRing.map(([x, y]) => new Vector2(x, y)), []) : [];
   const index = [...solid.sides];
   for (const [a, b, c] of cap) index.push(solid.topStart + a, solid.topStart + b, solid.topStart + c);
   const g = new BufferGeometry();

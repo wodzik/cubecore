@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { roundedOutline, stickerLayout, stickerlessOutline } from "@cubecore/skin";
-import { dedupe, tileSolid } from "./tile";
+import { dedupe, skirtSolid, tileSolid } from "./tile";
 
 const SHAPE = { corner: { inner: 0.34, outer: 0.07 }, edge: { inner: 0.3, outer: 0.07 }, center: 0.36 };
 const PROFILE = { thickness: 0.035, bevel: 0.024, segments: 4, sink: 0.02 };
@@ -61,5 +61,23 @@ describe("tile solids", () => {
     expect(extent(s.positions, 0, 0.035)).toBeCloseTo(edge + 0.035 - R, 4);
     const meet = 0.035 - R * (1 - Math.SQRT1_2);
     expect(extent(s.positions, 0, meet)).toBeCloseTo(edge + meet, 4);
+  });
+
+  it("skirts: the piece under a tile narrows going in (front larger than back), outer sides stay on the mitre", () => {
+    const layout = { ...stickerLayout(8, SHAPE), u: 1, v: 1 };
+    const edge = 0.4945, side = 0.94 * 0.985;
+    const s = skirtSolid(stickerlessOutline(layout, side, edge), { top: 0.02, depth: 0.3, taper: 0.07 }, { u: 1, v: 1, edge, ramp: 0.14 });
+    expect(s.topRing.length).toBe(0); // no caps
+    // Outer side: on the mitre plane (x = edge + z) at both ends.
+    expect(extent(s.positions, 0, -0.3)).toBeCloseTo(edge - 0.3, 4);
+    expect(extent(s.positions, 0, -0.02)).toBeCloseTo(edge - 0.02, 4);
+    // Inner side (−x): pulled in by the taper at the bottom only.
+    const minAt = (z: number) => {
+      let m = Infinity;
+      for (let i = 0; i < s.positions.length; i += 3) if (Math.abs(s.positions[i + 2] - z) < 1e-6) m = Math.min(m, s.positions[i]);
+      return m;
+    };
+    expect(minAt(-0.02)).toBeCloseTo(-side / 2, 3);
+    expect(minAt(-0.3)).toBeCloseTo(-side / 2 + 0.07, 3);
   });
 });

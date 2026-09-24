@@ -53,6 +53,8 @@
           <label for="lat">Camera latitude</label><input type="range" id="lat" min="-80" max="80" value="30" />
           <label for="lon">Camera longitude</label><input type="range" id="lon" min="-180" max="180" value="35" />
           <label class="kv"><input type="checkbox" id="gyro" /> simulated gyroscope (setOrientation, smoothed)</label>
+          <label for="partial">Hold a layer part-way (inspect piece shapes)</label>
+          <div class="row"><select id="partialMove" style="width:auto"><option>U</option><option>R</option><option>F</option><option>M</option></select><input type="range" id="partial" min="0" max="100" value="0" style="flex:1" /></div>
           <div class="kv" id="info"></div>
         </section>
         <section>

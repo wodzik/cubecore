@@ -90,44 +90,24 @@ function edgeWeight(c: number, dir: number, mitre: Mitre): number {
   return Math.max(0, 1 - (mitre.edge - c * dir) / mitre.ramp);
 }
 
-export function tileSolid(outlineIn: readonly Pt[], profile: TileProfile, mitre: Mitre | null): TileSolid {
+/**
+ * One cross-section level of a swept solid. Inner sides: height z, inward
+ * offset d, normal tilt phi (0 = sideways, π/2 = up, < 0 = facing down).
+ * Outer (cube-edge) sides: height oz, extent beyond the edge line `off`, tilt ophi.
+ */
+interface Ring {
+  z: number;
+  d: number;
+  phi: number;
+  oz: number;
+  off: number;
+  ophi: number;
+}
+
+/** Sweep `outline` through `rings` (bottom up); optionally close the top with a flat cap. */
+function sweep(outlineIn: readonly Pt[], rings: readonly Ring[], mitre: Mitre | null, cap: boolean): TileSolid {
   const outline = dedupe(outlineIn);
   const vn = vertexNormals(outline);
-  const t = profile.thickness;
-  const b = Math.max(0, Math.min(profile.bevel, t + profile.sink));
-  // The rounded cube edge dips 0.29·R below the top where the two tiles meet; keep that above the bottom.
-  const R = mitre ? Math.max(0, Math.min(profile.edgeRadius ?? 0, (t + profile.sink) / (1 - Math.SQRT1_2))) : 0;
-  const segs = b > 0 || R > 0 ? Math.max(1, profile.segments) : 0;
-
-  // Rings from the bottom up. Inner sides: height z, inward offset d, normal tilt phi (0 = sideways,
-  // π/2 = up). Outer (cube-edge) sides: height oz, extent beyond the edge line `off`, tilt ophi.
-  interface Ring {
-    z: number;
-    d: number;
-    phi: number;
-    oz: number;
-    off: number;
-    ophi: number;
-  }
-  const arcStart = t - R * (1 - Math.SQRT1_2); // where the edge round meets the mitre plane
-  const rings: Ring[] = [{ z: -profile.sink, d: 0, phi: 0, oz: -profile.sink, off: -profile.sink, ophi: 0 }];
-  if (segs > 0) {
-    rings.push({ z: t - b, d: 0, phi: 0, oz: arcStart, off: arcStart, ophi: 0 });
-    for (let k = 1; k <= segs; k++) {
-      const s = k / segs;
-      const th = s * (Math.PI / 2);
-      const op = Math.PI / 4 + s * (Math.PI / 4); // 45° (on the mitre) → 90° (flat top)
-      rings.push({
-        z: t - b + b * Math.sin(th),
-        d: b * (1 - Math.cos(th)),
-        phi: th,
-        oz: t - R + R * Math.sin(op),
-        off: t - R + R * Math.cos(op),
-        ophi: op,
-      });
-    }
-  } else rings.push({ z: t, d: 0, phi: 0, oz: t, off: t, ophi: 0 });
-
   const n = outline.length;
   const positions: number[] = [];
   const normals: number[] = [];
@@ -138,10 +118,10 @@ export function tileSolid(outlineIn: readonly Pt[], profile: TileProfile, mitre:
   const place = (i: number, ring: Ring): [number, number, number] => {
     let [x, y] = outline[i];
     const { ku, kv } = weights[i];
-    // The bevel inset fades out towards the outer edge; outer sides follow the mitre / edge round.
-    const bevelWeight = (1 - ku) * (1 - kv);
-    x -= vn[i].n[0] * ring.d * vn[i].scale * bevelWeight;
-    y -= vn[i].n[1] * ring.d * vn[i].scale * bevelWeight;
+    // The inner offset fades out towards the outer edge; outer sides follow the mitre / edge round.
+    const innerWeight = (1 - ku) * (1 - kv);
+    x -= vn[i].n[0] * ring.d * vn[i].scale * innerWeight;
+    y -= vn[i].n[1] * ring.d * vn[i].scale * innerWeight;
     if (mitre) {
       x += mitre.u * ring.off * ku;
       y += mitre.v * ring.off * kv;
@@ -179,15 +159,62 @@ export function tileSolid(outlineIn: readonly Pt[], profile: TileProfile, mitre:
   }
 
   // Top cap: its own copy of the top ring, facing straight up.
-  const top = rings[rings.length - 1];
   const topStart = positions.length / 3;
   const topRing: Pt[] = [];
-  for (let i = 0; i < n; i++) {
-    const p = place(i, top);
-    positions.push(...p);
-    normals.push(0, 0, 1);
-    topRing.push([p[0], p[1]]);
+  if (cap) {
+    const top = rings[rings.length - 1];
+    for (let i = 0; i < n; i++) {
+      const p = place(i, top);
+      positions.push(...p);
+      normals.push(0, 0, 1);
+      topRing.push([p[0], p[1]]);
+    }
   }
-
   return { positions: new Float32Array(positions), normals: new Float32Array(normals), sides: new Uint32Array(sides), topStart, topRing };
+}
+
+export function tileSolid(outline: readonly Pt[], profile: TileProfile, mitre: Mitre | null): TileSolid {
+  const t = profile.thickness;
+  const b = Math.max(0, Math.min(profile.bevel, t + profile.sink));
+  // The rounded cube edge dips 0.29·R below the top where the two tiles meet; keep that above the bottom.
+  const R = mitre ? Math.max(0, Math.min(profile.edgeRadius ?? 0, (t + profile.sink) / (1 - Math.SQRT1_2))) : 0;
+  const segs = b > 0 || R > 0 ? Math.max(1, profile.segments) : 0;
+
+  const arcStart = t - R * (1 - Math.SQRT1_2); // where the edge round meets the mitre plane
+  const rings: Ring[] = [{ z: -profile.sink, d: 0, phi: 0, oz: -profile.sink, off: -profile.sink, ophi: 0 }];
+  if (segs > 0) {
+    rings.push({ z: t - b, d: 0, phi: 0, oz: arcStart, off: arcStart, ophi: 0 });
+    for (let k = 1; k <= segs; k++) {
+      const s = k / segs;
+      const th = s * (Math.PI / 2);
+      const op = Math.PI / 4 + s * (Math.PI / 4); // 45° (on the mitre) → 90° (flat top)
+      rings.push({
+        z: t - b + b * Math.sin(th),
+        d: b * (1 - Math.cos(th)),
+        phi: th,
+        oz: t - R + R * Math.sin(op),
+        off: t - R + R * Math.cos(op),
+        ophi: op,
+      });
+    }
+  } else rings.push({ z: t, d: 0, phi: 0, oz: t, off: t, ophi: 0 });
+  return sweep(outline, rings, mitre, true);
+}
+
+/**
+ * The piece's plastic under a tile: the tile outline continued down into the
+ * cubie from `top` to `depth` (both below the face, positive numbers),
+ * narrowing by `taper` on the inner sides — the front of a piece is larger
+ * than its back, and a centre piece is as round as its tile. Outer sides
+ * stay on the mitre, so the skirts of one piece's faces close its outside.
+ * No caps: the top is covered by the tile, the bottom faces the core.
+ */
+export function skirtSolid(outline: readonly Pt[], shape: { top: number; depth: number; taper: number }, mitre: Mitre | null): TileSolid {
+  const h = Math.max(1e-6, shape.depth - shape.top);
+  const phi = -Math.atan2(shape.taper, h); // walls lean inwards going down: normals tilt downwards
+  const rings: Ring[] = [
+    { z: -shape.depth, d: shape.taper, phi, oz: -shape.depth, off: -shape.depth, ophi: 0 },
+    { z: -shape.top, d: 0, phi, oz: -shape.top, off: -shape.top, ophi: 0 },
+  ];
+  return sweep(outline, rings, mitre, false);
 }

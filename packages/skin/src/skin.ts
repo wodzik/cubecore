@@ -19,6 +19,14 @@ export interface Skin {
    * deep in the gaps. Tiles reach down to meet it. Default 0.
    */
   bodyInset?: number;
+  /**
+   * Stickerless piece bodies shaped like their tiles instead of a box: under
+   * each tile the plastic continues `depth` deep into the cubie, narrowing
+   * by `taper` (the front of a piece is larger than its back; a centre piece
+   * is as round as its tile), around a rounded core `core` × the cubie size.
+   * Cubie units.
+   */
+  pieces?: { depth: number; taper: number; core: number };
   stickers: {
     /** Colour of each colour class, U R F D L B home-face order. */
     colors: readonly [string, string, string, string, string, string];
@@ -108,6 +116,7 @@ export const SKINS = {
     cubieSize: 0.99,
     cubieRadius: 0.06,
     bodyInset: 0.02,
+    pieces: { depth: 0.3, taper: 0.07, core: 0.6 },
     stickers: {
       colors: ["#f7f7f5", "#f5303a", "#1fc25a", "#ffe01a", "#ff8a1f", "#1f73ea"],
       size: 0.97,
@@ -134,11 +143,12 @@ export const SKINS = {
     cubieSize: 0.992,
     cubieRadius: 0.07,
     bodyInset: 0.02,
+    pieces: { depth: 0.3, taper: 0.07, core: 0.6 },
     stickers: {
       colors: ["#f3f2ee", "#f2323d", "#24c95c", "#ffe03a", "#ff7b22", "#2d6cf0"],
       size: 0.978,
       radius: 0.1,
-      shape: { corner: { inner: 0.26, outer: 0.09 }, edge: { inner: 0.3, outer: 0.09 }, center: 0.3 },
+      shape: { corner: { inner: 0.18, outer: 0.06 }, edge: { inner: 0.22, outer: 0.06 }, center: 0.22 },
       thickness: 0.04,
       bevel: 0.018,
       edgeRadius: 0.05,

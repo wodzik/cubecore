@@ -307,6 +307,11 @@ re-export shims in core — they would make core depend on the method packages
   gloss), `stickers.centerHoles` (translucent discs, 3D and SVG). New preset
   `ganI4` from product photos (light internals, minimal gaps, squarish holed
   centres); `stickerless` / `gan` gaps made minimal.
+- 2026-09-24 — **shaped pieces**: `pieces: { depth, taper, core }` — under
+  each tile the piece's plastic follows the tile outline into the cubie and
+  narrows (front larger than back; centres as round as their tiles), around a
+  small core, instead of one rounded box. `gan` / `ganI4` use it; i4 tile
+  corners less rounded. Demo: "hold a layer part-way" slider (showPartial).
 - Next: per-theme skins, gyroscope adapter from smart-cube drivers, then
   `solve` (cross/xcross).
 

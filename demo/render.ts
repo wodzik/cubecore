@@ -94,6 +94,13 @@ $("mask").onchange = () => {
   mask = v ? maskByName(v) : null;
   renderer.setMask(mask);
 };
+// showPartial: the current state with one layer frozen part-way through a turn.
+const holdPartial = () => {
+  const move = parseAlg($<HTMLSelectElement>("partialMove").value)[0];
+  renderer.showPartial(renderer.currentState, move, Number($<HTMLInputElement>("partial").value) / 100, renderer.currentSpins);
+};
+$("partial").oninput = holdPartial;
+$("partialMove").onchange = holdPartial;
 const camera = () => renderer.setCamera({ latitude: Number($<HTMLInputElement>("lat").value), longitude: Number($<HTMLInputElement>("lon").value) });
 $("lat").oninput = camera;
 $("lon").oninput = camera;

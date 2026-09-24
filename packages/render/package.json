@@ -9,9 +9,7 @@
   "sideEffects": false,
   "dependencies": {
     "@cubecore/core": "workspace:*",
-    "@cubecore/skin": "workspace:*"
-  },
-  "peerDependencies": {
-    "three": ">=0.160"
+    "@cubecore/skin": "workspace:*",
+    "three": "^0.186.1"
   }
 }

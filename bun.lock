@@ -30,12 +30,10 @@
         "@cubecore/render": "workspace:*",
         "@cubecore/skin": "workspace:*",
         "@cubecore/timeline": "workspace:*",
+        "three": "^0.186.1",
       },
       "devDependencies": {
         "@cubecore/cfop": "workspace:*",
-      },
-      "peerDependencies": {
-        "three": ">=0.160",
       },
     },
     "packages/image": {
@@ -78,9 +76,7 @@
       "dependencies": {
         "@cubecore/core": "workspace:*",
         "@cubecore/skin": "workspace:*",
-      },
-      "peerDependencies": {
-        "three": ">=0.160",
+        "three": "^0.186.1",
       },
     },
     "packages/roux": {

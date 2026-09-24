@@ -13,10 +13,8 @@
     "@cubecore/core": "workspace:*",
     "@cubecore/render": "workspace:*",
     "@cubecore/skin": "workspace:*",
-    "@cubecore/timeline": "workspace:*"
-  },
-  "peerDependencies": {
-    "three": ">=0.160"
+    "@cubecore/timeline": "workspace:*",
+    "three": "^0.186.1"
   },
   "devDependencies": {
     "@cubecore/cfop": "workspace:*"

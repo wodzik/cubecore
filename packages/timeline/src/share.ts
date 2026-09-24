@@ -1,7 +1,7 @@
 /**
- * Share links — a whole solve in the URL fragment (`…#s=<payload>`), so a
- * static app can show it to anyone with no backend. The fragment never
- * reaches a server. Only what can't be recomputed is stored: the recording
+ * Share payloads — a whole solve as one URL-safe string, e.g. for a link
+ * fragment (`…#s=<payload>`) that a static app can open with no backend.
+ * Building and reading the URL is the app's business; this is the codec. Only what can't be recomputed is stored: the recording
  * (scramble, every move with its time, the total) and a few facts about it.
  * Stage splits are NOT stored — the reader derives them (MethodTracker).
  *
@@ -68,15 +68,4 @@ export function decodeShare(text: string): SharedSolve | null {
     ...(flags & 2 ? { hideTimes: true } : {}),
     ...(start ? { start } : {}),
   };
-}
-
-/** `base#key=payload` — e.g. shareUrl(location.origin + location.pathname, solve). */
-export const shareUrl = (base: string, solve: SharedSolve, key = "s") => `${base.split("#")[0]}#${key}=${encodeShare(solve)}`;
-
-/** The solve in a URL's fragment, or null. */
-export function readShareUrl(url: string, key = "s"): SharedSolve | null {
-  const hash = url.split("#")[1];
-  if (!hash) return null;
-  const value = new URLSearchParams(hash).get(key);
-  return value ? decodeShare(value) : null;
 }

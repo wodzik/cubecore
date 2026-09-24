@@ -352,12 +352,20 @@ re-export shims in core — they would make core depend on the method packages
   noise. Rotations from the gyro never change the cube State — they are view
   only, so method tracking stays unaffected.
 
-## 11. Open questions
+## 11. Decisions & open questions
 
-- Licence (MIT vs MPL/GPL) — decide before copying/porting anything from
-  cubing.js or or18; check their licences first.
-- npm: `cubecore` and `@cubecore/*` scope must be claimed before publishing
-  (`cubecore` looked free on 2026-09-24).
-- three.js as a peer dependency vs bundled.
-- How much of act's `stageDetection` / share codec moves into cubecore vs
-  stays app-specific.
+Decided 2026-09-24:
+- **three.js and smartcube-web-bluetooth are regular dependencies** of
+  `@cubecore/render` / `@cubecore/element` and `@cubecore/bluetooth`.
+- **Share links: the library ships the codec only** (`encodeShare` /
+  `decodeShare`); building and reading URLs is up to the app.
+- **Order**: follow the plan phase by phase; adoption in act comes last —
+  after the whole library is done and a few cube skins are prepared.
+- Licence and the npm name: decided at the end.
+
+Still open:
+
+- Licence (MIT vs MPL/GPL) — at the end; check cubing.js / or18 licences
+  before porting anything from them.
+- npm: claim `cubecore` / `@cubecore/*` before publishing (`cubecore` looked
+  free on 2026-09-24).

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { formatAlg, formatMove, invert, parseAlg } from "@cubecore/core";
 import { CFOP } from "@cubecore/cfop";
-import { type ClockHost, ReplayClock, decodeRecording, decodeShare, encodeRecording, encodeShare, moveWindows, positionAt, readShareUrl, recording, shareUrl, stageTimings } from "./index";
+import { type ClockHost, ReplayClock, decodeRecording, decodeShare, encodeRecording, encodeShare, moveWindows, positionAt, recording, stageTimings } from "./index";
 
 const SOLUTION = "F2 R' D L2 R U R' L' U' L R' U' R L U L' R U R' U R U2 R' R U R' U' R' F R2 U' R' U' R U R' F' U";
 function solve(): ReturnType<typeof recording> {
@@ -137,9 +137,7 @@ describe("share links", () => {
   it("round-trip: recording, method, flags and a start state", async () => {
     const { applyMoves, solvedState, statesEqual } = await import("@cubecore/core");
     const start = applyMoves(solvedState(), "F2 R' D L2 M x");
-    const url = shareUrl("https://example.org/app/#old", { recording: rec, method: "cfop", dnf: true, hideTimes: true, start });
-    expect(url.startsWith("https://example.org/app/#s=")).toBe(true);
-    const back = readShareUrl(url)!;
+    const back = decodeShare(encodeShare({ recording: rec, method: "cfop", dnf: true, hideTimes: true, start }))!;
     expect(back.method).toBe("cfop");
     expect(back.dnf && back.hideTimes).toBe(true);
     expect(statesEqual(back.start!, start)).toBe(true);
@@ -153,6 +151,6 @@ describe("share links", () => {
     const code = encodeShare({ recording: rec, method: "roux" });
     expect(decodeShare(code.slice(0, -3))).toBeNull();
     expect(decodeShare(`${code}AA`)).toBeNull();
-    expect(readShareUrl("https://example.org/")).toBeNull();
+    expect(decodeShare("")).toBeNull();
   });
 });

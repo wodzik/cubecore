@@ -13,7 +13,13 @@ import {
   parseAlg,
   solvedState,
   transformMoves,
+  CFOP,
+  MASK_PRESETS,
+  type MaskPreset,
+  presetMask,
 } from "../packages/core/src/index";
+import { SvgCache, SCHEMES as IMG_SCHEMES, type ColorScheme } from "../packages/image/src/index";
+import { ReplayClock, encodeRecording, recording, stageTimings } from "../packages/timeline/src/index";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -72,6 +78,7 @@ function render() {
   const scrub = $<HTMLInputElement>("scrub");
   scrub.max = String(solution.length);
   if (Number(scrub.value) > solution.length) scrub.value = String(solution.length);
+  setupReplay();
   drawPosition();
 
   const start = applyMoves(solvedState(), scramble);
@@ -90,12 +97,86 @@ function render() {
   }).join("");
 }
 
+const cache = new SvgCache(300);
+for (const p of MASK_PRESETS) $<HTMLSelectElement>("mask").add(new Option(`mask: ${p}`, p));
+
+function drawImages(state: Uint8Array) {
+  const colors = SCHEMES[$<HTMLSelectElement>("scheme").value];
+  const scheme: ColorScheme = { ...IMG_SCHEMES.western, faces: colors as unknown as ColorScheme["faces"] };
+  const preset = $<HTMLSelectElement>("mask").value as MaskPreset;
+  // "Last layer on top": look at the cube from the frame whose top is the method's last layer.
+  const t = new MethodTracker(CFOP, applyMoves(solvedState(), scramble));
+  solution.forEach((m) => t.push(m));
+  const anchor = t.current.frame ?? FRAMES[0];
+  const frame = $<HTMLInputElement>("lltop").checked ? anchor : FRAMES[0];
+  const mask = presetMask(preset, frame);
+  const t0 = performance.now();
+  const imgs = (["iso", "top", "net"] as const).map((v) => cache.get(state, { view: v, size: v === "net" ? 240 : 170, scheme, mask, frame }));
+  $("images").innerHTML = imgs.join("");
+  $("imginfo").textContent = `3 SVGs in ${(performance.now() - t0).toFixed(2)} ms (cached: ${cache.size}) · ${imgs.reduce((n, x) => n + x.length, 0)} bytes`;
+}
+
+// ─── real-time replay ───
+let clock: ReplayClock | null = null;
+function buildRecording() {
+  const t = new MethodTracker(CFOP, applyMoves(solvedState(), scramble));
+  const stageStart = new Set<number>([0]);
+  solution.forEach((m, i) => {
+    const before = t.boundaries.length;
+    t.push(m);
+    if (t.boundaries.length > before) stageStart.add(i + 1);
+  });
+  let ms = 0;
+  const timed = solution.map((m, i) => {
+    ms += stageStart.has(i) ? 700 : 130;
+    return [formatMove(m), ms] as [string, number];
+  });
+  return recording(formatAlg(scramble), timed, ms + 100);
+}
+
+function setupReplay() {
+  clock?.pause();
+  const rec = buildRecording();
+  clock = new ReplayClock(rec, { maxAnimMs: 120 });
+  clock.rate = Number($<HTMLSelectElement>("rate").value);
+  clock.onChange((time, pos) => {
+    $("clock").textContent = (time / 1000).toFixed(2) + " s";
+    const scrub = $<HTMLInputElement>("scrub");
+    if (Number(scrub.value) !== pos.applied) {
+      scrub.value = String(pos.applied);
+      drawPosition();
+    }
+    $("play").textContent = clock!.isPlaying ? "Pause" : "Play";
+  });
+  const enc = encodeRecording(rec);
+  $("enc").textContent = ` · recording encodes to ${enc.length} URL-safe chars`;
+  const tm = stageTimings(CFOP, rec);
+  $("timings").innerHTML =
+    `<tr><th>Stage</th><th>Moves</th><th>Recognition</th><th>Execution</th><th>Total</th></tr>` +
+    tm.stages.map((s) => `<tr><td>${s.label}${s.detail ? ` (${s.detail})` : ""}</td><td>${s.moveCount}</td><td>${(s.recognitionMs / 1000).toFixed(2)}</td><td>${(s.executionMs / 1000).toFixed(2)}</td><td>${(s.totalMs / 1000).toFixed(2)}</td></tr>`).join("") +
+    `<tr><td colspan="5" class="kv">fluency ${tm.fluency === null ? "—" : Math.round(tm.fluency * 100) + "%"} · total ${(rec.totalMs / 1000).toFixed(2)} s</td></tr>`;
+  $("clock").textContent = "0.00 s";
+}
+$("play").addEventListener("click", () => {
+  if (!clock) return;
+  if (clock.isPlaying) clock.pause();
+  else {
+    if (clock.currentTime >= clock.recording.totalMs || Number($<HTMLInputElement>("scrub").value) === 0) clock.seek(0);
+    clock.play();
+  }
+  $("play").textContent = clock.isPlaying ? "Pause" : "Play";
+});
+$("rate").addEventListener("change", () => clock && (clock.rate = Number($<HTMLSelectElement>("rate").value)));
+$("mask").addEventListener("change", drawPosition);
+$("lltop").addEventListener("change", drawPosition);
+
 function drawPosition() {
   const n = Number($<HTMLInputElement>("scrub").value);
   const state = applyMoves(applyMoves(solvedState(), scramble), solution.slice(0, n));
   $("net").innerHTML = drawNet(state, SCHEMES[$<HTMLSelectElement>("scheme").value]);
   $("pos").textContent = `after ${n} / ${solution.length} moves · ${moveCount(solution, "htm")} HTM · ${moveCount(solution, "stm")} STM`;
   $("solved").textContent = isSolved(state) ? " · solved" : "";
+  drawImages(state);
   $("moves").innerHTML = solution.map((m, i) => `<span class="${i < n - 1 ? "done" : i === n - 1 ? "cur" : ""}">${formatMove(m)}</span>`).join(" ");
 }
 

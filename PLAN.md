@@ -55,6 +55,7 @@ packages/
   solve-wasm/  @cubecore/solve-wasm  two-phase / optimal full-cube solver (Rust→WASM), optional
   timeline/    @cubecore/timeline  timed recordings, replay clock, stage timings
   render/      @cubecore/render    three.js scene, animation, camera, drag input, Skin
+  image/       @cubecore/image     SVG pictures of states (iso / top / net), cacheable, server-side PNG
   element/     @cubecore/element   <cube-player> web component (headless-first) + optional controls
   react/       @cubecore/react     thin React bindings
   bluetooth/   @cubecore/bluetooth adapters from smart-cube drivers to core/timeline events
@@ -218,7 +219,16 @@ Dependency direction is strictly downward: `core` ← `solve`, `timeline` ←
   progress, best frame wins; ~0.005 ms per move). 26 tests, every method
   test repeated in all 24 orientations. Demo: `bun run demo` (2D net,
   scrubber, all methods side by side, colour scheme + orientation switch).
-- Next: masks (3.6) → `timeline` → `solve` (cross/xcross) → renderer.
+- 2026-09-24 — **masks, timeline, images**: masks follow pieces, 17
+  colour-neutral presets. `@cubecore/timeline`: recordings, a 6-bit/varint
+  URL-safe codec (all move families), `positionAt` + `ReplayClock` (moves
+  end at their recorded time, rate, seek), stage timings with recognition /
+  execution / fluency. `@cubecore/image` (new, not in the original plan):
+  SVG strings with no DOM — iso, last-layer "top" and net views, schemes,
+  masks, frames, rounded stickers — ~0.04 ms per image; `SvgCache` + stable
+  `svgKey` for any cache; PNG via canvas in the browser or
+  `@cubecore/image/png-node` (resvg) on a server. 47 tests.
+- Next: `solve` (cross/xcross, TS + WASM) → 3D renderer.
 
 ## 11. Open questions
 

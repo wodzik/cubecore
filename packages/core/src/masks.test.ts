@@ -45,3 +45,12 @@ describe("masks", () => {
     for (const p of MASK_PRESETS) expect(presetMask(p).length).toBe(54);
   });
 });
+
+describe("mask centres", () => {
+  it("last-layer presets keep every centre in full colour", () => {
+    for (const p of ["oll", "coll", "ocll", "cll", "ell", "pll"] as const) {
+      const m = presetMask(p);
+      for (let face = 0; face < 6; face++) expect(`${p}:${face}:${maskStateAt(m, S, face * 9 + 4)}`).toBe(`${p}:${face}:regular`);
+    }
+  });
+});

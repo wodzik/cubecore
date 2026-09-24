@@ -11,6 +11,7 @@
     "demo": "bun demo/index.html"
   },
   "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@types/bun": "latest",
     "typescript": "^5.6.0"
   }

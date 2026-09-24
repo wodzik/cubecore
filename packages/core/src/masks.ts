@@ -62,13 +62,13 @@ const RULES: Record<MaskPreset, MaskRule> = {
   f2l: (f, c) => (y(c) <= 0 || isCenter(c) ? "regular" : "ignored"),
   ll: () => "regular",
   // Orientation: last-layer pieces show only their top-facing colour.
-  oll: (f, c) => (inLastLayer(c) ? (faceUp(f) ? "regular" : "ignored") : "dim"),
+  oll: (f, c) => isCenter(c) ? "regular" : (inLastLayer(c) ? (faceUp(f) ? "regular" : "ignored") : "dim"),
   // Permutation: everything in colour, the first two layers dimmed.
   pll: (f, c) => (inLastLayer(c) || isCenter(c) ? "regular" : "dim"),
-  coll: (f, c) => (inLastLayer(c) ? (c.kind === "corner" || faceUp(f) ? "regular" : "ignored") : "dim"),
-  ocll: (f, c) => (inLastLayer(c) ? (c.kind === "corner" && faceUp(f) ? "regular" : "ignored") : "dim"),
-  cll: (f, c) => (inLastLayer(c) ? (c.kind === "corner" ? "regular" : "ignored") : "dim"),
-  ell: (f, c) => (inLastLayer(c) ? (c.kind === "edge" ? "regular" : "ignored") : "dim"),
+  coll: (f, c) => isCenter(c) ? "regular" : (inLastLayer(c) ? (c.kind === "corner" || faceUp(f) ? "regular" : "ignored") : "dim"),
+  ocll: (f, c) => isCenter(c) ? "regular" : (inLastLayer(c) ? (c.kind === "corner" && faceUp(f) ? "regular" : "ignored") : "dim"),
+  cll: (f, c) => isCenter(c) ? "regular" : (inLastLayer(c) ? (c.kind === "corner" ? "regular" : "ignored") : "dim"),
+  ell: (f, c) => isCenter(c) ? "regular" : (inLastLayer(c) ? (c.kind === "edge" ? "regular" : "ignored") : "dim"),
   // ZZ: every edge shown as good/bad orientation material, the line in colour.
   eoline: (f, c) => (c.kind === "edge" ? (isCrossEdge(c) && c.pos[0] === 0 ? "regular" : "oriented") : isCenter(c) ? "regular" : "ignored"),
   "zz-f2l": (f, c) => (y(c) <= 0 || isCenter(c) ? "regular" : "ignored"),

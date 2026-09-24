@@ -92,7 +92,10 @@ describe("moves", () => {
 
 describe("notation", () => {
   it("parses and formats", () => {
-    expect(formatAlg(parseAlg("R U R' U2 R2' F3 Rw' x y2 M' E S2"))).toBe("R U R' U2 R2 F' r' x y2 M' E S2");
+    expect(formatAlg(parseAlg("R U R' U2 R2' F3 Rw' x y2 M' E S2"))).toBe("R U R' U2 R2' F3 r' x y2 M' E S2"); // the way to turn is kept as written
+    const [r2p, f3] = [parseAlg("R2'")[0], parseAlg("F3")[0]];
+    expect([r2p.amount, r2p.written, f3.amount, f3.written]).toEqual([2, -2, -1, 3]);
+    expect(parseAlg("R2")[0].written).toBeUndefined();
     expect(formatAlg(parseAlg("R U’ F′"))).toBe("R U' F'");
     expect(formatAlg(parseAlg("(R U)2 R4 // comment\nU"))).toBe("R U R U U");
   });

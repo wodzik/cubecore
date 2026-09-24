@@ -52,7 +52,7 @@ import { type TileKit, tileKit } from "./build/tiles";
 import { loadModel, readyModel } from "./build/models";
 import { PLACEMENTS, stickerFaceOf } from "./pieceModels";
 import { type BackView, backPosition, viewports } from "./viewports";
-import { type ArrowStyle, ARROW_REACH, bestAngle, buildArrows, disposeArrows } from "./arrows";
+import { type ArrowStyle, ARROW_REACH, arrowCentre, buildArrows, disposeArrows } from "./arrows";
 
 export interface CameraOptions {
   /** Degrees above the horizon. */
@@ -451,13 +451,11 @@ export class CubeRenderer {
     const toCube = this.root.quaternion.clone().invert();
     this.camera.updateMatrixWorld();
     const eye = this.camera.position.clone().applyQuaternion(toCube);
-    const up = new Vector3().setFromMatrixColumn(this.camera.matrixWorld, 1).applyQuaternion(toCube);
-    const centres = a.arrows.map((arrow) => bestAngle(arrow, eye, up));
-    // Arrows face the viewer, so they follow the eye (rounded: tiny gyro wobbles don't rebuild them).
-    const key = [...centres, ...eye.clone().normalize().toArray().map((v) => Math.round(v * 60))].join(",");
+    const centres = a.arrows.map((arrow) => arrowCentre(arrow, eye));
+    const key = centres.join(",");
     if (a.group && key === a.key && a.group.parent === this.root) return;
     if (a.group) disposeArrows(a.group);
-    a.group = buildArrows(a.arrows, centres, a.style, eye);
+    a.group = buildArrows(a.arrows, centres, a.style);
     a.key = key;
     this.root.add(a.group);
   }

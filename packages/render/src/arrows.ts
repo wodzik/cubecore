@@ -1,14 +1,18 @@
 /**
- * Turn arrows in 3D: for each turning layer, a flat arrow on a circle around
- * the cube (an outer layer's just beyond its face — U's floats above the
- * cube, D's below; a middle layer's through the middle), flat side to the
- * viewer, placed where most of it is beside the cube (bestAngle).
+ * Turn arrows in 3D: a ribbon with an arrowhead hovering just above the
+ * layer that is about to turn — centred on its row, flat side to the cube,
+ * rounding the cube's edges — the way the layer moves.
  *
- *   single turn  one arrowhead
- *   double turn  two arrowheads, one behind the other (and a longer arc)
+ *   single turn         over the face you see best, one head
+ *   double / triple     over the two faces you see best, two / three heads
  *
- * Angles are about +axis, counter-clockwise from e1 (PLANE) — the same sense
- * as TurnArrow.quarters.
+ * The direction is the one written (R2' the other way than R2).
+ *
+ * The path around a layer is the cube's square cross-section pushed out by
+ * HOVER (straight over the faces, round over the edges), measured in
+ * quarters t: t = k at the middle of side k (side 0 faces +e1, side 1 +e2…),
+ * t = k + 0.5 at the edge between sides k and k+1; increasing t is
+ * counter-clockwise about +axis — the same sense as TurnArrow.quarters.
  */
 
 import { BufferGeometry, Color, DoubleSide, Float32BufferAttribute, Group, Matrix4, Mesh, MeshBasicMaterial, Vector3 } from "three";
@@ -17,23 +21,27 @@ import type { Axis, TurnArrow } from "@cubecore/core";
 export interface ArrowStyle {
   /** Arrow colour. Default a clear blue. */
   color?: string;
-  /** 0..1. Default 0.92. */
+  /** 0..1. Default 0.95. */
   opacity?: number;
   /** Size factor (ribbon width, heads). Default 1. */
   scale?: number;
 }
 
-/** Circle radius — clear of the corners (1.5·√2 ≈ 2.12). */
-export const ARROW_RADIUS = 2.36;
-const WIDTH = 0.2;
-const HEAD_WIDTH = 0.56;
-const HEAD_LENGTH = 0.46;
-/** Second head of a double: this many head lengths behind the first. */
-const HEAD_GAP = 0.95;
-/** Arc length in radians: single, double. */
-const SPAN = { single: (100 * Math.PI) / 180, double: (170 * Math.PI) / 180 };
-/** Where the arrow is centred snaps to this step, so small gyro wobbles don't rebuild it. */
-const SNAP = Math.PI / 12;
+const HALF = 1.5; // half the cube
+/** Height of the ribbon above the faces. */
+const HOVER = 0.3;
+const CORNER = (Math.PI / 2) * HOVER;
+const QUARTER = 2 * HALF + CORNER; // path length of one quarter
+const WIDTH = 0.34;
+const HEAD_WIDTH = 0.7;
+const HEAD_LENGTH = 0.5;
+/** Each further head this many head lengths behind the one before. */
+const HEAD_GAP = 0.9;
+/** How far over a face an arrow reaches from its middle (quarters; 0.5 would be the edge). */
+const OVER_FACE = 0.4;
+
+/** How far arrows reach from the centre (for fitting the camera). */
+export const ARROW_REACH = Math.hypot(HALF * Math.SQRT2 + HOVER, 1 + HEAD_WIDTH / 2);
 
 /** In-plane basis (e1, e2) with e1 × e2 = +axis. */
 export const PLANE: Record<Axis, [Vector3, Vector3, Vector3]> = {
@@ -42,126 +50,75 @@ export const PLANE: Record<Axis, [Vector3, Vector3, Vector3]> = {
   2: [new Vector3(1, 0, 0), new Vector3(0, 1, 0), new Vector3(0, 0, 1)],
 };
 
-/** Angle (about the axis) facing a viewer at `eye` (cube coordinates), snapped. */
-export function facingAngle(axis: Axis, eye: Vector3): number {
-  const [e1, e2] = PLANE[axis];
-  const u = eye.dot(e1), v = eye.dot(e2);
-  if (Math.hypot(u, v) < 1e-3) return Math.PI / 4; // looking straight down the axis
-  return Math.round(Math.atan2(v, u) / SNAP) * SNAP;
+/** Point of the path at `t` quarters, in plane coordinates (u along e1, v along e2). */
+export function pathPoint(t: number): [number, number] {
+  const k = Math.floor(t);
+  const s = (t - k) * QUARTER;
+  let u: number, v: number;
+  if (s < HALF) [u, v] = [HALF + HOVER, s];
+  else if (s < HALF + CORNER) {
+    const a = (s - HALF) / HOVER;
+    [u, v] = [HALF + HOVER * Math.cos(a), HALF + HOVER * Math.sin(a)];
+  } else [u, v] = [HALF - (s - HALF - CORNER), HALF + HOVER];
+  for (let i = 0; i < ((k % 4) + 4) % 4; i++) [u, v] = [-v, u]; // k quarter turns counter-clockwise
+  return [u, v];
 }
 
-/** Where the segment eye → p meets the cube: "clear" (beside it), "front" (p covers it) or "hidden" (behind it). */
-function sightOf(eye: Vector3, p: Vector3): "clear" | "front" | "hidden" {
-  let t0 = -Infinity, t1 = Infinity;
-  for (const k of ["x", "y", "z"] as const) {
-    const d = p[k] - eye[k];
-    if (Math.abs(d) < 1e-9) {
-      if (Math.abs(eye[k]) > HALF) return "clear";
-      continue;
-    }
-    const a = (-HALF - eye[k]) / d, b = (HALF - eye[k]) / d;
-    t0 = Math.max(t0, Math.min(a, b));
-    t1 = Math.min(t1, Math.max(a, b));
-  }
-  if (t0 > t1 || t1 < 0) return "clear";
-  return t0 < 1 ? "hidden" : "front";
+/** Outward normal of side k of the layer (cube coordinates). */
+function sideNormal(axis: Axis, k: number): Vector3 {
+  const [e1, e2] = PLANE[axis];
+  const q = ((k % 4) + 4) % 4;
+  return [e1, e2, e1.clone().negate(), e2.clone().negate()][q].clone();
 }
-const HALF = 1.5;
-/** Outer layers' arrows float just beyond their face (U above the cube, D below); middle ones stay in the middle. */
-const OUTER = 1.62;
-/** How far arrows reach from the centre (for fitting the camera). */
-export const ARROW_REACH = Math.hypot(2.36 + 0.3, 1.62);
-export const ringHeight = (layer: number): number => (layer === 0 ? 0 : Math.sign(layer) * OUTER);
 
 /**
- * Where to centre an arrow so it reads best from `eye`: most of it beside
- * the cube (not over it, not behind it) — like GAN's, the top layer's arrow
- * floats above the cube and the bottom one's below. Ties go to the side
- * that's up on screen (`up`, cube coordinates).
+ * Where an arrow goes for a viewer at `eye` (cube coordinates): the middle
+ * of the best-seen side for a single turn, the edge between the two
+ * best-seen neighbouring sides for a double or triple.
  */
-export function bestAngle(arrow: TurnArrow, eye: Vector3, up: Vector3): number {
-  const [e1, e2, n] = PLANE[arrow.axis];
-  let best = facingAngle(arrow.axis, eye), bestScore = -Infinity;
-  for (let k = 0; k < 24; k++) {
-    const centre = k * SNAP;
-    const { from, to } = arrowSpan(arrow.quarters, centre);
-    let score = 0;
-    for (const layer of arrow.layers) {
-      for (let i = 0; i <= 8; i++) {
-        const a = from + ((to - from) * i) / 8;
-        const p = new Vector3().addScaledVector(e1, ARROW_RADIUS * Math.cos(a)).addScaledVector(e2, ARROW_RADIUS * Math.sin(a)).addScaledVector(n, ringHeight(layer));
-        const sight = sightOf(eye, p);
-        score += sight === "clear" ? 1 : sight === "front" ? 0.3 : -1.5; // a gap in the middle of an arrow reads worst
-      }
-    }
-    const dir = new Vector3().addScaledVector(e1, Math.cos(centre)).addScaledVector(e2, Math.sin(centre));
-    score += 0.3 * dir.dot(up) + 0.1 * dir.dot(eye.clone().normalize());
-    if (score > bestScore + 1e-6) [best, bestScore] = [centre, score];
-  }
-  return best;
+export function arrowCentre(arrow: TurnArrow, eye: Vector3): number {
+  const seen = [0, 1, 2, 3].map((k) => sideNormal(arrow.axis, k).dot(eye));
+  const best = seen.indexOf(Math.max(...seen));
+  if (Math.abs(arrow.quarters) === 1) return best;
+  const next = seen[(best + 1) % 4] >= seen[(best + 3) % 4] ? best + 1 : best - 1;
+  return (best + next) / 2;
 }
 
-/** Tail → tip of one arrow, in radians about the axis. */
-export function arrowSpan(quarters: TurnArrow["quarters"], centre: number): { from: number; to: number } {
-  const half = (Math.abs(quarters) === 2 ? SPAN.double : SPAN.single) / 2;
+/** Tail → tip in quarters along the path. */
+export function arrowSpan(quarters: number, centre: number): { from: number; to: number } {
+  const half = Math.abs(quarters) === 1 ? OVER_FACE : 0.5 + OVER_FACE;
   return quarters > 0 ? { from: centre - half, to: centre + half } : { from: centre + half, to: centre - half };
 }
 
-/** A strip along the circle: cross-sections [arc length, half width] from one end to the other. */
+/** A strip along the path: cross-sections [t, half width] from one end to the other. */
 export type Strip = [number, number][];
 
-/**
- * One arrow unrolled: the ribbon and each head as strips — x = arc length
- * along the circle (angle × radius), width along the axis. buildArrows wraps
- * them onto the cylinder (flat side to the cube and to you) in short
- * segments, so they bend with it.
- */
-export function arrowStrips(quarters: TurnArrow["quarters"], centre: number, scale = 1): Strip[] {
-  const r = ARROW_RADIUS;
+/** One arrow as strips: the ribbon, then one per head (as many heads as quarter turns, up to 3). */
+export function arrowStrips(quarters: number, centre: number, scale = 1): Strip[] {
   const { from, to } = arrowSpan(quarters, centre);
-  const [a, b] = [from * r, to * r];
-  const dir = Math.sign(b - a);
-  const heads = Math.abs(quarters) === 2 ? 2 : 1;
-  const w = (WIDTH * scale) / 2;
-  const hw = (HEAD_WIDTH * scale) / 2;
-  const hl = HEAD_LENGTH * scale;
-  const strip = (s0: number, s1: number, w0: number, w1: number, n: number): Strip =>
-    Array.from({ length: n + 1 }, (_, i) => [s0 + ((s1 - s0) * i) / n, w0 + ((w1 - w0) * i) / n]);
-
-  // Ribbon: tail up to the base of the last head.
-  const end = b - dir * hl * (1 + HEAD_GAP * (heads - 1));
-  const strips = [strip(a, end, w, w, 64)];
-  // Heads: full width at the base, a point at the tip; one behind the other for a double.
+  const dir = Math.sign(to - from);
+  const heads = Math.min(3, Math.max(1, Math.abs(quarters)));
+  const hl = (HEAD_LENGTH * scale) / QUARTER;
+  const strip = (t0: number, t1: number, w0: number, w1: number, n: number): Strip =>
+    Array.from({ length: n + 1 }, (_, i) => [t0 + ((t1 - t0) * i) / n, w0 + ((w1 - w0) * i) / n]);
+  const end = to - dir * hl * (1 + HEAD_GAP * (heads - 1));
+  const strips = [strip(from, end, (WIDTH * scale) / 2, (WIDTH * scale) / 2, 64)];
   for (let h = 0; h < heads; h++) {
-    const tip = b - dir * hl * HEAD_GAP * h;
-    strips.push(strip(tip - dir * hl, tip, hw, 0, 8));
+    const tip = to - dir * hl * HEAD_GAP * h;
+    strips.push(strip(tip - dir * hl, tip, (HEAD_WIDTH * scale) / 2, 0, 6));
   }
   return strips;
 }
 
-/**
- * The strips as a mesh on the circle (the layer's frame: axis = z, circle
- * at z = 0). With `eye` (same frame) the ribbon turns its flat side to the
- * viewer at every point — never seen edge-on; without it, it lies on the
- * cylinder (width along the axis).
- */
-function wrap(strips: readonly Strip[], eye: Vector3 | null): BufferGeometry {
+/** Strips as a mesh around the layer (layer frame: axis = z, the row's middle at z = 0); width along the axis. */
+function wrap(strips: readonly Strip[]): BufferGeometry {
   const pos: number[] = [];
   const index: number[] = [];
-  const p = new Vector3(), t = new Vector3(), w = new Vector3(), prev = new Vector3();
   for (const strip of strips) {
-    prev.set(0, 0, 1);
     const first = pos.length / 3;
-    for (const [s, half] of strip) {
-      const angle = s / ARROW_RADIUS;
-      p.set(ARROW_RADIUS * Math.cos(angle), ARROW_RADIUS * Math.sin(angle), 0);
-      if (eye) {
-        t.set(-Math.sin(angle), Math.cos(angle), 0);
-        w.crossVectors(t, eye.clone().sub(p)).normalize();
-        if (w.dot(prev) < 0) w.negate(); // no flip from one point to the next: the strip never twists
-        prev.copy(w);
-      } else w.set(0, 0, 1);
-      pos.push(p.x + w.x * half, p.y + w.y * half, p.z + w.z * half, p.x - w.x * half, p.y - w.y * half, p.z - w.z * half);
+    for (const [t, half] of strip) {
+      const [u, v] = pathPoint(t);
+      pos.push(u, v, half, u, v, -half);
     }
     for (let i = 0; i < strip.length - 1; i++) {
       const k = first + 2 * i;
@@ -175,29 +132,23 @@ function wrap(strips: readonly Strip[], eye: Vector3 | null): BufferGeometry {
   return g;
 }
 
-/**
- * Meshes for `arrows`, centred on `centres` (radians, one per arrow), facing
- * a viewer at `eye` (cube coordinates; null: lying on the cylinder).
- * Dispose with disposeArrows.
- */
-export function buildArrows(arrows: readonly TurnArrow[], centres: readonly number[], style: ArrowStyle = {}, eye: Vector3 | null = null): Group {
+/** Meshes for `arrows`, placed at `centres` (quarters along the path, one per arrow). Dispose with disposeArrows. */
+export function buildArrows(arrows: readonly TurnArrow[], centres: readonly number[], style: ArrowStyle = {}): Group {
   const group = new Group();
   const material = new MeshBasicMaterial({
     color: new Color(style.color ?? "#2f8bff"),
     transparent: true,
-    opacity: style.opacity ?? 0.92,
+    opacity: style.opacity ?? 0.95,
     side: DoubleSide,
     depthWrite: false,
   });
   arrows.forEach((arrow, i) => {
     const [e1, e2, n] = PLANE[arrow.axis];
-    const strips = arrowStrips(arrow.quarters, centres[i], style.scale ?? 1);
+    const geometry = wrap(arrowStrips(arrow.quarters, centres[i], style.scale ?? 1));
     for (const layer of arrow.layers) {
-      const h = ringHeight(layer);
-      const local = eye ? new Vector3(eye.dot(e1), eye.dot(e2), eye.dot(n) - h) : null;
-      const mesh = new Mesh(wrap(strips, local), material);
+      const mesh = new Mesh(geometry, material);
       mesh.matrixAutoUpdate = false;
-      mesh.matrix.copy(new Matrix4().makeBasis(e1, e2, n).setPosition(n.clone().multiplyScalar(ringHeight(layer))));
+      mesh.matrix.copy(new Matrix4().makeBasis(e1, e2, n).setPosition(n.clone().multiplyScalar(layer)));
       mesh.renderOrder = 1; // after the cube, so the see-through ribbon blends over it
       group.add(mesh);
     }

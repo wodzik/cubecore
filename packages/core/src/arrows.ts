@@ -11,14 +11,17 @@
 
 import { IDENTITY_FRAME, type Frame } from "./frames";
 import { type Axis, apply } from "./geometry";
-import { FAMILY, type Move } from "./moves";
+import { FAMILY, type Move, writtenQuarters } from "./moves";
 
 export interface TurnArrow {
   axis: Axis;
   /** Layer coordinates along the axis (-1, 0, 1) that turn — one arrow each. */
   layers: number[];
-  /** Counter-clockwise quarter turns about +axis: ±1 a single turn, ±2 a double. */
-  quarters: 1 | -1 | 2 | -2;
+  /**
+   * Counter-clockwise quarter turns about +axis, the way it's written: ±1 a
+   * single turn, ±2 a double (R2' = the other way than R2), ±3 a triple.
+   */
+  quarters: number;
 }
 
 export function turnArrow(move: Move, frame: Frame = IDENTITY_FRAME): TurnArrow {
@@ -28,10 +31,5 @@ export function turnArrow(move: Move, frame: Frame = IDENTITY_FRAME): TurnArrow 
   const v = apply(frame.matrix, unit);
   const axis = v.findIndex((c) => c !== 0) as Axis;
   const sign = v[axis];
-  const q = def.q * (move.amount === -1 ? -1 : move.amount);
-  return {
-    axis,
-    layers: def.layers.map((l) => l * sign),
-    quarters: (q * sign) as TurnArrow["quarters"],
-  };
+  return { axis, layers: def.layers.map((l) => l * sign), quarters: def.q * writtenQuarters(move) * sign };
 }

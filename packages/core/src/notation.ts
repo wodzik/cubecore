@@ -122,7 +122,10 @@ class Parser {
       quarters = -quarters;
     }
     const amount = toAmount(quarters);
-    return amount === null ? null : { family, amount };
+    if (amount === null) return null;
+    // Keep the way it's written when the amount alone would lose it (R2', R3, R3').
+    const plain = amount === -1 ? -1 : amount;
+    return quarters === plain ? { family, amount } : { family, amount, written: quarters };
   }
 }
 

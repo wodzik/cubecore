@@ -15,6 +15,10 @@ describe("turnArrow", () => {
     expect(turnArrow(mv("r"))).toEqual({ axis: 0, layers: [1, 0], quarters: -1 });
     expect(turnArrow(mv("M"))).toEqual({ axis: 0, layers: [0], quarters: 1 });
     expect(turnArrow(mv("y")).layers).toEqual([-1, 0, 1]);
+    // The way it's written: R2' the other way than R2, R3 three quarters clockwise.
+    expect(turnArrow(mv("R2")).quarters).toBe(-2);
+    expect(turnArrow(mv("R2'")).quarters).toBe(2);
+    expect(turnArrow(mv("R3")).quarters).toBe(-3);
   });
 });
 

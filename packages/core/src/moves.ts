@@ -22,6 +22,12 @@ export type Amount = 1 | 2 | -1;
 export interface Move {
   family: MoveFamily;
   amount: Amount;
+  /**
+   * Signed quarter turns as written, when that says more than `amount`:
+   * R2' = -2 (a half turn, counter-clockwise), R3 = 3, R3' = -3. Only the
+   * way to turn (arrows, display) — the state uses `amount`.
+   */
+  written?: number;
 }
 
 export type MoveKind = "face" | "wide" | "slice" | "rotation";
@@ -102,12 +108,21 @@ export function moveKind(move: Move): MoveKind {
 }
 
 export function invertMove(move: Move): Move {
-  return { family: move.family, amount: move.amount === 2 ? 2 : (-move.amount as Amount) };
+  const out: Move = { family: move.family, amount: move.amount === 2 ? 2 : (-move.amount as Amount) };
+  if (move.written !== undefined) out.written = -move.written;
+  return out;
 }
 
 export function formatMove(move: Move): string {
+  if (move.written !== undefined) {
+    const n = Math.abs(move.written);
+    return move.family + (n === 1 ? "" : String(n)) + (move.written < 0 ? "'" : "");
+  }
   return move.family + (move.amount === 2 ? "2" : move.amount === -1 ? "'" : "");
 }
+
+/** Signed quarter turns the way it's meant to be turned (written, else from the amount: R2 = 2). */
+export const writtenQuarters = (move: Move): number => move.written ?? (move.amount === -1 ? -1 : move.amount);
 
 /** Normalise a quarter-turn count to an Amount, or null for a full turn. */
 export function toAmount(quarters: number): Amount | null {

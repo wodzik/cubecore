@@ -456,3 +456,7 @@ Still open:
   `player.showTurnArrows`, `arrows` + `player` on both sequence elements.
   `/sequences` reworked into a plain tester: Scramble | Algorithm, cube below,
   arrows toggle.
+- 2026-09-25 — Turn arrows reworked after feedback: a ribbon hovering over
+  the turning layer's row (not a ring around the cube); single over one
+  face, double / triple over two with 2 / 3 heads; direction as written
+  (`R2'`, `R3` kept by the parser in `Move.written`; `formatMove` keeps it).

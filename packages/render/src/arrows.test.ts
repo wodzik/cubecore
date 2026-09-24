@@ -1,38 +1,28 @@
 import { describe, expect, it } from "bun:test";
 import { Vector3 } from "three";
-import { arrowSpan, buildArrows, facingT, loopPoint } from "./arrows";
+import { ARROW_RADIUS, arrowShapes, arrowSpan, buildArrows, facingAngle } from "./arrows";
 
 describe("turn arrows", () => {
-  it("the loop runs just above the faces, round over the edges", () => {
-    const [u, v] = loopPoint(0);
-    expect(u).toBeCloseTo(1.72);
-    expect(v).toBeCloseTo(0);
-    const [cu, cv] = loopPoint(0.5); // the corner
-    expect(Math.hypot(cu - 1.5, cv - 1.5)).toBeCloseTo(0.22);
-    const [bu, bv] = loopPoint(1); // next side, counter-clockwise
-    expect(bu).toBeCloseTo(0);
-    expect(bv).toBeCloseTo(1.72);
-    expect(loopPoint(-1)[1]).toBeCloseTo(-1.72);
+  it("float clear of the cube's corners", () => {
+    expect(ARROW_RADIUS).toBeGreaterThan(1.5 * Math.SQRT2 + 0.2);
   });
 
-  it("faces the camera: a corner or the middle of a side", () => {
-    expect(facingT(1, new Vector3(1, 1, 1))).toBe(0.5); // U layer seen from the URF corner
-    expect(facingT(1, new Vector3(0, 1, 5))).toBe(0); // straight at F (e1 = z for the y axis)
-    expect(facingT(1, new Vector3(0, 5, 0))).toBe(0.5); // down the axis
+  it("face the camera", () => {
+    expect(facingAngle(1, new Vector3(1, 1, 1))).toBeCloseTo(Math.PI / 4); // U layer from the URF corner (e1 = z, e2 = x)
+    expect(facingAngle(1, new Vector3(0, 1, 5))).toBeCloseTo(0); // straight at F
+    expect(facingAngle(1, new Vector3(0, 5, 0))).toBeCloseTo(Math.PI / 4); // down the axis
   });
 
-  it("single = a quarter of the way round, double = half; the direction follows the sign", () => {
-    expect(arrowSpan(-1, 0.5)).toEqual({ from: 1, to: 0 });
-    expect(arrowSpan(1, 0.5)).toEqual({ from: 0, to: 1 });
-    expect(arrowSpan(2, 0.5)).toEqual({ from: -0.5, to: 1.5 });
+  it("double = a longer arc; the direction follows the sign", () => {
+    const s = arrowSpan(-1, 0);
+    expect(s.from).toBeGreaterThan(s.to);
+    const d = arrowSpan(2, 0);
+    expect(d.to - d.from).toBeGreaterThan(s.from - s.to);
   });
 
-  it("one arrow per layer, two heads for a double", () => {
-    const count = (quarters: 1 | 2, layers: number[], outline: string | null) =>
-      buildArrows([{ axis: 0, layers, quarters }], [0.5], { outline }).children.length;
-    expect(count(1, [1], null)).toBe(2); // shaft + head
-    expect(count(2, [1], null)).toBe(3); // shaft + 2 heads
-    expect(count(1, [1, 0], null)).toBe(4); // wide: two arrows
-    expect(count(1, [1], "#000")).toBe(4); // with outlines
+  it("one head for a single turn, two for a double; one mesh per layer", () => {
+    expect(arrowShapes(1, 0)).toHaveLength(2); // ribbon + head
+    expect(arrowShapes(-2, 0)).toHaveLength(3); // ribbon + 2 heads
+    expect(buildArrows([{ axis: 0, layers: [1, 0], quarters: -1 }], [0]).children).toHaveLength(2); // wide r
   });
 });

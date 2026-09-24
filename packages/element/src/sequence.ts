@@ -67,7 +67,7 @@ export const SEQUENCE_STYLES = /* css */ `
   --cc-seq-todo: color-mix(in srgb, currentColor 82%, transparent);
   --cc-seq-hidden: color-mix(in srgb, currentColor 45%, transparent);
   --cc-seq-undo: #ff8a4c;
-  --cc-arrow: #ff2d95;
+  --cc-arrow: #2f8bff;
   --cc-arrow-undo: var(--cc-seq-undo);
   --cc-accent: #4f8cff;
   --cc-control-bg: color-mix(in srgb, currentColor 8%, transparent);

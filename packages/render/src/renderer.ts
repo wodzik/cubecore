@@ -52,7 +52,7 @@ import { type TileKit, tileKit } from "./build/tiles";
 import { loadModel, readyModel } from "./build/models";
 import { PLACEMENTS, stickerFaceOf } from "./pieceModels";
 import { type BackView, backPosition, viewports } from "./viewports";
-import { type ArrowStyle, buildArrows, disposeArrows, facingT } from "./arrows";
+import { type ArrowStyle, buildArrows, disposeArrows, facingAngle } from "./arrows";
 
 export interface CameraOptions {
   /** Degrees above the horizon. */
@@ -443,7 +443,7 @@ export class CubeRenderer {
     const a = this.arrows;
     if (!a) return;
     const eye = this.camera.position.clone().applyQuaternion(this.root.quaternion.clone().invert());
-    const centres = a.arrows.map((arrow) => facingT(arrow.axis, eye));
+    const centres = a.arrows.map((arrow) => facingAngle(arrow.axis, eye));
     const key = centres.join(",");
     if (a.group && key === a.key && a.group.parent === this.root) return;
     if (a.group) disposeArrows(a.group);

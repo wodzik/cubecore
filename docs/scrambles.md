@@ -102,10 +102,10 @@ The core behind them: `SequenceTracker` and `PracticeTracker`.
 
 ### Arrows on the 3D cube
 
-With `arrows` and a player, the cube shows the next turn: an arrow around
-each turning layer on the side facing you (two for a wide `r`, the middle
-layer for `M`), a quarter of the way round with one head for a single turn,
-half way with two heads for a double. After a slip it shows the undo move
+With `arrows` and a player, the cube shows the next turn: a flat arrow on a
+circle around the cube, in the plane of each turning layer, on the side
+facing you (two for a wide `r`, the middle layer for `M`) — one head for a
+single turn, two heads (and a longer arc) for a double. After a slip it shows the undo move
 instead; in practice it stays hidden with the move (Hint or a slip shows it).
 It follows the gyro and camera drags.
 
@@ -117,7 +117,7 @@ It follows the gyro and camera drags.
 Colours: `--cc-arrow`, `--cc-arrow-undo`. Underneath: core `turnArrow(move, frame)`
 and the trackers' `nextTurn` (which layers, which way, in the cube's own
 coordinates — after a rotation or an `r` the next move lands on the right
-physical face), `renderer.setTurnArrows(arrows, { color, outline, scale })`,
+physical face), `renderer.setTurnArrows(arrows, { color, opacity, scale })`,
 `player.showTurnArrows(arrows, style, owner)`.
 
 ### Styling and your own controls

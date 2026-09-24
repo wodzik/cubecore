@@ -1,0 +1,24 @@
+{
+  "name": "@cubecore/element",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "sideEffects": [
+    "./src/index.ts"
+  ],
+  "dependencies": {
+    "@cubecore/core": "workspace:*",
+    "@cubecore/render": "workspace:*",
+    "@cubecore/skin": "workspace:*",
+    "@cubecore/timeline": "workspace:*"
+  },
+  "peerDependencies": {
+    "three": ">=0.160"
+  },
+  "devDependencies": {
+    "@cubecore/cfop": "workspace:*"
+  }
+}

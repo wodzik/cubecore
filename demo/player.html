@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>cube-player demo</title>
+    <style>
+      :root { color-scheme: dark; --bg: #0b0b0c; --panel: #151517; --line: #2a2a2e; --text: #e6e6e6; --muted: #8b8b93; }
+      * { box-sizing: border-box; }
+      body { margin: 0; font: 14px/1.45 system-ui, sans-serif; background: var(--bg); color: var(--text); }
+      main { max-width: 1100px; margin: 0 auto; padding: 16px; display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+      header { max-width: 1100px; margin: 0 auto; padding: 16px 16px 0; }
+      h1 { font-size: 18px; margin: 0 0 4px; } p { margin: 0 0 8px; color: var(--muted); }
+      h2 { font-size: 14px; margin: 0 0 4px; }
+      section { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+      cube-player { height: 420px; }
+      code { font: 12px ui-monospace, monospace; color: #c9d4ff; }
+      a { color: #7aa2ff; }
+
+      /* 2 · restyled with CSS variables and ::part() */
+      #styled {
+        --cc-accent: #ff7a2f;
+        --cc-control-radius: 999px;
+        --cc-button-size: 34px;
+        --cc-controls-gap: 4px;
+        --cc-progress-height: 10px;
+        --cc-thumb-size: 18px;
+        --cc-marker: #ffd28a;
+        --cc-control-bg: #26211d;
+        --cc-control-bg-hover: #3a2e25;
+      }
+      #styled::part(controls) { background: #1c1917; border: 1px solid #3a2e25; border-radius: 999px; padding: 5px 8px; }
+      #styled::part(button-play) { box-shadow: 0 6px 18px -6px #ff7a2f; }
+      #styled::part(time) { color: #ffd28a; opacity: 1; }
+      #styled::part(button-speed) { font-family: system-ui; letter-spacing: 0.04em; }
+      #styled::part(progress-track) { background: repeating-linear-gradient(90deg, #2a2420 0 6px, #231e1b 6px 12px); }
+
+      /* 3 · custom controls */
+      .mine { display: flex; gap: 8px; align-items: center; width: 100%; }
+      .mine button { background: none; border: 1px solid var(--line); color: var(--text); border-radius: 6px; padding: 6px 12px; font: 600 12px system-ui; cursor: pointer; text-transform: uppercase; letter-spacing: 0.06em; }
+      .mine button:hover { border-color: #7aa2ff; }
+      .mine input { flex: 1; min-width: 0; accent-color: #7aa2ff; }
+      .mine output { font: 12px ui-monospace, monospace; color: var(--muted); min-width: 6ch; text-align: right; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>&lt;cube-player&gt;</h1>
+      <p>Buttons and progress bar are optional, restylable or replaceable. <a href="/render">3D renderer →</a> · <a href="/">Core →</a></p>
+    </header>
+    <main>
+      <section>
+        <h2>1 · Default look — a recorded solve</h2>
+        <p>Real-time replay, <code>progress</code> + <code>markers</code> (CFOP stages from the method). Keys: Space, ←/→, Home/End.</p>
+        <cube-player id="solve" progress markers skin="gan"></cube-player>
+      </section>
+
+      <section>
+        <h2>2 · Restyled — CSS variables and <code>::part()</code></h2>
+        <p>Same element; accent, sizes, rounded pill bar and track pattern from the page's CSS.</p>
+        <cube-player id="styled" progress markers skin="stickerless"></cube-player>
+      </section>
+
+      <section>
+        <h2>3 · Your own controls — <code>slot="controls"</code></h2>
+        <p>The default buttons are replaced; this bar only uses the API and <code>timeupdate</code>.</p>
+        <cube-player id="custom" alg="R U R' U' R' F R2 U' R' U' R U R' F'" setup="F R U' R' U' R U R' F' R U R' U' R' F R F'" tempo="3">
+          <div slot="controls" class="mine">
+            <button data-do="toggle">Play</button>
+            <input type="range" min="0" max="1000" value="0" aria-label="Position" />
+            <output>0.00</output>
+            <button data-do="restart">Restart</button>
+          </div>
+        </cube-player>
+      </section>
+
+      <section>
+        <h2>4 · An algorithm at a steady tempo, no progress bar</h2>
+        <p><code>&lt;cube-player alg="…" setup="…" tempo="2"&gt;</code> — the default for guides.</p>
+        <cube-player alg="R U R' U R U2 R'" setup="R U2 R' U' R U' R'" tempo="2" skin="standard"></cube-player>
+      </section>
+    </main>
+    <script type="module" src="./player.ts"></script>
+  </body>
+</html>

@@ -331,7 +331,15 @@ re-export shims in core — they would make core depend on the method packages
   solver in TS (tables ~0.5 s, solves in a few ms, ≤ 21 moves) and
   random-state scrambles with presets (full, F2L, last slot, LL, ZBLL, PLL,
   ELL, CMLL) on any face via frames.
-- Next: glTF piece models, per-theme skins, gyroscope adapter from smart-cube drivers, then
+- 2026-09-24 — **`<cube-player>`** (`@cubecore/element`): plays an algorithm
+  at a tempo or a recorded solve in real time; default controls (inline SVG
+  icons, time, speed) and an optional progress bar (`progress`: click / drag
+  / keys to seek, `markers`: stage ends from a method). Themable with
+  `--cc-*` variables and `::part()`, replaceable via `slot="controls"` or
+  `controls="none"` + the API (play / pause / seek / step…) and events.
+  Container query keeps the bar on one row down to ~300 px. Demo `/player`,
+  guide `docs/player.md`.
+- Next: glTF piece models, React bindings, per-theme skins, gyroscope adapter from smart-cube drivers, then
   `solve` (cross/xcross).
 
 ### Gyroscope (planned)

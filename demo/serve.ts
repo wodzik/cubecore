@@ -5,6 +5,7 @@
  */
 import index from "./index.html";
 import render from "./render.html";
+import player from "./player.html";
 
 const port = Number(process.env.PORT ?? 3000);
 Bun.serve({
@@ -13,6 +14,7 @@ Bun.serve({
   routes: {
     "/": index,
     "/render": render,
+    "/player": player,
     "/assets/*": (req) => {
       const name = new URL(req.url).pathname.replace(/^\/assets\//, "");
       if (name.includes("..")) return new Response("Not found", { status: 404 });
@@ -21,4 +23,4 @@ Bun.serve({
     },
   },
 });
-console.log(`cubecore demo: http://localhost:${port}/  ·  3D: http://localhost:${port}/render`);
+console.log(`cubecore demo: http://localhost:${port}/  ·  3D: http://localhost:${port}/render  ·  player: http://localhost:${port}/player`);

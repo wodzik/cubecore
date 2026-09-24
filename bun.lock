@@ -22,6 +22,22 @@
       "name": "@cubecore/core",
       "version": "0.0.0",
     },
+    "packages/element": {
+      "name": "@cubecore/element",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cubecore/core": "workspace:*",
+        "@cubecore/render": "workspace:*",
+        "@cubecore/skin": "workspace:*",
+        "@cubecore/timeline": "workspace:*",
+      },
+      "devDependencies": {
+        "@cubecore/cfop": "workspace:*",
+      },
+      "peerDependencies": {
+        "three": ">=0.160",
+      },
+    },
     "packages/image": {
       "name": "@cubecore/image",
       "version": "0.0.0",
@@ -110,6 +126,8 @@
     "@cubecore/cfop": ["@cubecore/cfop@workspace:packages/cfop"],
 
     "@cubecore/core": ["@cubecore/core@workspace:packages/core"],
+
+    "@cubecore/element": ["@cubecore/element@workspace:packages/element"],
 
     "@cubecore/image": ["@cubecore/image@workspace:packages/image"],
 

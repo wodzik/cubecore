@@ -52,7 +52,7 @@ import { type TileKit, tileKit } from "./build/tiles";
 import { loadModel, readyModel } from "./build/models";
 import { PLACEMENTS, stickerFaceOf } from "./pieceModels";
 import { type BackView, backPosition, viewports } from "./viewports";
-import { type ArrowStyle, buildArrows, disposeArrows, facingAngle } from "./arrows";
+import { type ArrowStyle, ARROW_REACH, bestAngle, buildArrows, disposeArrows } from "./arrows";
 
 export interface CameraOptions {
   /** Degrees above the horizon. */
@@ -129,6 +129,8 @@ export class CubeRenderer {
   private active: { move: Move; ms: number; start: number; resolve: () => void } | null = null;
   private quarterMs: number;
   private disposed = false;
+  /** Arrows were shown: the camera keeps room for them (so it doesn't jump each time they come and go). */
+  private arrowRoom = false;
   private arrows: { arrows: TurnArrow[]; style: ArrowStyle; group: Group | null; key: string } | null = null;
   private targetOrientation = new Quaternion();
   private orientationSmoothing = 0;
@@ -276,6 +278,10 @@ export class CubeRenderer {
   setTurnArrows(arrows: readonly TurnArrow[] | null, style: ArrowStyle = {}): void {
     if (this.arrows?.group) disposeArrows(this.arrows.group);
     this.arrows = arrows?.length ? { arrows: [...arrows], style, group: null, key: "" } : null;
+    if (this.arrows && !this.arrowRoom) {
+      this.arrowRoom = true;
+      this.applyCamera(); // places the arrows too
+    }
     this.placeArrows();
     this.requestRender();
   }
@@ -442,12 +448,16 @@ export class CubeRenderer {
   private placeArrows(): void {
     const a = this.arrows;
     if (!a) return;
-    const eye = this.camera.position.clone().applyQuaternion(this.root.quaternion.clone().invert());
-    const centres = a.arrows.map((arrow) => facingAngle(arrow.axis, eye));
-    const key = centres.join(",");
+    const toCube = this.root.quaternion.clone().invert();
+    this.camera.updateMatrixWorld();
+    const eye = this.camera.position.clone().applyQuaternion(toCube);
+    const up = new Vector3().setFromMatrixColumn(this.camera.matrixWorld, 1).applyQuaternion(toCube);
+    const centres = a.arrows.map((arrow) => bestAngle(arrow, eye, up));
+    // Arrows face the viewer, so they follow the eye (rounded: tiny gyro wobbles don't rebuild them).
+    const key = [...centres, ...eye.clone().normalize().toArray().map((v) => Math.round(v * 60))].join(",");
     if (a.group && key === a.key && a.group.parent === this.root) return;
     if (a.group) disposeArrows(a.group);
-    a.group = buildArrows(a.arrows, centres, a.style);
+    a.group = buildArrows(a.arrows, centres, a.style, eye);
     a.key = key;
     this.root.add(a.group);
   }
@@ -480,7 +490,7 @@ export class CubeRenderer {
   /** Distance at which a sphere around the cube (and its back stickers) fits the narrower field of view, with a margin. */
   private fitDistance(aspect: number, withHints: boolean): number {
     const reach = withHints ? 1 + 0.5 + this.skin.hints.distance + 0.45 : 0;
-    const radius = Math.max(1.5 * Math.sqrt(3), reach) * 1.06;
+    const radius = Math.max(1.5 * Math.sqrt(3), reach, this.arrowRoom ? ARROW_REACH : 0) * 1.06;
     const vfov = (this.cam.fov * Math.PI) / 180;
     const hfov = 2 * Math.atan(Math.tan(vfov / 2) * aspect);
     return radius / Math.sin(Math.min(vfov, hfov) / 2);

@@ -102,10 +102,12 @@ The core behind them: `SequenceTracker` and `PracticeTracker`.
 
 ### Arrows on the 3D cube
 
-With `arrows` and a player, the cube shows the next turn: a flat arrow on a
-circle around the cube, in the plane of each turning layer, on the side
-facing you (two for a wide `r`, the middle layer for `M`) — one head for a
-single turn, two heads (and a longer arc) for a double. After a slip it shows the undo move
+With `arrows` and a player, the cube shows the next turn: a flat arrow (flat
+side to you) on a circle around each turning layer — an outer layer's just
+beyond its face, so U floats above the cube and D below; two for a wide `r`,
+the middle one for `M`. It goes where most of it is beside the cube rather
+than over or behind it. One head for a single turn, two heads (and a longer
+arc) for a double. The camera keeps a little room for arrows once shown. After a slip it shows the undo move
 instead; in practice it stays hidden with the move (Hint or a slip shows it).
 It follows the gyro and camera drags.
 

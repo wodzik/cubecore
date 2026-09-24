@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { Vector3 } from "three";
-import { ARROW_RADIUS, arrowShapes, arrowSpan, buildArrows, facingAngle } from "./arrows";
+import { ARROW_RADIUS, arrowStrips, arrowSpan, buildArrows, facingAngle } from "./arrows";
 
 describe("turn arrows", () => {
   it("float clear of the cube's corners", () => {
@@ -21,8 +21,8 @@ describe("turn arrows", () => {
   });
 
   it("one head for a single turn, two for a double; one mesh per layer", () => {
-    expect(arrowShapes(1, 0)).toHaveLength(2); // ribbon + head
-    expect(arrowShapes(-2, 0)).toHaveLength(3); // ribbon + 2 heads
+    expect(arrowStrips(1, 0)).toHaveLength(2); // ribbon + head
+    expect(arrowStrips(-2, 0)).toHaveLength(3); // ribbon + 2 heads
     expect(buildArrows([{ axis: 0, layers: [1, 0], quarters: -1 }], [0]).children).toHaveLength(2); // wide r
   });
 });

@@ -6,6 +6,7 @@
 import index from "./index.html";
 import render from "./render.html";
 import player from "./player.html";
+import bluetooth from "./bluetooth.html";
 
 const port = Number(process.env.PORT ?? 3000);
 Bun.serve({
@@ -15,6 +16,7 @@ Bun.serve({
     "/": index,
     "/render": render,
     "/player": player,
+    "/bluetooth": bluetooth,
     "/assets/*": (req) => {
       const name = new URL(req.url).pathname.replace(/^\/assets\//, "");
       if (name.includes("..")) return new Response("Not found", { status: 404 });

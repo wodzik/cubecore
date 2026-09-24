@@ -12,8 +12,10 @@
   },
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",
+    "@types/aes-js": "^3.1.4",
     "@types/bun": "latest",
     "@types/three": "^0.186.0",
+    "@types/web-bluetooth": "^0.0.21",
     "three": "^0.186.1",
     "typescript": "^5.6.0"
   }

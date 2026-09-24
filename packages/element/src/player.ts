@@ -14,7 +14,20 @@
  * skin, mask, method (stage markers from it), markers, speeds, rate,
  * currentTime, duration, playing, renderer.
  * Events: timeupdate {time, duration, applied}, play, pause, ended.
+ *
+ * Live: `attach(session)` follows a smart cube (a @cubecore/bluetooth
+ * SmartCubeSession, or anything with the same events) — its moves animate,
+ * resyncs jump, the gyro turns the cube; replay controls hide (`live`
+ * attribute). `detach()` goes back to playback.
  */
+
+/** What `attach` needs — SmartCubeSession fits; so does anything shaped like it. */
+export interface LiveSource {
+  readonly state: State;
+  on(type: "move", listener: (e: { move: Move }) => void): () => void;
+  on(type: "state", listener: (e: { state: State; reason: string }) => void): () => void;
+  on(type: "orientation", listener: (q: { x: number; y: number; z: number; w: number }) => void): () => void;
+}
 
 import { type Mask, type Method, type Move, type State, applyMoves, parseAlg, solvedState, spinsAfter } from "@cubecore/core";
 import { type BackView, CubeRenderer, showPosition } from "@cubecore/render";
@@ -65,6 +78,7 @@ export class CubePlayer extends HTMLElement {
   private _speeds = [0.5, 1, 2];
   private _rate = 1;
   private _setupState: State | null = null;
+  private liveOff: (() => void) | null = null;
 
   constructor() {
     super();
@@ -241,6 +255,43 @@ export class CubePlayer extends HTMLElement {
     this.seek(this.duration);
   }
 
+  // ─── live ───
+
+  /** Follow a smart cube: its moves animate, resyncs jump, its gyro turns the cube. Returns detach. */
+  attach(source: LiveSource, options: { gyro?: boolean; gyroSmoothing?: number } = {}): () => void {
+    this.detach();
+    this.pause();
+    this.unsubscribe?.();
+    this.unsubscribe = null;
+    this.setAttribute("live", "");
+    const r = () => this._renderer;
+    r()?.setState(source.state);
+    const offs = [
+      source.on("move", (e) => void r()?.animate(e.move)),
+      source.on("state", (e) => {
+        if (e.reason !== "move") r()?.setState(e.state);
+      }),
+    ];
+    if (options.gyro ?? true) offs.push(source.on("orientation", (q) => r()?.setOrientation(q, options.gyroSmoothing ?? 0.6)));
+    this.liveOff = () => offs.forEach((off) => off());
+    return () => this.detach();
+  }
+
+  /** Stop following a live cube and go back to playback. */
+  detach(): void {
+    if (!this.liveOff) return;
+    this.liveOff();
+    this.liveOff = null;
+    this.removeAttribute("live");
+    this._renderer?.setOrientation(null);
+    this.load();
+  }
+
+  /** Animate one move now (live input without a session). */
+  pushMove(move: Move | string): void {
+    for (const m of typeof move === "string" ? parseAlg(move) : [move]) void this._renderer?.animate(m);
+  }
+
   // ─── internals ───
 
   private $<T extends HTMLElement = HTMLElement>(sel: string): T {
@@ -254,7 +305,7 @@ export class CubePlayer extends HTMLElement {
   }
 
   private load(): void {
-    if (!this._renderer) return;
+    if (!this._renderer || this.liveOff) return;
     const wasPlaying = this.playing;
     this.clock?.pause();
     this.unsubscribe?.();

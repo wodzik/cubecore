@@ -67,3 +67,20 @@ describe("state codec", () => {
     expect(encodeState(fromCubies(twisted))).toBeNull();
   });
 });
+
+describe("facelet strings", () => {
+  it("round-trip, solved is UUUUUUUUURRR…, and any letters work as long as centres differ", async () => {
+    const { faceletsOf, stateFromFacelets } = await import("./index");
+    expect(faceletsOf(S)).toBe("U".repeat(9) + "R".repeat(9) + "F".repeat(9) + "D".repeat(9) + "L".repeat(9) + "B".repeat(9));
+    for (const scr of SCRAMBLES.filter((x) => !/[xyzMESrludfb]/.test(x))) {
+      const s = applyMoves(S, scr);
+      expect(statesEqual(stateFromFacelets(faceletsOf(s))!, s)).toBe(true);
+      const colours = faceletsOf(s).replace(/[URFDLB]/g, (c) => "wrgyob"["URFDLB".indexOf(c)]);
+      expect(statesEqual(stateFromFacelets(colours)!, s)).toBe(true);
+    }
+    expect(stateFromFacelets("U".repeat(54))).toBeNull();
+    const twisted = faceletsOf(S).split("");
+    [twisted[8], twisted[9], twisted[20]] = [twisted[9], twisted[20], twisted[8]];
+    expect(stateFromFacelets(twisted.join(""))).toBeNull();
+  });
+});

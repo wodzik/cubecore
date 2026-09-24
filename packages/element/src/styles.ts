@@ -95,6 +95,8 @@ export const STYLES = /* css */ `
   .speed { grid-area: speed; }
 }
 :host([controls="none"]) .controls { display: none; }
+/* Live (following a smart cube): nothing to replay. */
+:host([live]) .controls, :host([live]) .progress { display: none; }
 button {
   display: inline-grid; place-items: center;
   min-width: var(--cc-button-size); height: var(--cc-button-size);

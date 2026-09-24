@@ -115,3 +115,58 @@ export function permUnrank(rank: number, n: number): number[] {
   const pool = Array.from({ length: n }, (_, i) => i);
   return digits.map((d) => pool.splice(d, 1)[0]);
 }
+
+// ─── facelet strings ───
+
+const FACE_LETTERS = "URFDLB";
+
+/**
+ * A state from a 54-letter facelet string (Kociemba order U1…U9 R1… F1… D1…
+ * L1… B1…, each letter the face whose colour is there) — what smart cubes
+ * report and many tools exchange. Colours are read against the centres, so
+ * any letters work as long as each centre has its own. Null if the string
+ * isn't a reachable cube.
+ */
+export function stateFromFacelets(text: string): State | null {
+  if (text.length !== 54) return null;
+  const centreOf = new Map<string, number>();
+  for (let f = 0; f < 6; f++) centreOf.set(text[f * 9 + 4], f);
+  if (centreOf.size !== 6) return null;
+  const colour = (i: number) => centreOf.get(text[i]);
+  const cls = (facelet: number) => Math.floor(facelet / 9); // home colour class of a facelet
+  const cp: number[] = [], co: number[] = [], ep: number[] = [], eo: number[] = [];
+  for (const pos of CORNER_FACELETS) {
+    const cols = pos.map(colour);
+    let found = false;
+    for (let j = 0; j < 8 && !found; j++) {
+      const home = CORNER_FACELETS[j].map(cls);
+      for (let k = 0; k < 3; k++) {
+        if (cols[k] === home[0] && cols[(k + 1) % 3] === home[1] && cols[(k + 2) % 3] === home[2]) {
+          cp.push(j);
+          co.push(k);
+          found = true;
+          break;
+        }
+      }
+    }
+    if (!found) return null;
+  }
+  for (const pos of EDGE_FACELETS) {
+    const cols = pos.map(colour);
+    const j = EDGE_FACELETS.findIndex((home) => {
+      const h = home.map(cls);
+      return (cols[0] === h[0] && cols[1] === h[1]) || (cols[0] === h[1] && cols[1] === h[0]);
+    });
+    if (j < 0) return null;
+    ep.push(j);
+    eo.push(cols[0] === cls(EDGE_FACELETS[j][0]) ? 0 : 1);
+  }
+  const c: CubieState = { frame: FRAMES[0], cp, co, ep, eo };
+  if (new Set(cp).size !== 8 || new Set(ep).size !== 12 || !isSolvable(c)) return null;
+  return fromCubies(c);
+}
+
+/** The 54-letter facelet string of a state (each letter = the colour class's home face). */
+export function faceletsOf(state: State): string {
+  return Array.from(state, (sticker) => FACE_LETTERS[Math.floor(sticker / 9)]).join("");
+}

@@ -339,7 +339,19 @@ re-export shims in core — they would make core depend on the method packages
   `controls="none"` + the API (play / pause / seek / step…) and events.
   Container query keeps the bar on one row down to ~300 px. Demo `/player`,
   guide `docs/player.md`.
-- Next: glTF piece models, React bindings, per-theme skins, gyroscope adapter from smart-cube drivers, then
+- 2026-09-24 — **smart cubes** (`@cubecore/bluetooth`): `SmartCubeSession`
+  over smartcube-web-bluetooth (used from its TS sources via a tsconfig path —
+  the git dependency ships no build) — moves with times from the cube's own
+  clock (ClockSync: bursts from a backgrounded tab and resent moves keep their
+  real times, flagged `late`), tracked state resynced from FACELETS reports,
+  calibrated gyro for `setOrientation`, battery / hardware; `SimulatedCube`
+  with the same events. Core: `stateFromFacelets` / `faceletsOf`.
+  `<cube-player>` live mode: `attach(session)` / `detach()` / `pushMove()`.
+  Demo `/bluetooth` (real or simulated cube, written log, CFOP stages), guide
+  `docs/bluetooth.md`. Demo pages share a menu (`demo/nav.ts`).
+- Next: stage solvers (cross / xcross / EOCross / pair) + a worker,
+  glTF piece models, alg notation extras from cubing.js, React bindings,
+  per-theme skins, gyroscope adapter from smart-cube drivers, then
   `solve` (cross/xcross).
 
 ### Gyroscope (planned)

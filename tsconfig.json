@@ -3,7 +3,10 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "lib": ["ES2022", "DOM"],
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
     "strict": true,
     "noEmit": true,
     "isolatedModules": true,
@@ -11,7 +14,18 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": false,
     "allowImportingTsExtensions": true,
-    "types": ["bun"]
+    "types": [
+      "bun",
+      "web-bluetooth"
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "smartcube-web-bluetooth": [
+        "packages/bluetooth/node_modules/smartcube-web-bluetooth/src/index.ts"
+      ]
+    }
   },
-  "include": ["packages/*/src"]
+  "include": [
+    "packages/*/src"
+  ]
 }

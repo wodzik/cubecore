@@ -1,0 +1,14 @@
+{
+  "name": "@cubecore/bluetooth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "sideEffects": false,
+  "dependencies": {
+    "@cubecore/core": "workspace:*",
+    "smartcube-web-bluetooth": "github:poliva/smartcube-web-bluetooth"
+  }
+}

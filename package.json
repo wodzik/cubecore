@@ -8,11 +8,13 @@
   "scripts": {
     "test": "bun test",
     "typecheck": "tsc -p .",
-    "demo": "bun demo/index.html"
+    "demo": "bun demo/index.html demo/render.html"
   },
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",
     "@types/bun": "latest",
+    "@types/three": "^0.186.0",
+    "three": "^0.186.1",
     "typescript": "^5.6.0"
   }
 }

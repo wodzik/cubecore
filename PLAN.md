@@ -228,7 +228,26 @@ Dependency direction is strictly downward: `core` ← `solve`, `timeline` ←
   masks, frames, rounded stickers — ~0.04 ms per image; `SvgCache` + stable
   `svgKey` for any cache; PNG via canvas in the browser or
   `@cubecore/image/png-node` (resvg) on a server. 47 tests.
-- Next: `solve` (cross/xcross, TS + WASM) → 3D renderer.
+- 2026-09-24 — **3D renderer MVP** (`@cubecore/render`, three.js peer
+  dependency): `CubeRenderer` with no built-in UI (`setState`, `animate`,
+  `showPartial`, `showPosition` for timeline replays, `setMask`, `setSkin`,
+  `setCamera`, drag-to-orbit), on-demand rendering, camera auto-fit (also
+  with back stickers), Skin presets `standard` / `stickerless` / `gan`,
+  back ("hint") stickers per skin, smart-cube-friendly queue (backlog applied
+  instantly, only the newest move animates: 20 moves caught up in ~150 ms),
+  `setOrientation(quaternion, smoothing)` for gyroscopes. Demo: `/render`.
+- Next: logo texture + custom sticker shapes (SDF), per-theme skins,
+  gyroscope adapter from smart-cube drivers, then `solve` (cross/xcross).
+
+### Gyroscope (planned)
+- `setOrientation(q, smoothing)` is the whole renderer-side API: the cube's
+  root group takes the quaternion, independent of the camera orbit.
+- A `@cubecore/bluetooth` adapter will map a smart cube's gyro quaternion
+  (GAN i3/i4 etc. report one) into the renderer's frame: calibrate on
+  "hold the cube as shown" (store the inverse of the current reading), then
+  `setOrientation(inverse(calibration) × reading)`; smoothing hides sensor
+  noise. Rotations from the gyro never change the cube State — they are view
+  only, so method tracking stays unaffected.
 
 ## 11. Open questions
 

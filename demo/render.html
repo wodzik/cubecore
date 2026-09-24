@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>cubecore render demo</title>
+    <style>
+      :root { color-scheme: dark; --bg: #0b0b0c; --panel: #151517; --line: #2a2a2e; --text: #e6e6e6; --muted: #8b8b93; --accent: #7aa2ff; }
+      * { box-sizing: border-box; }
+      body { margin: 0; font: 14px/1.45 system-ui, sans-serif; background: var(--bg); color: var(--text); }
+      main { max-width: 1100px; margin: 0 auto; padding: 16px; display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+      @media (min-width: 900px) { main { grid-template-columns: minmax(0, 1fr) 360px; } }
+      section { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+      #stage { aspect-ratio: 1; width: 100%; max-height: 70vh; }
+      h1 { font-size: 18px; margin: 0 0 4px; } p.sub { margin: 0 0 12px; color: var(--muted); }
+      label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
+      select, input[type=text] { width: 100%; background: #0f0f11; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 7px; font: 13px ui-monospace, monospace; }
+      .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+      button { background: #232327; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; cursor: pointer; font: 13px ui-monospace, monospace; }
+      button:hover { border-color: var(--accent); }
+      input[type=range] { width: 100%; }
+      .kv { color: var(--muted); font-size: 12px; }
+      a { color: var(--accent); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div>
+        <h1>@cubecore/render</h1>
+        <p class="sub">three.js view driven from outside — drag to orbit. <a href="/">Core demo →</a></p>
+        <section><div id="stage"></div></section>
+      </div>
+      <div style="display:grid;gap:12px;align-content:start">
+        <section>
+          <strong>Moves</strong>
+          <div class="row" id="moveButtons" style="margin-top:8px"></div>
+          <label for="alg">Animate an algorithm</label>
+          <div class="row"><input type="text" id="alg" value="R U R' U' R' F R2 U' R' U' R U R' F'" style="flex:1" /><button id="run">Run</button></div>
+          <div class="row" style="margin-top:8px"><button id="scramble">Scramble</button><button id="reset">Reset</button><button id="burst">Burst ×20 (fast input)</button></div>
+        </section>
+        <section>
+          <strong>Replay in real time</strong>
+          <div class="kv">A CFOP solve with a pause before each stage; moves end at their recorded time.</div>
+          <div class="row" style="margin-top:8px"><button id="play">Play</button><select id="rate" style="width:auto"><option>0.5</option><option selected>1</option><option>2</option></select><span id="clock" class="kv"></span></div>
+          <input type="range" id="scrub" min="0" max="1000" value="0" />
+        </section>
+        <section>
+          <strong>Look</strong>
+          <label for="skin">Skin</label><select id="skin"></select>
+          <label for="mask">Mask</label><select id="mask"><option value="">none</option></select>
+          <label class="kv"><input type="checkbox" id="hints" /> back ("hint") stickers</label>
+          <label for="lat">Camera latitude</label><input type="range" id="lat" min="-80" max="80" value="30" />
+          <label for="lon">Camera longitude</label><input type="range" id="lon" min="-180" max="180" value="35" />
+          <label class="kv"><input type="checkbox" id="gyro" /> simulated gyroscope (setOrientation, smoothed)</label>
+          <div class="kv" id="info"></div>
+        </section>
+      </div>
+    </main>
+    <script type="module" src="./render.ts"></script>
+  </body>
+</html>

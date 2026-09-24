@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import { applyMoves, formatAlg, invert, parseAlg } from "@cubecore/core";
+import { applyMoves, formatAlg, invert, isSolved, parseAlg, solvedState, statesEqual } from "@cubecore/core";
 import { CFOP } from "@cubecore/cfop";
 import { recording } from "@cubecore/timeline";
-import { formatTime, fraction, stageMarkers, stepTime, tempoRecording } from "./model";
+import { formatTime, fraction, stageMarkers, startMoves, stepTime, tempoRecording } from "./model";
 
 describe("player model", () => {
   it("formats times like a timer", () => {
@@ -37,5 +37,18 @@ describe("player model", () => {
     expect(marks[0]).toEqual({ time: 400, label: "Cross" });
     expect(marks.length).toBeGreaterThanOrEqual(5);
     expect(applyMoves).toBeDefined();
+  });
+});
+
+describe("where an algorithm starts", () => {
+  const alg = parseAlg("R U R' U R U2 R'");
+  it("anchor start: from solved (plus setup); anchor end: the algorithm solves the cube", () => {
+    expect(startMoves("", alg)).toEqual([]);
+    const start = applyMoves(solvedState(), startMoves("", alg, "end"));
+    expect(isSolved(applyMoves(start, alg))).toBe(true);
+    // With a setup, "end" lands back on the setup state.
+    const setup = "F2 D";
+    const s2 = applyMoves(solvedState(), startMoves(setup, alg, "end"));
+    expect(statesEqual(applyMoves(s2, alg), applyMoves(solvedState(), setup))).toBe(true);
   });
 });

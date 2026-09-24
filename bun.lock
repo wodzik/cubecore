@@ -37,6 +37,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@cubecore/core": "workspace:*",
+        "@cubecore/image": "workspace:*",
         "@cubecore/render": "workspace:*",
         "@cubecore/skin": "workspace:*",
         "@cubecore/timeline": "workspace:*",

@@ -359,6 +359,13 @@ re-export shims in core — they would make core depend on the method packages
   smart cube by state: half turns, reordered opposite faces, slices /
   rotations; undo after a slip) and `<cube-scramble>`. With these, act no
   longer needs cubing.js or or18 for anything. Guide: `docs/scrambles.md`.
+- 2026-09-25 — **player: anchor, 2D views, errors; Playground demo**:
+  `anchor="end"` (the algorithm solves the cube: start = setup + inverse, as
+  act's "this algorithm solves the cube"), `visualization="net" | "top" |
+  "iso"` (SVG with the same skin / mask), `error` events for bad notation.
+  Demo `/playground`: every player option (timing: tempo / recording / share
+  code; skins, page theme, 2D views, back view, hints, masks, stage markers,
+  controls) with the matching code snippet.
 - Next: glTF piece models, alg notation extras from cubing.js, React bindings,
   per-theme skins, gyroscope adapter from smart-cube drivers, then
   `solve` (cross/xcross).

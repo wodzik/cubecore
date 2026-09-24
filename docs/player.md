@@ -17,6 +17,8 @@
 | | |
 |---|---|
 | `alg`, `setup`, `tempo` | an algorithm at a steady tempo (moves per second), after a setup (moves, or a `State` via the property) |
+| `anchor` | `start` (default): play the algorithm from the (set-up) cube · `end`: the algorithm **solves** the cube — it starts at setup + the algorithm's inverse and ends solved (case practice) |
+| `visualization` | `3d` (default), `net`, `top`, `iso` — the 2D views are SVG pictures (@cubecore/image) with the same skin and mask |
 | `recording` (property) | a timed solve; takes precedence over `alg` |
 | `skin` | preset name, or a `Skin` object via the property |
 | `back-view` | `none` / `side-by-side` / `top-right` |
@@ -27,7 +29,39 @@
 
 API: `play()`, `pause()`, `toggle()`, `seek(ms)`, `stepForward()`, `stepBack()`,
 `toStart()`, `toEnd()`; `playing`, `currentTime`, `duration`, `renderer`.
-Events: `timeupdate` (`detail: { time, duration, applied }`), `play`, `pause`, `ended`.
+Events: `timeupdate` (`detail: { time, duration, applied }`), `play`, `pause`, `ended`,
+`error` (`detail: { message }` — e.g. notation that doesn't parse; the cube then shows the setup).
+
+## Algorithm vs recording (timestamps)
+
+Both end up as the same thing inside — a *recording*: moves, each with the
+time it **completed**, and a total time — driven by the same clock, controls
+and progress bar. The difference is where the times come from:
+
+| | `alg` (+ `tempo`) | `recording` |
+|---|---|---|
+| times | made up: move *i* ends at (*i*+1) / tempo s | real, as recorded (e.g. from a smart cube: `SmartCubeSession` move times) |
+| pauses | none — a steady rhythm | kept (recognition pauses stay pauses) |
+| a move's animation | 80 % of the interval | at most 150 ms, ending at the move's time, never overlapping the previous one |
+| start state | solved (+ `setup`; `anchor="end"` for "the algorithm solves it") | solved + the recording's `scramble` |
+| typical use | guides, case practice, algorithm demos | solve replays, shared solves (`decodeShare`) |
+
+`rate` (speed button) scales either one, keeping proportions.
+
+## Stage markers
+
+`markers` shows ticks on the progress bar where stages END. They come from:
+
+- **`player.method`** — any `Method` (CFOP, Roux, ZZ, Petrus, LBL, or your own
+  from `@cubecore/core`'s `Method` / `Stage`). The player runs the method's
+  colour-neutral `MethodTracker` over the recording (its scramble + moves) and
+  puts a tick at the time each stage was reached (skipped stages — reached on
+  the same move as the previous — get none). Nothing to pass: stage times are
+  derived from the moves, like `stageTimings` in @cubecore/timeline.
+- **`player.markers = [{ time, label }, …]`** — any ticks you like (overrides
+  `method`): chapters of a guide, your own analysis, stage times you stored.
+
+Hovering a tick shows its label and time.
 Keyboard (when focused): Space / K, ← →, Home / End.
 
 ## Three levels of customising the controls

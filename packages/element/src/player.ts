@@ -7,13 +7,17 @@
  *   3. bring your own controls: <cube-player controls="none"> or a child with slot="controls",
  *                               driven by play() / pause() / seek() / stepForward()… and events.
  *
- * Attributes: alg, setup, tempo (moves per second, default 2), skin (preset
- * name), back-view, controls ("default" | "none"), progress (show the bar),
- * markers (show stage markers on it).
+ * Attributes: alg, setup, anchor ("start": play the algorithm from the
+ * (set-up) cube — default; "end": the algorithm SOLVES it, so the cube
+ * starts at setup + inverse of the algorithm), tempo (moves per second,
+ * default 2), skin (preset name), back-view, visualization ("3d" | "net" |
+ * "top" — the 2D views are SVG pictures from @cubecore/image), controls
+ * ("default" | "none"), progress (show the bar), markers (stage markers).
  * Properties: recording (a timed solve — plays in real time), alg, setup,
  * skin, mask, method (stage markers from it), markers, speeds, rate,
  * currentTime, duration, playing, renderer.
- * Events: timeupdate {time, duration, applied}, play, pause, ended.
+ * Events: timeupdate {time, duration, applied}, play, pause, ended,
+ * error {message} (e.g. an algorithm that doesn't parse — the cube then shows the setup).
  *
  * Live: `attach(session)` follows a smart cube (a @cubecore/bluetooth
  * SmartCubeSession, or anything with the same events) — its moves animate,
@@ -30,15 +34,16 @@ export interface LiveSource {
 }
 
 import { type Mask, type Method, type Move, type State, applyMoves, parseAlg, solvedState, spinsAfter } from "@cubecore/core";
+import { renderSvg } from "@cubecore/image";
 import { type BackView, CubeRenderer, showPosition } from "@cubecore/render";
 import { SKINS, type Skin } from "@cubecore/skin";
 import { type Position, type Recording, ReplayClock } from "@cubecore/timeline";
-import { type Marker, formatTime, fraction, stageMarkers, stepTime, tempoRecording } from "./model";
+import { type Marker, formatTime, fraction, stageMarkers, startMoves, stepTime, tempoRecording } from "./model";
 import { ICONS, STYLES } from "./styles";
 
 const TEMPLATE = `
 <style>${STYLES}</style>
-<div class="stage" part="stage"></div>
+<div class="stage" part="stage"><div class="flat" part="flat" hidden></div></div>
 <div class="progress" part="progress" role="slider" tabindex="0" aria-label="Position" aria-valuemin="0">
   <div class="track" part="progress-track">
     <div class="fill" part="progress-fill"></div>
@@ -61,7 +66,7 @@ const TEMPLATE = `
 </slot>`;
 
 export class CubePlayer extends HTMLElement {
-  static observedAttributes = ["alg", "setup", "tempo", "skin", "back-view"];
+  static observedAttributes = ["alg", "setup", "anchor", "tempo", "skin", "back-view", "visualization"];
 
   private readonly root: ShadowRoot;
   private _renderer: CubeRenderer | null = null;
@@ -109,7 +114,10 @@ export class CubePlayer extends HTMLElement {
 
   attributeChangedCallback(name: string): void {
     if (!this._renderer) return;
-    if (name === "skin") this._renderer.setSkin(this.resolveSkin());
+    if (name === "skin") {
+      this._renderer.setSkin(this.resolveSkin());
+      this.redraw();
+    } else if (name === "visualization") this.redraw();
     else if (name === "back-view") this._renderer.setBackView((this.getAttribute("back-view") as BackView) ?? "none");
     else this.load();
   }
@@ -157,6 +165,7 @@ export class CubePlayer extends HTMLElement {
     } else {
       this._skin = s;
       this._renderer?.setSkin(s);
+      this.redraw();
     }
   }
 
@@ -166,6 +175,7 @@ export class CubePlayer extends HTMLElement {
   set mask(m: Mask | null) {
     this._mask = m;
     this._renderer?.setMask(m);
+    this.redraw();
   }
 
   /** Stage markers come from this method's analysis of the recording (colour neutral). */
@@ -310,16 +320,28 @@ export class CubePlayer extends HTMLElement {
     this.clock?.pause();
     this.unsubscribe?.();
     let maxAnimMs = 150;
-    if (this._recording) {
-      this.rec = this._recording;
-    } else {
-      const tempo = Number(this.getAttribute("tempo") ?? 2) || 2;
-      const t = tempoRecording(this.alg, tempo);
-      this.rec = t.recording;
-      maxAnimMs = t.interval * 0.8;
+    let solves: Move[] = [];
+    try {
+      if (this._recording) {
+        this.rec = this._recording;
+      } else {
+        const tempo = Number(this.getAttribute("tempo") ?? 2) || 2;
+        const t = tempoRecording(this.alg, tempo);
+        this.rec = t.recording;
+        maxAnimMs = t.interval * 0.8;
+        // anchor="end": the algorithm solves the cube — start from its inverse.
+        solves = startMoves([], t.recording.moves.map((m) => m.move), this.getAttribute("anchor") === "end" ? "end" : "start");
+      }
+      const setup = this._setupState ? [] : parseAlg(this.setup);
+      this.startMoves = [...setup, ...solves, ...this.rec.scramble];
+      this.start = this._setupState ? applyMoves(this._setupState, [...solves, ...this.rec.scramble]) : applyMoves(solvedState(), this.startMoves);
+    } catch (err) {
+      // Bad notation: show the cube as set up (or solved) and tell the page.
+      this.rec = { scramble: [], moves: [], totalMs: 0 };
+      this.startMoves = [];
+      this.start = this._setupState ?? solvedState();
+      this.dispatchEvent(new CustomEvent("error", { detail: { message: err instanceof Error ? err.message : String(err) } }));
     }
-    this.startMoves = this._setupState ? [] : [...parseAlg(this.setup), ...this.rec.scramble];
-    this.start = this._setupState ?? applyMoves(solvedState(), this.startMoves);
     this.clock = new ReplayClock(this.rec, { maxAnimMs });
     this.clock.rate = this._rate;
     this.unsubscribe = this.clock.onChange((time, pos) => this.onTime(time, pos));
@@ -328,8 +350,12 @@ export class CubePlayer extends HTMLElement {
     if (wasPlaying) this.play();
   }
 
+  private lastPos: Position = { applied: 0 };
+
   private onTime(time: number, pos: Position): void {
+    this.lastPos = pos;
     if (this._renderer) showPosition(this._renderer, this.start, this.rec.moves.map((m) => m.move), pos, spinsAfter(solvedState(), this.startMoves));
+    this.redraw();
     this.updateUi(time);
     this.dispatchEvent(new CustomEvent("timeupdate", { detail: { time, duration: this.duration, applied: pos.applied } }));
     // The clock reports the final frame while still playing, then stops: that frame is the end.
@@ -339,6 +365,21 @@ export class CubePlayer extends HTMLElement {
         this.dispatchEvent(new Event("ended"));
       });
     }
+  }
+
+  /** 2D visualizations: an SVG of the position (moves applied so far) with the same skin and mask. */
+  private redraw(): void {
+    const kind = this.getAttribute("visualization") ?? "3d";
+    const flat = this.$(".flat");
+    const canvas = this._renderer?.canvas;
+    const is2d = kind === "net" || kind === "top" || kind === "iso";
+    flat.hidden = !is2d;
+    if (canvas) canvas.style.visibility = is2d ? "hidden" : "";
+    if (!is2d) return;
+    const played = this.rec.moves.slice(0, this.lastPos.applied).map((m) => m.move);
+    const state = applyMoves(this.start, played);
+    const spins = spinsAfter(solvedState(), [...this.startMoves, ...played]);
+    flat.innerHTML = renderSvg(state, { view: kind, skin: this.resolveSkin(), spins, ...(this._mask ? { mask: this._mask } : {}) });
   }
 
   private updateUi(time: number): void {

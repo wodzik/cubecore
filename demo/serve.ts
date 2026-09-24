@@ -7,6 +7,7 @@ import index from "./index.html";
 import render from "./render.html";
 import player from "./player.html";
 import bluetooth from "./bluetooth.html";
+import playground from "./playground.html";
 
 // Bun's HTML dev bundler leaves `new URL("./worker.ts", import.meta.url)` alone, so the demo builds the
 // solver worker itself and serves it; pages pass this URL to createSolverWorker.
@@ -23,6 +24,7 @@ Bun.serve({
     "/render": render,
     "/player": player,
     "/bluetooth": bluetooth,
+    "/playground": playground,
     "/solver-worker.js": async () => new Response(await buildSolverWorker(), { headers: { "content-type": "text/javascript" } }),
     "/assets/*": (req) => {
       const name = new URL(req.url).pathname.replace(/^\/assets\//, "");

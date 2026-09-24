@@ -9,7 +9,7 @@
  *     --cc-progress-height   bar thickness            --cc-progress-track / --cc-progress-fill
  *     --cc-marker            stage marker colour      --cc-thumb-size
  *     --cc-font              time / speed text
- * - ::part() for anything else: stage, progress, progress-track,
+ * - ::part() for anything else: stage, flat (the 2D picture), progress, progress-track,
  *   progress-fill, progress-thumb, progress-marker, controls, buttons, button,
  *   button-start, button-back, button-play, button-forward, button-end,
  *   button-speed, time.
@@ -44,6 +44,9 @@ export const STYLES = /* css */ `
 }
 :host([hidden]) { display: none; }
 .stage { position: relative; flex: 1; min-height: 0; }
+.flat { position: absolute; inset: 0; display: grid; place-items: center; }
+.flat[hidden] { display: none; }
+.flat svg { width: 100%; height: 100%; }
 
 /* ─── progress bar ─── */
 .progress { display: none; padding: 6px 2px; cursor: pointer; touch-action: none; }

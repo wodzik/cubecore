@@ -7,6 +7,7 @@
 export const DEMOS = [
   { path: "/", title: "Core", hint: "State, notation, colour-neutral method tracking, masks, pictures, timeline" },
   { path: "/render", title: "3D renderer", hint: "Skins, tiles and pieces, decals and features, masks, back view, gyro" },
+  { path: "/playground", title: "Playground", hint: "Every <cube-player> option: setup, 'algorithm solves the cube', timing, skins, theme, 2D views, masks — with the code" },
   { path: "/player", title: "Player", hint: "<cube-player>: controls, progress bar, theming, your own controls" },
   { path: "/bluetooth", title: "Smart cube", hint: "Bluetooth cubes live: moves with the cube's clock, written log, stages, gyro — or a simulated cube" },
 ] as const;

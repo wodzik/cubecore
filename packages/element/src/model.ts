@@ -3,7 +3,7 @@
  * pure functions (tested in bun; the element only wires them to buttons).
  */
 
-import { type Method, type Move, parseAlg } from "@cubecore/core";
+import { type Method, type Move, invert, parseAlg } from "@cubecore/core";
 import { type Recording, stageTimings } from "@cubecore/timeline";
 
 /** A mark on the progress bar, e.g. where a stage ends. */
@@ -48,3 +48,13 @@ export function stepTime(rec: Recording, time: number, direction: 1 | -1): numbe
 
 /** Fraction 0..1 of the way through. */
 export const fraction = (time: number, duration: number) => (duration > 0 ? Math.min(1, Math.max(0, time / duration)) : 0);
+
+/**
+ * Moves that set the cube up before an algorithm plays: the setup, then —
+ * for `anchor = "end"` (the algorithm SOLVES the cube) — the algorithm's
+ * inverse, so playing it ends solved (or back at the setup).
+ */
+export function startMoves(setup: string | readonly Move[], alg: readonly Move[], anchor: "start" | "end" = "start"): Move[] {
+  const s = typeof setup === "string" ? parseAlg(setup) : [...setup];
+  return anchor === "end" ? [...s, ...invert(alg)] : s;
+}

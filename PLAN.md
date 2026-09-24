@@ -13,6 +13,19 @@ of cubing.js that hurt in `act`:
 | Masks, hint ("back") stickers and themes only reachable through experimental APIs | First-class API: per-facelet mask states and their colours, hint distance, theme switch — no three.js internals |
 | Everything tied to the player; hard to use logic alone | `@cubecore/core` has zero dependencies and no DOM; renderer is a separate package |
 
+Decisions (2026-09-24):
+
+- **Developed standalone.** Nothing is adopted in act until cubecore is
+  ready; it is first exercised on a plain HTML demo page (`demo/`).
+- **Many methods, not just CFOP**: CFOP, beginner LBL, Roux, ZZ, Petrus
+  from the start (Mehta/others later), each as data (ordered stages with
+  predicates) so adding a method needs no engine change.
+- **Colour neutral everywhere.** Nothing assumes "white cross on D". Pieces
+  are checked against the *current centre colours*, and every method stage is
+  searched over all cube orientations (frames) until one fits; the found frame
+  anchors the later stages. Works for any colour scheme and when centres move
+  (M/E/S, rotations).
+
 Non-goals: other puzzles (2x2, 4x4, megaminx…), a full Twizzle-like editor,
 WCA scramble certification.
 
@@ -77,7 +90,25 @@ Dependency direction is strictly downward: `core` ← `solve`, `timeline` ←
 - Stage detector for a move stream (CFOP / Roux / LBL), emitting boundaries —
   port of act's `stageDetection`.
 
-### 3.4 Masks
+### 3.4 Frames, blocks and colour neutrality
+- A **Frame** is one of the 24 cube orientations; canonical block
+  definitions (e.g. "cross = the D-layer edges", "Roux FB = 1×2×3 on L,
+  bottom D") are mapped through it to physical facelet positions.
+- A block is **solved** when every facelet in it shows the colour of the
+  centre of the face it sits on — no fixed colours anywhere.
+- Method stages search frames: the first stage fixes the frame (e.g. which
+  face the cross is on), later stages reuse it.
+
+### 3.5 Methods & stage tracking
+- Method = ordered stages, each `{ id, check(state, frame) → done | progress }`.
+- Built-in: CFOP (cross, F2L ×4 in any order, OLL, PLL, AUF), LBL (cross,
+  corners ×4, edges ×4, OLL, PLL), Roux (FB, SB, CMLL, EO, UL/UR, L4E),
+  ZZ (EOLine/EOCross, left block, right block, LL), Petrus (2×2×2, 2×2×3,
+  EO, F2L, LL).
+- `MethodTracker`: feed moves (with timestamps), get stage boundaries and
+  the frame each method settled on; several methods can be tracked at once.
+
+### 3.6 Masks
 - Per-facelet mask states: `regular | dim | ignored | oriented | invisible`
   (+ `hint` override), built from piece groups (`cross(D)`, `f2lSlot(FR)`,
   `ll`, …). Masks follow pieces, like cubing.js stickering masks.

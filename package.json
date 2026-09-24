@@ -2,10 +2,13 @@
   "name": "cubecore-monorepo",
   "private": true,
   "type": "module",
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "test": "bun test",
-    "typecheck": "tsc -p ."
+    "typecheck": "tsc -p .",
+    "demo": "bun demo/index.html"
   },
   "devDependencies": {
     "@types/bun": "latest",

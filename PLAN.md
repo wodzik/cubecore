@@ -208,7 +208,19 @@ Dependency direction is strictly downward: `core` ← `solve`, `timeline` ←
 9. **Adopt in act** behind a flag, page by page (Solve analysis replay first:
    it benefits most from timed replay and styled controls).
 
-## 10. Open questions
+## 10. Status
+
+- 2026-09-24 — **Phase 1 core done** (`packages/core`): geometry-derived
+  moves (face/wide/slice/rotation), notation (repetition, commutators,
+  conjugates, invert/simplify/mirror, HTM/QTM/STM/ETM), sticker-identity
+  state + facelet strings, 24 frames + `transformMoves`, colour-neutral
+  checks, methods CFOP/LBL/Roux/ZZ/Petrus, `MethodTracker` (per-frame
+  progress, best frame wins; ~0.005 ms per move). 26 tests, every method
+  test repeated in all 24 orientations. Demo: `bun run demo` (2D net,
+  scrubber, all methods side by side, colour scheme + orientation switch).
+- Next: masks (3.6) → `timeline` → `solve` (cross/xcross) → renderer.
+
+## 11. Open questions
 
 - Licence (MIT vs MPL/GPL) — decide before copying/porting anything from
   cubing.js or or18; check their licences first.

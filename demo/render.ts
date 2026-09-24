@@ -63,6 +63,7 @@ $("scrub").oninput = () => {
 const DEMO_SKINS: Record<string, Skin> = {
   ...SKINS,
   "gan + logo": { ...SKINS.gan, logo: { sticker: 4, image: "/assets/gan-logo.png", size: 0.72, blend: "multiply" } },
+  "gan i4 + logo": { ...SKINS.ganI4, logo: { sticker: 4, image: "/assets/gan-logo.png", size: 0.62, blend: "multiply" } },
   "custom SVG tiles": {
     ...SKINS.stickerless,
     stickers: {

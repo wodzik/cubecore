@@ -301,6 +301,12 @@ re-export shims in core — they would make core depend on the method packages
   core under thick tiles. `gan` / `stickerless` presets use it; `standard`
   keeps flat stickers. Next levels: a custom cross-section curve, then glTF
   piece models per cube model (materials named sticker-U/F/R, body).
+- 2026-09-24 — **GAN i4-style skin + finer stickerless**: `stickers.edgeRadius`
+  rounds the cube's edges (each tile takes 45° of the round, meeting on the
+  mitre — colour runs round the edge), `stickers.roughness` (matte ↔ UV
+  gloss), `stickers.centerHoles` (translucent discs, 3D and SVG). New preset
+  `ganI4` from product photos (light internals, minimal gaps, squarish holed
+  centres); `stickerless` / `gan` gaps made minimal.
 - Next: per-theme skins, gyroscope adapter from smart-cube drivers, then
   `solve` (cross/xcross).
 

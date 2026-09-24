@@ -39,6 +39,20 @@ export interface Skin {
      * "plastic" — lit with a soft highlight, so thick bevelled tiles read as moulded plastic.
      */
     material?: "flat" | "plastic";
+    /** Plastic finish: 0 = glossy (UV coated) … 1 = matte. Default 0.4. */
+    roughness?: number;
+    /**
+     * Stickerless: rounding of the cube's outer edges (cubie units). The two
+     * tiles meeting there each curve over half of it, so colour runs round
+     * the edge. Default 0 (a sharp edge).
+     */
+    edgeRadius?: number;
+    /**
+     * Small holes in the centre tiles (e.g. the tension-adjustment holes of
+     * some smart cubes): `radius` as a fraction of the tile side, `offset`
+     * from the tile centre towards each corner as a fraction of the half side.
+     */
+    centerHoles?: { radius: number; offset: number };
     /**
      * Stickerless: tile sides on the cube's outer edge reach the edge, so two
      * faces' colours meet directly on edges and corners (no black line there);
@@ -76,10 +90,10 @@ export const SKINS = {
   /** Stickerless look: tiles fill the face, small radius, dark grey core. */
   stickerless: {
     body: "#1c1c1c",
-    cubieSize: 0.97,
+    cubieSize: 0.99,
     cubieRadius: 0.08,
     bodyInset: 0.015,
-    stickers: { colors: WESTERN, size: 0.94, radius: 0.1, fillOuter: true, thickness: 0.03, bevel: 0.02, material: "plastic" },
+    stickers: { colors: WESTERN, size: 0.975, radius: 0.1, fillOuter: true, thickness: 0.03, bevel: 0.012, edgeRadius: 0.03, material: "plastic" },
     mask: { ignored: "#4a4a4a", oriented: "#39c7d4", dimAmount: 0.55 },
     hints: { enabled: false, distance: 1.4, opacity: 0.75, ignoredOpacity: 0.35 },
     background: null,
@@ -91,20 +105,49 @@ export const SKINS = {
    */
   gan: {
     body: "#0a0a0a",
-    cubieSize: 0.985,
+    cubieSize: 0.99,
     cubieRadius: 0.06,
     bodyInset: 0.02,
     stickers: {
       colors: ["#f7f7f5", "#f5303a", "#1fc25a", "#ffe01a", "#ff8a1f", "#1f73ea"],
-      size: 0.955,
+      size: 0.97,
       radius: 0.08,
       shape: { corner: { inner: 0.34, outer: 0.07 }, edge: { inner: 0.3, outer: 0.07 }, center: 0.36 },
       thickness: 0.035,
-      bevel: 0.024,
+      bevel: 0.016,
+      edgeRadius: 0.03,
       material: "plastic",
       fillOuter: true,
     },
     mask: { ignored: "#5a5a5a", oriented: "#39c7d4", dimAmount: 0.55 },
+    hints: { enabled: false, distance: 1.4, opacity: 0.75, ignoredOpacity: 0.35 },
+    background: null,
+  },
+  /**
+   * GAN i4-style smart cube (from product photos): light translucent-grey
+   * internals showing in minimal gaps, thick matte tiles with soft edges, the
+   * cube's edges rounded so colour runs round them, squarish centres with
+   * four adjustment holes. The brand logo is up to the app (`logo`).
+   */
+  ganI4: {
+    body: "#cfd3d9",
+    cubieSize: 0.992,
+    cubieRadius: 0.07,
+    bodyInset: 0.02,
+    stickers: {
+      colors: ["#f3f2ee", "#f2323d", "#24c95c", "#ffe03a", "#ff7b22", "#2d6cf0"],
+      size: 0.978,
+      radius: 0.1,
+      shape: { corner: { inner: 0.26, outer: 0.09 }, edge: { inner: 0.3, outer: 0.09 }, center: 0.3 },
+      thickness: 0.04,
+      bevel: 0.018,
+      edgeRadius: 0.05,
+      material: "plastic",
+      roughness: 0.55,
+      fillOuter: true,
+      centerHoles: { radius: 0.045, offset: 0.64 },
+    },
+    mask: { ignored: "#6a6d72", oriented: "#39c7d4", dimAmount: 0.55 },
     hints: { enabled: false, distance: 1.4, opacity: 0.75, ignoredOpacity: 0.35 },
     background: null,
   },

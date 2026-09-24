@@ -52,4 +52,14 @@ describe("tile solids", () => {
     expect(s.topRing.length).toBe(4);
     expect(extent(s.positions, 0, 0.035)).toBeCloseTo(0.45);
   });
+
+  it("edgeRadius rounds the cube edge: the top ends R short of the mitre, the round meets it at 45°", () => {
+    const layout = { ...stickerLayout(8, SHAPE), u: 1, v: 1 };
+    const edge = 0.4945, R = 0.05;
+    const s = tileSolid(stickerlessOutline(layout, 0.94 * 0.985, edge), { ...PROFILE, edgeRadius: R }, { u: 1, v: 1, edge, ramp: 0.14 });
+    // Flat top reaches edge + t − R; where the round meets the mitre plane x − edge = z.
+    expect(extent(s.positions, 0, 0.035)).toBeCloseTo(edge + 0.035 - R, 4);
+    const meet = 0.035 - R * (1 - Math.SQRT1_2);
+    expect(extent(s.positions, 0, meet)).toBeCloseTo(edge + meet, 4);
+  });
 });

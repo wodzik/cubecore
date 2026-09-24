@@ -12,6 +12,7 @@
 
 import {
   BackSide,
+  CircleGeometry,
   Color,
   FrontSide,
   Group,
@@ -267,12 +268,13 @@ export class CubeRenderer {
   private material(color: string, hint: boolean, opacity = 1): MeshBasicMaterial | MeshStandardMaterial {
     // Tiles of a "plastic" skin are lit; hint stickers always stay flat (they're a see-through aid, not plastic).
     const lit = !hint && this.skin.stickers.material === "plastic";
-    const key = `${color}|${hint}|${opacity}|${lit}`;
+    const roughness = this.skin.stickers.roughness ?? 0.4;
+    const key = `${color}|${hint}|${opacity}|${lit}|${roughness}`;
     let m = this.materials.get(key);
     if (!m) {
       m = lit
         ? // A little of the tile's own colour as emission keeps shaded faces from going muddy; the highlight stays.
-          new MeshStandardMaterial({ color: new Color(color), emissive: new Color(color), emissiveIntensity: 0.32, roughness: 0.4, metalness: 0 })
+          new MeshStandardMaterial({ color: new Color(color), emissive: new Color(color), emissiveIntensity: 0.32, roughness, metalness: 0 })
         : new MeshBasicMaterial({
             color: new Color(color),
             side: hint ? BackSide : FrontSide,
@@ -321,12 +323,13 @@ export class CubeRenderer {
             : roundedOutline(side, layout.radii);
         g =
           thickness > 0
-            ? solidGeometry(outline, { thickness, bevel, segments: 4, sink: inset + 0.002 }, fill ? { u: layout.u, v: layout.v, edge, ramp: Math.max(thickness * 4, 0.03) } : null)
+            ? solidGeometry(outline, { thickness, bevel, segments: 4, sink: inset + 0.002, edgeRadius: s.stickers.edgeRadius ?? 0 }, fill ? { u: layout.u, v: layout.v, edge, ramp: Math.max(thickness * 4, 0.03) } : null)
             : new ShapeGeometry(new Shape(outline.map(([x, y]) => new Vector2(x, y))));
         geometries.set(key, g);
       }
       return g;
     };
+    const holes = s.stickers.centerHoles;
     const flat = new Map<string, BufferGeometry>();
     const hintGeometryFor = (fi: number): BufferGeometry => {
       const layout = stickerLayout(fi, shape);
@@ -350,6 +353,7 @@ export class CubeRenderer {
         mesh.position.set(...f.pos).addScaledVector(normal, size / 2 + 0.002);
         mesh.quaternion.setFromRotationMatrix(basis);
         g.add(mesh);
+        if (holes && fi % 9 === 4) addHoles(mesh, side, thickness, holes);
         this.stickerMeshes[fi] = mesh;
         this.cubieOfFacelet[fi] = ci;
         if (s.hints.enabled) {
@@ -643,4 +647,20 @@ function solidGeometry(outline: readonly (readonly [number, number])[], profile:
   g.setIndex(index);
   g.computeBoundingSphere();
   return g;
+}
+
+/**
+ * Holes in a centre tile: small discs of translucent black just above its top,
+ * so they darken whatever colour the tile has (and follow it, masks included).
+ * Children of the tile mesh — hidden with it.
+ */
+const HOLE_MATERIAL = new MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.38, depthWrite: false });
+function addHoles(tile: Mesh, side: number, thickness: number, holes: { radius: number; offset: number }): void {
+  const disc = new CircleGeometry(holes.radius * side, 20);
+  const o = (holes.offset * side) / 2;
+  for (const [sx, sy] of [[1, 1], [-1, 1], [-1, -1], [1, -1]]) {
+    const m = new Mesh(disc, HOLE_MATERIAL);
+    m.position.set(sx * o, sy * o, thickness + 0.001);
+    tile.add(m);
+  }
 }

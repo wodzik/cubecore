@@ -10,7 +10,9 @@
  * Sides lying on the cube's outer edge (stickerless `fillOuter`) are not
  * bevelled: they are mitred at 45° instead, so the tiles of two faces of one
  * piece meet on the edge line and their colours touch, like on a real
- * stickerless cube. Normals are given explicitly — smooth round the bevel,
+ * stickerless cube. With `edgeRadius` the cube edge is rounded: each of the
+ * two tiles curves over its half (45°) of a quarter round, meeting the other
+ * on the mitre plane — colour runs round the edge, no seam. Normals are given explicitly — smooth round the bevel,
  * straight up on the top — so a lit ("plastic") material shades it cleanly.
  */
 
@@ -25,6 +27,8 @@ export interface TileProfile {
   segments: number;
   /** How deep the tile reaches below the cubie face — into a body shrunk by `bodyInset`. */
   sink: number;
+  /** Rounding of the cube's outer edges (stickerless, cubie units): each tile takes half of a quarter round. */
+  edgeRadius?: number;
 }
 
 export interface Mitre {
@@ -91,41 +95,79 @@ export function tileSolid(outlineIn: readonly Pt[], profile: TileProfile, mitre:
   const vn = vertexNormals(outline);
   const t = profile.thickness;
   const b = Math.max(0, Math.min(profile.bevel, t + profile.sink));
-  const segs = b > 0 ? Math.max(1, profile.segments) : 0;
+  // The rounded cube edge dips 0.29·R below the top where the two tiles meet; keep that above the bottom.
+  const R = mitre ? Math.max(0, Math.min(profile.edgeRadius ?? 0, (t + profile.sink) / (1 - Math.SQRT1_2))) : 0;
+  const segs = b > 0 || R > 0 ? Math.max(1, profile.segments) : 0;
 
-  // Rings from the bottom up: height z, inward offset d, normal tilt phi (0 = sideways, π/2 = up).
-  const rings: { z: number; d: number; phi: number }[] = [{ z: -profile.sink, d: 0, phi: 0 }];
-  if (b > 0) {
-    rings.push({ z: t - b, d: 0, phi: 0 });
+  // Rings from the bottom up. Inner sides: height z, inward offset d, normal tilt phi (0 = sideways,
+  // π/2 = up). Outer (cube-edge) sides: height oz, extent beyond the edge line `off`, tilt ophi.
+  interface Ring {
+    z: number;
+    d: number;
+    phi: number;
+    oz: number;
+    off: number;
+    ophi: number;
+  }
+  const arcStart = t - R * (1 - Math.SQRT1_2); // where the edge round meets the mitre plane
+  const rings: Ring[] = [{ z: -profile.sink, d: 0, phi: 0, oz: -profile.sink, off: -profile.sink, ophi: 0 }];
+  if (segs > 0) {
+    rings.push({ z: t - b, d: 0, phi: 0, oz: arcStart, off: arcStart, ophi: 0 });
     for (let k = 1; k <= segs; k++) {
-      const th = (k / segs) * (Math.PI / 2);
-      rings.push({ z: t - b + b * Math.sin(th), d: b * (1 - Math.cos(th)), phi: th });
+      const s = k / segs;
+      const th = s * (Math.PI / 2);
+      const op = Math.PI / 4 + s * (Math.PI / 4); // 45° (on the mitre) → 90° (flat top)
+      rings.push({
+        z: t - b + b * Math.sin(th),
+        d: b * (1 - Math.cos(th)),
+        phi: th,
+        oz: t - R + R * Math.sin(op),
+        off: t - R + R * Math.cos(op),
+        ophi: op,
+      });
     }
-  } else rings.push({ z: t, d: 0, phi: 0 });
+  } else rings.push({ z: t, d: 0, phi: 0, oz: t, off: t, ophi: 0 });
 
   const n = outline.length;
   const positions: number[] = [];
   const normals: number[] = [];
-  const place = (i: number, ring: { z: number; d: number }): [number, number, number] => {
+  const weights = outline.map(([x, y]) => ({
+    ku: mitre ? edgeWeight(x, mitre.u, mitre) : 0,
+    kv: mitre ? edgeWeight(y, mitre.v, mitre) : 0,
+  }));
+  const place = (i: number, ring: Ring): [number, number, number] => {
     let [x, y] = outline[i];
-    const ku = mitre ? edgeWeight(x, mitre.u, mitre) : 0;
-    const kv = mitre ? edgeWeight(y, mitre.v, mitre) : 0;
-    // Bevel inset fades out towards the outer edge; the mitre moves the outer sides with height.
+    const { ku, kv } = weights[i];
+    // The bevel inset fades out towards the outer edge; outer sides follow the mitre / edge round.
     const bevelWeight = (1 - ku) * (1 - kv);
     x -= vn[i].n[0] * ring.d * vn[i].scale * bevelWeight;
     y -= vn[i].n[1] * ring.d * vn[i].scale * bevelWeight;
     if (mitre) {
-      x += mitre.u * ring.z * ku;
-      y += mitre.v * ring.z * kv;
+      x += mitre.u * ring.off * ku;
+      y += mitre.v * ring.off * kv;
     }
-    return [x, y, ring.z];
+    const k = Math.max(ku, kv);
+    return [x, y, ring.z * (1 - k) + ring.oz * k];
+  };
+  const normal = (i: number, ring: Ring): [number, number, number] => {
+    const { ku, kv } = weights[i];
+    const k = Math.max(ku, kv);
+    const c = Math.cos(ring.phi), s = Math.sin(ring.phi);
+    let nx = vn[i].n[0] * c * (1 - k), ny = vn[i].n[1] * c * (1 - k), nz = s * (1 - k);
+    if (k > 0 && mitre) {
+      const ou = mitre.u * ku, ov = mitre.v * kv, ol = Math.hypot(ou, ov) || 1;
+      nx += (ou / ol) * Math.cos(ring.ophi) * k;
+      ny += (ov / ol) * Math.cos(ring.ophi) * k;
+      nz += Math.sin(ring.ophi) * k;
+    }
+    const l = Math.hypot(nx, ny, nz) || 1;
+    return [nx / l, ny / l, nz / l];
   };
 
   for (const ring of rings) {
     for (let i = 0; i < n; i++) {
       positions.push(...place(i, ring));
-      const c = Math.cos(ring.phi), s = Math.sin(ring.phi);
-      normals.push(vn[i].n[0] * c, vn[i].n[1] * c, s);
+      normals.push(...normal(i, ring));
     }
   }
   const sides: number[] = [];

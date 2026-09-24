@@ -49,6 +49,11 @@ describe("renderSvg", () => {
     expect(count(svg, 'd="M0.5,0 L1,0.5 L0.5,1 L0,0.5 Z" transform="matrix(')).toBe(6);
   });
 
+  it("centre holes from the skin: four per centre tile", () => {
+    expect(count(renderSvg(S, { view: "net", skin: SKINS.ganI4 }), 'fill-opacity="0.38"')).toBe(6 * 4);
+    expect(count(renderSvg(S, { view: "net", skin: SKINS.gan }), 'fill-opacity="0.38"')).toBe(0);
+  });
+
   it("draws the logo on its sticker, turned by the centre's spin", () => {
     const skin: Skin = { ...STD, logo: { sticker: 4, image: "logo.png", size: 0.7 } };
     const upright = renderSvg(S, { view: "top", skin });

@@ -207,6 +207,18 @@ export function renderSvg(state: State, options: SvgOptions = {}): string {
     // Stickerless: outer sides reach the cube edge (a hair past it, so neighbouring faces overlap instead of leaving an anti-aliased seam).
     const outline = skin.stickers.fillOuter ? stickerlessOutline(layout, side, 0.506, 6) : roundedOutline(side, layout.radii, 6);
     out += `<path d="${polygon(outline.map(([x, y]) => v.project(f.face, onFace(f, x, y))))}" fill="${fill}"/>`;
+    // Centre-tile holes, as in 3D: translucent black, so they darken any colour.
+    const holes = skin.stickers.centerHoles;
+    if (holes && layout.kind === "center") {
+      const r = holes.radius * side, o = (holes.offset * side) / 2;
+      for (const [sx, sy] of [[1, 1], [-1, 1], [-1, -1], [1, -1]]) {
+        const ring = Array.from({ length: 12 }, (_, k): Pt => {
+          const a = (k / 12) * Math.PI * 2;
+          return v.project(f.face, onFace(f, sx * o + r * Math.cos(a), sy * o + r * Math.sin(a)));
+        });
+        out += `<path d="${polygon(ring)}" fill="#000" fill-opacity="0.38"/>`;
+      }
+    }
   }
 
   const logo = skin.logo;

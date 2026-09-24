@@ -8,7 +8,7 @@
   "scripts": {
     "test": "bun test",
     "typecheck": "tsc -p .",
-    "demo": "bun demo/index.html demo/render.html"
+    "demo": "bun demo/serve.ts"
   },
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",

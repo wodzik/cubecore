@@ -1,0 +1,111 @@
+/**
+ * Sticker shapes — pure geometry, no three.js.
+ *
+ * Real cubes (e.g. GAN stickerless tiles) shape a tile by what piece it is on
+ * and which way the face centre is: a corner tile rounds off the corner that
+ * points at the centre, an edge tile rounds its inner side into a "tongue",
+ * the centre tile is nearly round. `StickerShape` describes that with four
+ * corner radii per piece kind; custom SVG paths can replace any kind.
+ *
+ * Local sticker frame: x = tangent `a`, y = tangent `b`, z = outward normal
+ * (a × b = n). Coordinates of a sticker's corners are (±1, ±1)·half-size.
+ */
+
+import { FACELETS, type Face, type Vec3 } from "@cubecore/core";
+
+export type PieceKind = "corner" | "edge" | "center";
+
+export interface CornerRadii {
+  /** Radius of the corner(s) facing the face centre, as a fraction of the tile side (0..0.5). */
+  inner: number;
+  /** Radius of the other corners. */
+  outer: number;
+}
+
+export interface StickerShape {
+  corner: CornerRadii;
+  edge: CornerRadii;
+  /** Centre tiles: one radius for all four corners. */
+  center: number;
+}
+
+/**
+ * Custom tile outlines as SVG path data in a 0..1 box (y down, like SVG).
+ * Convention: the face centre lies towards the BOTTOM-RIGHT for corner tiles
+ * and towards the BOTTOM for edge tiles; centre tiles are drawn as-is.
+ * The renderer rotates each path into place.
+ */
+export type StickerPaths = Partial<Record<PieceKind, string>>;
+
+/** Tangent axes per face so that a × b = outward normal (b is "up" on the side faces). */
+export const FACE_BASIS: Record<Face, { a: Vec3; b: Vec3; n: Vec3 }> = {
+  U: { a: [1, 0, 0], b: [0, 0, -1], n: [0, 1, 0] },
+  D: { a: [1, 0, 0], b: [0, 0, 1], n: [0, -1, 0] },
+  F: { a: [1, 0, 0], b: [0, 1, 0], n: [0, 0, 1] },
+  B: { a: [-1, 0, 0], b: [0, 1, 0], n: [0, 0, -1] },
+  R: { a: [0, 0, -1], b: [0, 1, 0], n: [1, 0, 0] },
+  L: { a: [0, 0, 1], b: [0, 1, 0], n: [-1, 0, 0] },
+};
+
+const dot = (p: Vec3, q: Vec3) => p[0] * q[0] + p[1] * q[1] + p[2] * q[2];
+
+export interface StickerLayout {
+  kind: PieceKind;
+  /** Position of the tile on its face: (u, v) ∈ {-1, 0, 1}², in the face's (a, b) axes. */
+  u: number;
+  v: number;
+  /**
+   * Radii of the corners in local order: (+x,+y), (−x,+y), (−x,−y), (+x,−y)
+   * — i.e. counter-clockwise from top-right.
+   */
+  radii: [number, number, number, number];
+  /** Quarter turns (CCW) that bring the path convention's "centre direction" onto this tile's. */
+  pathQuarters: number;
+}
+
+const LOCAL_CORNERS: [number, number][] = [[1, 1], [-1, 1], [-1, -1], [1, -1]];
+
+export function stickerLayout(faceletIndex: number, shape: StickerShape): StickerLayout {
+  const f = FACELETS[faceletIndex];
+  const { a, b } = FACE_BASIS[f.face];
+  const u = dot(f.pos, a), v = dot(f.pos, b);
+  const kind: PieceKind = u === 0 && v === 0 ? "center" : u !== 0 && v !== 0 ? "corner" : "edge";
+  let radii: [number, number, number, number];
+  if (kind === "center") radii = [shape.center, shape.center, shape.center, shape.center];
+  else {
+    const r = kind === "corner" ? shape.corner : shape.edge;
+    // A corner of the tile faces the centre when it points the opposite way to the tile's offset.
+    radii = LOCAL_CORNERS.map(([sx, sy]) => {
+      const inner = kind === "corner" ? sx === -Math.sign(u) && sy === -Math.sign(v) : u !== 0 ? sx === -Math.sign(u) : sy === -Math.sign(v);
+      return inner ? r.inner : r.outer;
+    }) as [number, number, number, number];
+  }
+  // Path convention (SVG, y down): centre towards bottom-right (corner) / bottom (edge). In local
+  // coords (y up) that is direction (+1, −1) / (0, −1). Rotate it onto (−u, −v).
+  const target: [number, number] = [-Math.sign(u), -Math.sign(v)];
+  const from: [number, number] = kind === "corner" ? [1, -1] : [0, -1];
+  let q = 0;
+  let d = from;
+  while (q < 4 && (d[0] !== target[0] || d[1] !== target[1])) {
+    d = [-d[1], d[0]];
+    q++;
+  }
+  return { kind, u, v, radii, pathQuarters: kind === "center" ? 0 : q % 4 };
+}
+
+/** Outline of a tile of side `side` with per-corner radii (fractions of `side`), as points CCW. */
+export function roundedOutline(side: number, radii: readonly number[], segments = 8): [number, number][] {
+  const h = side / 2;
+  const pts: [number, number][] = [];
+  LOCAL_CORNERS.forEach(([sx, sy], i) => {
+    const r = Math.min(radii[i] * side, h);
+    const cx = sx * (h - r), cy = sy * (h - r);
+    // Arc from the corner's first edge to the second, going CCW.
+    const start = Math.atan2(sy, sx) - Math.PI / 4;
+    for (let k = 0; k <= segments; k++) {
+      const t = start + (k / segments) * (Math.PI / 2);
+      pts.push([cx + r * Math.cos(t), cy + r * Math.sin(t)]);
+    }
+  });
+  return pts;
+}

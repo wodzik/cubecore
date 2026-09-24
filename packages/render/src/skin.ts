@@ -4,6 +4,7 @@
  */
 
 import type { MaskState } from "@cubecore/core";
+import type { StickerPaths, StickerShape } from "./shapes";
 
 export interface Skin {
   /** Plastic colour. */
@@ -17,9 +18,22 @@ export interface Skin {
     colors: readonly [string, string, string, string, string, string];
     /** Side of a sticker relative to a cubie face, 0..1. */
     size: number;
-    /** Corner radius relative to the sticker, 0..0.5 (0.5 = circle). */
+    /** Corner radius relative to the sticker, 0..0.5 (0.5 = circle) — used when `shape` is not given. */
     radius: number;
+    /** Per-piece-kind corner radii (see shapes.ts) — overrides `radius`. */
+    shape?: StickerShape;
+    /** Custom outlines as SVG path data — override `shape` per piece kind. */
+    paths?: StickerPaths;
+    /** How far a tile stands out from the plastic (cubie units) — stickerless tiles are thicker. */
+    thickness?: number;
   };
+  /**
+   * A picture on one sticker, e.g. a brand logo on a centre. It follows that
+   * sticker (by home facelet index). `image` is a URL, data: URL or an SVG
+   * string. `blend: "multiply"` lets a logo drawn on white sit on any colour.
+   * Brand logos are trademarks — apps supply their own, the library ships none.
+   */
+  logo?: { sticker: number; image: string; size: number; blend?: "normal" | "multiply" };
   /** Colours for masked stickers. `dim` pulls the sticker colour towards the body by `dimAmount`. */
   mask: { ignored: string; oriented: string; dimAmount: number };
   /** Floating "back" stickers showing the hidden faces. */
@@ -50,12 +64,22 @@ export const SKINS = {
     hints: { enabled: false, distance: 1.4, opacity: 0.75, ignoredOpacity: 0.35 },
     background: null,
   },
-  /** GAN-like: black body, larger rounded tiles (colours are the standard scheme; logo support comes with textures). */
+  /**
+   * GAN-style stickerless: tiles almost fill each cubie face; corner tiles
+   * round off the corner facing the centre, edge tiles round their inner side
+   * into a tongue, centre tiles are nearly round. Add a logo with `logo`.
+   */
   gan: {
-    body: "#0c0c0c",
-    cubieSize: 0.975,
-    cubieRadius: 0.12,
-    stickers: { colors: ["#f4f4f4", "#e5261f", "#16a34a", "#fcd012", "#fb7e14", "#1d4ed8"], size: 0.9, radius: 0.24 },
+    body: "#0a0a0a",
+    cubieSize: 0.985,
+    cubieRadius: 0.06,
+    stickers: {
+      colors: ["#f7f7f5", "#f5303a", "#1fc25a", "#ffe01a", "#ff8a1f", "#1f73ea"],
+      size: 0.955,
+      radius: 0.08,
+      shape: { corner: { inner: 0.34, outer: 0.07 }, edge: { inner: 0.3, outer: 0.07 }, center: 0.36 },
+      thickness: 0.012,
+    },
     mask: { ignored: "#5a5a5a", oriented: "#39c7d4", dimAmount: 0.55 },
     hints: { enabled: false, distance: 1.4, opacity: 0.75, ignoredOpacity: 0.35 },
     background: null,

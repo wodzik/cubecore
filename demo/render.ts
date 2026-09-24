@@ -55,10 +55,27 @@ $("scrub").oninput = () => {
 };
 
 // ─── look ───
-for (const name of Object.keys(SKINS)) $<HTMLSelectElement>("skin").add(new Option(name, name));
+// Demo-only skins: a brand logo supplied by the app (the library ships none), and custom SVG tile outlines.
+const DEMO_SKINS: Record<string, Skin> = {
+  ...SKINS,
+  "gan + logo": { ...SKINS.gan, logo: { sticker: 4, image: "/assets/gan-logo.png", size: 0.72, blend: "multiply" } },
+  "custom SVG tiles": {
+    ...SKINS.stickerless,
+    stickers: {
+      ...SKINS.stickerless.stickers,
+      // Paths in a 0..1 box, face centre towards the bottom-right (corner) / bottom (edge).
+      paths: {
+        corner: "M0 0 H1 V0.62 L0.62 1 H0 Z",
+        edge: "M0 0 H1 V0.72 Q0.5 1.12 0 0.72 Z",
+        center: "M0.5 0 A0.5 0.5 0 1 1 0.5 1 A0.5 0.5 0 1 1 0.5 0 Z",
+      },
+    },
+  },
+};
+for (const name of Object.keys(DEMO_SKINS)) $<HTMLSelectElement>("skin").add(new Option(name, name));
 for (const p of MASK_PRESETS) $<HTMLSelectElement>("mask").add(new Option(p, p));
 function applySkin() {
-  const base = SKINS[$<HTMLSelectElement>("skin").value as keyof typeof SKINS] as Skin;
+  const base = DEMO_SKINS[$<HTMLSelectElement>("skin").value];
   renderer.setSkin({ ...base, hints: { ...base.hints, enabled: $<HTMLInputElement>("hints").checked } });
 }
 $("skin").onchange = applySkin;

@@ -20,8 +20,9 @@ describe("renderSvg", () => {
     const svg = renderSvg(S, { view: "net" });
     for (const c of STD.stickers.colors) expect(count(svg, `fill="${c}"`)).toBe(9);
     for (const c of SKINS.gan.stickers.colors) expect(count(renderSvg(S, { view: "net", skin: SKINS.gan }), `fill="${c}"`)).toBe(9);
-    const masked = renderSvg(S, { view: "net", mask: presetMask("cross") });
-    expect(count(masked, `fill="${STD.mask.ignored}"`)).toBe(54 - 14);
+    // First layer: its 21 stickers plus the other 5 centres stay in colour.
+    const masked = renderSvg(S, { view: "net", mask: presetMask("first-layer") });
+    expect(count(masked, `fill="${STD.mask.ignored}"`)).toBe(54 - 26);
     const hidden = renderSvg(S, { view: "net", mask: buildMask(() => "invisible") });
     expect(count(hidden, "<path")).toBe(6); // bodies only
   });
@@ -67,7 +68,7 @@ describe("caching", () => {
     expect(svgKey(a, { view: "iso" })).toBe(svgKey(new Uint8Array(a), { view: "iso" }));
     expect(svgKey(a, { view: "iso" })).not.toBe(svgKey(applyMoves(S, "R U'"), { view: "iso" }));
     expect(svgKey(a, { view: "iso" })).not.toBe(svgKey(a, { view: "top" }));
-    expect(svgKey(a, { view: "iso", mask: presetMask("oll") })).not.toBe(svgKey(a, { view: "iso" }));
+    expect(svgKey(a, { view: "iso", mask: presetMask("first-layer") })).not.toBe(svgKey(a, { view: "iso" }));
     expect(renderSvg(a, { view: "top" })).toBe(renderSvg(a, { view: "top" }));
   });
 

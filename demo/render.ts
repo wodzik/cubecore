@@ -1,4 +1,6 @@
-import { CFOP, MASK_PRESETS, type Mask, type MaskPreset, MethodTracker, applyMoves, formatMove, invert, parseAlg, presetMask, solvedState, spinsAfter } from "../packages/core/src/index";
+import { type Mask, MethodTracker, applyMoves, formatMove, invert, parseAlg, solvedState, spinsAfter } from "../packages/core/src/index";
+import { CFOP } from "../packages/cfop/src/index";
+import { MASK_NAMES, maskByName } from "../packages/methods/src/index";
 import { SvgCache, svgKey } from "../packages/image/src/index";
 import { type BackView, CubeRenderer, SKINS, type Skin, showPosition } from "../packages/render/src/index";
 import { ReplayClock, recording } from "../packages/timeline/src/index";
@@ -75,7 +77,7 @@ const DEMO_SKINS: Record<string, Skin> = {
   },
 };
 for (const name of Object.keys(DEMO_SKINS)) $<HTMLSelectElement>("skin").add(new Option(name, name));
-for (const p of MASK_PRESETS) $<HTMLSelectElement>("mask").add(new Option(p, p));
+for (const p of MASK_NAMES) $<HTMLSelectElement>("mask").add(new Option(p, p));
 let skin: Skin = SKINS.standard;
 let mask: Mask | null = null;
 function applySkin() {
@@ -87,8 +89,8 @@ $("backview").onchange = () => renderer.setBackView($<HTMLSelectElement>("backvi
 $("skin").onchange = applySkin;
 $("hints").onchange = applySkin;
 $("mask").onchange = () => {
-  const v = $<HTMLSelectElement>("mask").value as MaskPreset | "";
-  mask = v ? presetMask(v) : null;
+  const v = $<HTMLSelectElement>("mask").value;
+  mask = v ? maskByName(v) : null;
   renderer.setMask(mask);
 };
 const camera = () => renderer.setCamera({ latitude: Number($<HTMLInputElement>("lat").value), longitude: Number($<HTMLInputElement>("lon").value) });

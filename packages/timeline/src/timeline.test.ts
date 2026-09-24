@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { CFOP, formatAlg, formatMove, invert, parseAlg } from "@cubecore/core";
+import { formatAlg, formatMove, invert, parseAlg } from "@cubecore/core";
+import { CFOP } from "@cubecore/cfop";
 import { type ClockHost, ReplayClock, decodeRecording, encodeRecording, moveWindows, positionAt, recording, stageTimings } from "./index";
 
 const SOLUTION = "F2 R' D L2 R U R' L' U' L R' U' R L U L' R U R' U R U2 R' R U R' U' R' F R2 U' R' U' R U R' F' U";

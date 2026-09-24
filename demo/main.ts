@@ -1,6 +1,5 @@
 import {
   FRAMES,
-  METHODS,
   MethodTracker,
   type Move,
   applyMoves,
@@ -13,11 +12,8 @@ import {
   parseAlg,
   solvedState,
   transformMoves,
-  CFOP,
-  MASK_PRESETS,
-  type MaskPreset,
-  presetMask,
 } from "../packages/core/src/index";
+import { CFOP, MASK_NAMES, METHODS, maskByName } from "../packages/methods/src/index";
 import { SvgCache } from "../packages/image/src/index";
 import { SKINS, withColors } from "../packages/skin/src/index";
 import { ReplayClock, encodeRecording, recording, stageTimings } from "../packages/timeline/src/index";
@@ -99,18 +95,18 @@ function render() {
 }
 
 const cache = new SvgCache(300);
-for (const p of MASK_PRESETS) $<HTMLSelectElement>("mask").add(new Option(`mask: ${p}`, p));
+for (const p of MASK_NAMES) $<HTMLSelectElement>("mask").add(new Option(`mask: ${p}`, p));
 
 function drawImages(state: Uint8Array) {
   const colors = SCHEMES[$<HTMLSelectElement>("scheme").value];
   const skin = withColors(SKINS.standard, colors as unknown as Parameters<typeof withColors>[1]);
-  const preset = $<HTMLSelectElement>("mask").value as MaskPreset;
+  const preset = $<HTMLSelectElement>("mask").value;
   // "Last layer on top": look at the cube from the frame whose top is the method's last layer.
   const t = new MethodTracker(CFOP, applyMoves(solvedState(), scramble));
   solution.forEach((m) => t.push(m));
   const anchor = t.current.frame ?? FRAMES[0];
   const frame = $<HTMLInputElement>("lltop").checked ? anchor : FRAMES[0];
-  const mask = presetMask(preset, frame);
+  const mask = maskByName(preset, frame);
   const t0 = performance.now();
   const imgs = (["iso", "top", "net"] as const).map((v) => cache.get(state, { view: v, size: v === "net" ? 240 : 170, skin, mask, frame }));
   $("images").innerHTML = imgs.join("");

@@ -1,5 +1,5 @@
 {
-  "name": "@cubecore/timeline",
+  "name": "@cubecore/petrus",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -9,8 +9,5 @@
   "sideEffects": false,
   "dependencies": {
     "@cubecore/core": "workspace:*"
-  },
-  "devDependencies": {
-    "@cubecore/cfop": "workspace:*"
   }
 }

@@ -11,6 +11,13 @@
         "typescript": "^5.6.0",
       },
     },
+    "packages/cfop": {
+      "name": "@cubecore/cfop",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cubecore/core": "workspace:*",
+      },
+    },
     "packages/core": {
       "name": "@cubecore/core",
       "version": "0.0.0",
@@ -23,6 +30,32 @@
         "@cubecore/skin": "workspace:*",
       },
     },
+    "packages/lbl": {
+      "name": "@cubecore/lbl",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cubecore/core": "workspace:*",
+      },
+    },
+    "packages/methods": {
+      "name": "@cubecore/methods",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cubecore/cfop": "workspace:*",
+        "@cubecore/core": "workspace:*",
+        "@cubecore/lbl": "workspace:*",
+        "@cubecore/petrus": "workspace:*",
+        "@cubecore/roux": "workspace:*",
+        "@cubecore/zz": "workspace:*",
+      },
+    },
+    "packages/petrus": {
+      "name": "@cubecore/petrus",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cubecore/core": "workspace:*",
+      },
+    },
     "packages/render": {
       "name": "@cubecore/render",
       "version": "0.0.0",
@@ -32,6 +65,13 @@
       },
       "peerDependencies": {
         "three": ">=0.160",
+      },
+    },
+    "packages/roux": {
+      "name": "@cubecore/roux",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cubecore/core": "workspace:*",
       },
     },
     "packages/skin": {
@@ -47,18 +87,40 @@
       "dependencies": {
         "@cubecore/core": "workspace:*",
       },
+      "devDependencies": {
+        "@cubecore/cfop": "workspace:*",
+      },
+    },
+    "packages/zz": {
+      "name": "@cubecore/zz",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cubecore/core": "workspace:*",
+      },
     },
   },
   "packages": {
+    "@cubecore/cfop": ["@cubecore/cfop@workspace:packages/cfop"],
+
     "@cubecore/core": ["@cubecore/core@workspace:packages/core"],
 
     "@cubecore/image": ["@cubecore/image@workspace:packages/image"],
 
+    "@cubecore/lbl": ["@cubecore/lbl@workspace:packages/lbl"],
+
+    "@cubecore/methods": ["@cubecore/methods@workspace:packages/methods"],
+
+    "@cubecore/petrus": ["@cubecore/petrus@workspace:packages/petrus"],
+
     "@cubecore/render": ["@cubecore/render@workspace:packages/render"],
+
+    "@cubecore/roux": ["@cubecore/roux@workspace:packages/roux"],
 
     "@cubecore/skin": ["@cubecore/skin@workspace:packages/skin"],
 
     "@cubecore/timeline": ["@cubecore/timeline@workspace:packages/timeline"],
+
+    "@cubecore/zz": ["@cubecore/zz@workspace:packages/zz"],
 
     "@dimforge/rapier3d-compat": ["@dimforge/rapier3d-compat@0.12.0", "", {}, "sha512-uekIGetywIgopfD97oDL5PfeezkFpNhwlzlaEYNOA0N6ghdsOvh/HYjSMek5Q2O1PYvRSDFcqFVJl4r4ZBwOow=="],
 

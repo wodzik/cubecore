@@ -11,7 +11,7 @@
 
 import { type Frame, FRAMES, view } from "./frames";
 import { FACES, type Face } from "./geometry";
-import type { Method } from "./methods";
+import type { Method } from "./method";
 import type { Move } from "./moves";
 import { parseAlg } from "./notation";
 import { type State, applyMove, applyMoves, solvedState } from "./state";

@@ -95,9 +95,9 @@ primitives — so every method stays colour neutral by construction:
 Generic presets (`full`, `ll`, `first-layer`) stay in core. Why separate
 packages rather than one `methods` package with subpaths: recognition tables
 and alg sets make CFOP much larger than the rest, and an app for one method
-shouldn't download or version the others. Migration: move `methods.ts` and
-the method-specific parts of `masks.ts`/`checks.ts` out of core; core keeps
-re-export shims for one release.
+shouldn't download or version the others. Migration done (see Status): no
+re-export shims in core — they would make core depend on the method packages
+(a cycle), and nothing was published yet.
 
 ## 3. `@cubecore/core`
 
@@ -284,7 +284,15 @@ re-export shims for one release.
   "top-right"` (option + `setBackView`) — a second camera opposite the main
   one shows the three hidden faces; one WebGL context, scissored viewports;
   the inset only clears depth and back stickers are hidden in it.
-- Next: split methods into packages (see §2), per-theme skins, gyroscope adapter from smart-cube drivers, then
+- 2026-09-24 — **methods split into packages**: `@cubecore/cfop`, `lbl`,
+  `roux`, `zz`, `petrus` (method + its checks + masks as `MaskRule`s, e.g.
+  `CFOP_MASKS.oll`, `cfopMask("oll", frame)`), `@cubecore/methods`
+  (`METHODS`, `methodById`, `MASK_NAMES`, `maskByName("roux:cmll")`). Core
+  keeps the engine: `Method`/`Stage`, `countedStages`, `LAST_LAYER_STAGES`,
+  `MethodTracker`, exported check primitives (`cubieSolved`, `allSolved`,
+  `upToAuf`, `cubieAt`…) and generic masks (`full`, `first-layer`, `ll`).
+  `@cubecore/core/testing` has `runSegments` for method-package tests.
+- Next: per-theme skins, gyroscope adapter from smart-cube drivers, then
   `solve` (cross/xcross).
 
 ### Gyroscope (planned)

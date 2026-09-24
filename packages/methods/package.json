@@ -1,0 +1,18 @@
+{
+  "name": "@cubecore/methods",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "sideEffects": false,
+  "dependencies": {
+    "@cubecore/core": "workspace:*",
+    "@cubecore/cfop": "workspace:*",
+    "@cubecore/roux": "workspace:*",
+    "@cubecore/zz": "workspace:*",
+    "@cubecore/petrus": "workspace:*",
+    "@cubecore/lbl": "workspace:*"
+  }
+}

@@ -1,0 +1,43 @@
+/**
+ * ZZ — EOLine (all edges oriented + DF/DB), two F2L blocks in either order,
+ * then the last layer. Checks, method and masks; colour neutral.
+ */
+
+import { type Frame, IDENTITY_FRAME, LAST_LAYER_STAGES, type Mask, type MaskRule, type Method, type State, buildMask, checks as C } from "@cubecore/core";
+
+const DF = C.cubieAt(0, -1, 1);
+const DB = C.cubieAt(0, -1, -1);
+const LEFT_BLOCK = C.cubiesWhere((p) => p[0] === -1 && p[1] <= 0);
+const RIGHT_BLOCK = C.cubiesWhere((p) => p[0] === 1 && p[1] <= 0);
+
+export const eoLine = (s: State) => C.edgesOrientedFB(s) && C.cubieSolved(s, DF) && C.cubieSolved(s, DB);
+export const eoCross = (s: State) => C.edgesOrientedFB(s) && C.crossSolved(s);
+export const leftBlockSolved = (s: State) => C.allSolved(s, LEFT_BLOCK);
+export const rightBlockSolved = (s: State) => C.allSolved(s, RIGHT_BLOCK);
+
+export const ZZ: Method = {
+  id: "zz",
+  name: "ZZ",
+  stages: [
+    { id: "eoline", label: "EOLine", done: eoLine },
+    {
+      id: "block-1",
+      label: "First block",
+      done: (s) => eoLine(s) && (leftBlockSolved(s) || rightBlockSolved(s)),
+      detail: (s) => (leftBlockSolved(s) ? "left" : "right"),
+    },
+    { id: "block-2", label: "Second block", done: (s) => C.f2lSolved(s) && C.edgesOrientedFB(s) },
+    ...LAST_LAYER_STAGES,
+  ],
+};
+
+export type ZzMask = "eoline" | "f2l";
+
+export const ZZ_MASKS: Record<ZzMask, MaskRule> = {
+  // Every edge shown as good/bad orientation material, the line in colour.
+  eoline: (f, c) =>
+    c.kind === "edge" ? (c.pos[1] === -1 && c.pos[0] === 0 ? "regular" : "oriented") : c.kind === "center" ? "regular" : "ignored",
+  f2l: (f, c) => (c.pos[1] <= 0 || c.kind === "center" ? "regular" : "ignored"),
+};
+
+export const zzMask = (name: ZzMask, frame: Frame = IDENTITY_FRAME): Mask => buildMask(ZZ_MASKS[name], frame);

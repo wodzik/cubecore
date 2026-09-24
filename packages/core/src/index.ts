@@ -4,7 +4,7 @@ export * from "./notation";
 export * from "./state";
 export * from "./frames";
 export * as checks from "./checks";
-export * from "./methods";
+export * from "./method";
 export * from "./tracker";
 export * from "./masks";
 export * from "./centers";

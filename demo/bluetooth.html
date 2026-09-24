@@ -21,6 +21,7 @@
       button:disabled { opacity: 0.45; cursor: default; }
       .kv { color: var(--muted); font-size: 12px; }
       .kv b { color: var(--text); font-weight: 600; }
+      cube-scramble { --cc-scramble-size: 18px; min-height: 2em; }
       #log { font: 14px/1.7 ui-monospace, monospace; min-height: 3em; word-spacing: 0.25em; }
       #log .late { color: var(--late); }
       #stages { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -52,6 +53,20 @@
             <label class="kv"><input type="checkbox" id="gyro" checked /> gyro</label>
           </div>
           <p class="keys" id="keys" hidden>Keys: U R F D L B turn · Shift = prime · Ctrl+key = arrives 3 s late (like a backgrounded tab)</p>
+        </section>
+        <section>
+          <h2>Scramble (followed on the cube)</h2>
+          <cube-scramble id="scramble"></cube-scramble>
+          <div class="row" style="margin-top:10px">
+            <button id="newScramble" disabled>New scramble</button>
+            <select id="scrambleKind" style="background:#0f0f11;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px">
+              <option value="full">Random state</option>
+              <option value="cross-5">Cross in 5 (any face: white)</option>
+              <option value="xcross-7">XCross in 7</option>
+              <option value="ll">Last layer</option>
+            </select>
+          </div>
+          <p class="kv" id="scrambleInfo" style="margin:8px 0 0">Generated from the cube's current state in a worker — no need to solve it first.</p>
         </section>
         <section>
           <h2>Moves (as written: R R → R2, R L' → M)</h2>

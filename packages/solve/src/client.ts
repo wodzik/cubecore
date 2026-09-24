@@ -67,7 +67,12 @@ export function solverClient(worker: Worker): SolverClient {
   };
 }
 
-/** Start the solver worker (bundlers pick up the worker file from this URL). */
-export function createSolverWorker(): SolverClient {
-  return solverClient(new Worker(new URL("./worker.ts", import.meta.url), { type: "module" }));
+/**
+ * Start the solver worker. By default bundlers (Vite, webpack 5, Bun build)
+ * pick up the worker from `new URL("./worker.ts", import.meta.url)`; pass
+ * `url` to load a worker you built yourself (e.g. a dev server that doesn't
+ * rewrite worker URLs — see demo/serve.ts).
+ */
+export function createSolverWorker(url?: string | URL): SolverClient {
+  return solverClient(new Worker(url ?? new URL("./worker.ts", import.meta.url), { type: "module" }));
 }

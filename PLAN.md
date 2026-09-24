@@ -349,8 +349,17 @@ re-export shims in core — they would make core depend on the method packages
   `<cube-player>` live mode: `attach(session)` / `detach()` / `pushMove()`.
   Demo `/bluetooth` (real or simulated cube, written log, CFOP stages), guide
   `docs/bluetooth.md`. Demo pages share a menu (`demo/nav.ts`).
-- Next: stage solvers (cross / xcross / EOCross / pair) + a worker,
-  glTF piece models, alg notation extras from cubing.js, React bindings,
+- 2026-09-24 — **stage solvers, trainer scrambles, worker, following
+  scrambles**: `StageSolver` (cross, EOCross, xcross, xxcross, slot, Roux FB;
+  IDA* with group BFS tables; distance, all optimal solutions, next moves,
+  sampling at an exact distance), `stageScramble` (a stage in exactly N moves,
+  any face, from the cube's current state — core `relativeState`, `reframe` /
+  `unreframe`), `createSolverWorker` (Promise API; tables built off the main
+  thread), `SequenceTracker` (core; follows scrambles and algorithms on a
+  smart cube by state: half turns, reordered opposite faces, slices /
+  rotations; undo after a slip) and `<cube-scramble>`. With these, act no
+  longer needs cubing.js or or18 for anything. Guide: `docs/scrambles.md`.
+- Next: glTF piece models, alg notation extras from cubing.js, React bindings,
   per-theme skins, gyroscope adapter from smart-cube drivers, then
   `solve` (cross/xcross).
 

@@ -54,7 +54,8 @@ packages/
   solve/       @cubecore/solve     IDA* + pruning tables (cross, xcross, EO, F2L pair, LL cases) — TS, worker
   solve-wasm/  @cubecore/solve-wasm  two-phase / optimal full-cube solver (Rust→WASM), optional
   timeline/    @cubecore/timeline  timed recordings, replay clock, stage timings
-  render/      @cubecore/render    three.js scene, animation, camera, drag input, Skin
+  skin/        @cubecore/skin      Skin data + tile geometry, shared by render and image
+  render/      @cubecore/render    three.js scene, animation, camera, drag input
   image/       @cubecore/image     SVG pictures of states (iso / top / net), cacheable, server-side PNG
   element/     @cubecore/element   <cube-player> web component (headless-first) + optional controls
   react/       @cubecore/react     thin React bindings
@@ -236,8 +237,17 @@ Dependency direction is strictly downward: `core` ← `solve`, `timeline` ←
   back ("hint") stickers per skin, smart-cube-friendly queue (backlog applied
   instantly, only the newest move animates: 20 moves caught up in ~150 ms),
   `setOrientation(quaternion, smoothing)` for gyroscopes. Demo: `/render`.
-- Next: logo texture + custom sticker shapes (SDF), per-theme skins,
-  gyroscope adapter from smart-cube drivers, then `solve` (cross/xcross).
+- 2026-09-24 — **one skin for 3D and 2D**: `@cubecore/skin` (pure data +
+  geometry, no three.js) holds `Skin`, presets, tile shapes per piece kind,
+  custom SVG tile outlines, stickerless tiles (`fillOuter`: a piece's faces
+  meet on the cube edge — mitred in 3D) and the logo. `@cubecore/render` and
+  `@cubecore/image` both draw from it (`renderSvg(state, { skin })`; the old
+  `scheme`/`stickerRadius`/`gap` options are gone — use `withColors`).
+  Centre spins in core (`advanceSpins`, `spinsAfter`): the renderer tracks
+  them through every move, `setState`/`showPosition`/`renderSvg` take them,
+  so a logo keeps its orientation. Demo `/render` shows the same skin in 2D.
+- Next: per-theme skins, gyroscope adapter from smart-cube drivers, then
+  `solve` (cross/xcross).
 
 ### Gyroscope (planned)
 - `setOrientation(q, smoothing)` is the whole renderer-side API: the cube's

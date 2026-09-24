@@ -1,36 +1,63 @@
 import { describe, expect, it } from "bun:test";
-import { FRAMES, applyMoves, buildMask, presetMask, solvedState } from "@cubecore/core";
-import { SCHEMES, SvgCache, renderSvg, svgKey } from "./index";
+import { FRAMES, applyMoves, buildMask, presetMask, solvedState, spinsAfter } from "@cubecore/core";
+import { SKINS, type Skin } from "@cubecore/skin";
+import { SvgCache, renderSvg, svgKey } from "./index";
+
+const STD = SKINS.standard;
 
 const S = solvedState();
 const count = (svg: string, needle: string) => svg.split(needle).length - 1;
 
 describe("renderSvg", () => {
   it("draws the visible stickers of each view: iso 27, top 9 + 12 side strips, net 54", () => {
-    expect(count(renderSvg(S, { view: "iso" }), "<path") - 3).toBe(27); // minus the 3 body faces
-    expect(count(renderSvg(S, { view: "top" }), "<path")).toBe(21);
-    expect(count(renderSvg(S, { view: "net" }), "<path")).toBe(54);
+    // Tiles plus one body square per drawn face.
+    expect(count(renderSvg(S, { view: "iso" }), "<path") - 3).toBe(27);
+    expect(count(renderSvg(S, { view: "top" }), "<path") - 1).toBe(21);
+    expect(count(renderSvg(S, { view: "net" }), "<path") - 6).toBe(54);
   });
 
-  it("colours come from the scheme; masks grey out / hide stickers", () => {
+  it("colours come from the skin; masks grey out / hide stickers", () => {
     const svg = renderSvg(S, { view: "net" });
-    for (const c of SCHEMES.western.faces) expect(count(svg, `fill="${c}"`)).toBe(9);
+    for (const c of STD.stickers.colors) expect(count(svg, `fill="${c}"`)).toBe(9);
+    for (const c of SKINS.gan.stickers.colors) expect(count(renderSvg(S, { view: "net", skin: SKINS.gan }), `fill="${c}"`)).toBe(9);
     const masked = renderSvg(S, { view: "net", mask: presetMask("cross") });
-    expect(count(masked, `fill="${SCHEMES.western.ignored}"`)).toBe(54 - 14);
+    expect(count(masked, `fill="${STD.mask.ignored}"`)).toBe(54 - 14);
     const hidden = renderSvg(S, { view: "net", mask: buildMask(() => "invisible") });
-    expect(count(hidden, "<path")).toBe(0);
+    expect(count(hidden, "<path")).toBe(6); // bodies only
   });
 
   it("is a standalone SVG with the requested width and a matching aspect ratio", () => {
     const svg = renderSvg(S, { view: "net", size: 240 });
     expect(svg.startsWith('<svg xmlns="http://www.w3.org/2000/svg"')).toBe(true);
-    expect(svg).toContain('width="240" height="181"');
+    const [, , w, h] = svg.match(/viewBox="([^"]+)"/)![1].split(" ").map(Number);
+    expect(svg).toContain(`width="240" height="${Math.round((240 * h) / w)}"`);
+    expect(h / w).toBeCloseTo(0.75, 1);
   });
 
   it("the frame option shows the cube from another orientation", () => {
     const frame = FRAMES.find((f) => f.face.U === "D")!; // canonical top = physical bottom
     const svg = renderSvg(S, { view: "top", frame });
-    expect(count(svg, `fill="${SCHEMES.western.faces[3]}"`)).toBeGreaterThanOrEqual(9); // D colour on top
+    expect(count(svg, `fill="${STD.stickers.colors[3]}"`)).toBeGreaterThanOrEqual(9); // D colour on top
+  });
+
+  it("uses the skin's tile shapes and custom SVG tile outlines", () => {
+    // Round centres vs square corners give different outlines.
+    expect(renderSvg(S, { skin: SKINS.gan })).not.toBe(renderSvg(S, { skin: { ...SKINS.gan, stickers: { ...SKINS.gan.stickers, shape: undefined } } }));
+    const custom: Skin = { ...STD, stickers: { ...STD.stickers, paths: { center: "M0.5,0 L1,0.5 L0.5,1 L0,0.5 Z" } } };
+    const svg = renderSvg(S, { view: "net", skin: custom });
+    expect(count(svg, 'd="M0.5,0 L1,0.5 L0.5,1 L0,0.5 Z" transform="matrix(')).toBe(6);
+  });
+
+  it("draws the logo on its sticker, turned by the centre's spin", () => {
+    const skin: Skin = { ...STD, logo: { sticker: 4, image: "logo.png", size: 0.7 } };
+    const upright = renderSvg(S, { view: "top", skin });
+    expect(count(upright, '<image href="logo.png"')).toBe(1);
+    // After U the U centre has turned: the logo turns with it; after U4 it is back.
+    const turned = renderSvg(applyMoves(S, "U"), { view: "top", skin, spins: spinsAfter(S, "U") });
+    expect(turned).not.toBe(upright);
+    expect(renderSvg(S, { view: "top", skin, spins: spinsAfter(S, "U U U U") })).toBe(upright);
+    // Not drawn when its face isn't in the picture.
+    expect(count(renderSvg(applyMoves(S, "x2"), { view: "top", skin }), "<image")).toBe(0);
   });
 });
 

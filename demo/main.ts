@@ -18,7 +18,8 @@ import {
   type MaskPreset,
   presetMask,
 } from "../packages/core/src/index";
-import { SvgCache, SCHEMES as IMG_SCHEMES, type ColorScheme } from "../packages/image/src/index";
+import { SvgCache } from "../packages/image/src/index";
+import { SKINS, withColors } from "../packages/skin/src/index";
 import { ReplayClock, encodeRecording, recording, stageTimings } from "../packages/timeline/src/index";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -102,7 +103,7 @@ for (const p of MASK_PRESETS) $<HTMLSelectElement>("mask").add(new Option(`mask:
 
 function drawImages(state: Uint8Array) {
   const colors = SCHEMES[$<HTMLSelectElement>("scheme").value];
-  const scheme: ColorScheme = { ...IMG_SCHEMES.western, faces: colors as unknown as ColorScheme["faces"] };
+  const skin = withColors(SKINS.standard, colors as unknown as Parameters<typeof withColors>[1]);
   const preset = $<HTMLSelectElement>("mask").value as MaskPreset;
   // "Last layer on top": look at the cube from the frame whose top is the method's last layer.
   const t = new MethodTracker(CFOP, applyMoves(solvedState(), scramble));
@@ -111,7 +112,7 @@ function drawImages(state: Uint8Array) {
   const frame = $<HTMLInputElement>("lltop").checked ? anchor : FRAMES[0];
   const mask = presetMask(preset, frame);
   const t0 = performance.now();
-  const imgs = (["iso", "top", "net"] as const).map((v) => cache.get(state, { view: v, size: v === "net" ? 240 : 170, scheme, mask, frame }));
+  const imgs = (["iso", "top", "net"] as const).map((v) => cache.get(state, { view: v, size: v === "net" ? 240 : 170, skin, mask, frame }));
   $("images").innerHTML = imgs.join("");
   $("imginfo").textContent = `3 SVGs in ${(performance.now() - t0).toFixed(2)} ms (cached: ${cache.size}) · ${imgs.reduce((n, x) => n + x.length, 0)} bytes`;
 }

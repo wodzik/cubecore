@@ -24,6 +24,19 @@ export const FACE_NORMAL: Record<Face, Vec3> = {
   B: [0, 0, -1],
 };
 
+/**
+ * Tangent axes per face, as seen when looking straight at the face in the
+ * usual net: a = right, b = up, a × b = n (outward normal).
+ */
+export const FACE_BASIS: Record<Face, { a: Vec3; b: Vec3; n: Vec3 }> = {
+  U: { a: [1, 0, 0], b: [0, 0, -1], n: [0, 1, 0] },
+  D: { a: [1, 0, 0], b: [0, 0, 1], n: [0, -1, 0] },
+  F: { a: [1, 0, 0], b: [0, 1, 0], n: [0, 0, 1] },
+  B: { a: [-1, 0, 0], b: [0, 1, 0], n: [0, 0, -1] },
+  R: { a: [0, 0, -1], b: [0, 1, 0], n: [1, 0, 0] },
+  L: { a: [0, 0, 1], b: [0, 1, 0], n: [-1, 0, 0] },
+};
+
 /** Cubie position of facelet (row, col) on `face`. */
 function faceletPosition(face: Face, row: number, col: number): Vec3 {
   switch (face) {

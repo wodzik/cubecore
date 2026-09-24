@@ -11,7 +11,7 @@
  * (a × b = n). Coordinates of a sticker's corners are (±1, ±1)·half-size.
  */
 
-import { FACELETS, type Face, type Vec3 } from "@cubecore/core";
+import { FACELETS, FACE_BASIS, type Vec3 } from "@cubecore/core";
 
 export type PieceKind = "corner" | "edge" | "center";
 
@@ -37,15 +37,7 @@ export interface StickerShape {
  */
 export type StickerPaths = Partial<Record<PieceKind, string>>;
 
-/** Tangent axes per face so that a × b = outward normal (b is "up" on the side faces). */
-export const FACE_BASIS: Record<Face, { a: Vec3; b: Vec3; n: Vec3 }> = {
-  U: { a: [1, 0, 0], b: [0, 0, -1], n: [0, 1, 0] },
-  D: { a: [1, 0, 0], b: [0, 0, 1], n: [0, -1, 0] },
-  F: { a: [1, 0, 0], b: [0, 1, 0], n: [0, 0, 1] },
-  B: { a: [-1, 0, 0], b: [0, 1, 0], n: [0, 0, -1] },
-  R: { a: [0, 0, -1], b: [0, 1, 0], n: [1, 0, 0] },
-  L: { a: [0, 0, 1], b: [0, 1, 0], n: [-1, 0, 0] },
-};
+export { FACE_BASIS };
 
 const dot = (p: Vec3, q: Vec3) => p[0] * q[0] + p[1] * q[1] + p[2] * q[2];
 

@@ -21,12 +21,13 @@ function fnv(text: string): string {
 }
 
 export function svgKey(state: State, options: SvgOptions = {}): string {
-  const { mask, frame, scheme, ...rest } = options;
+  const { mask, frame, skin, spins, ...rest } = options;
   const parts = [
     hex(state),
     mask ? hex(mask as Mask) : "",
     frame ? String(frame.id) : "0",
-    scheme ? JSON.stringify(scheme) : "",
+    skin ? JSON.stringify(skin) : "",
+    spins && skin?.logo ? hex(spins) : "",
     JSON.stringify(rest, Object.keys(rest).sort()),
   ];
   return `${options.view ?? "iso"}-${fnv(parts.join("|"))}-${fnv(parts.reverse().join("|"))}`;

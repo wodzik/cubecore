@@ -20,6 +20,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@cubecore/core": "workspace:*",
+        "@cubecore/skin": "workspace:*",
       },
     },
     "packages/render": {
@@ -27,9 +28,17 @@
       "version": "0.0.0",
       "dependencies": {
         "@cubecore/core": "workspace:*",
+        "@cubecore/skin": "workspace:*",
       },
       "peerDependencies": {
         "three": ">=0.160",
+      },
+    },
+    "packages/skin": {
+      "name": "@cubecore/skin",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cubecore/core": "workspace:*",
       },
     },
     "packages/timeline": {
@@ -46,6 +55,8 @@
     "@cubecore/image": ["@cubecore/image@workspace:packages/image"],
 
     "@cubecore/render": ["@cubecore/render@workspace:packages/render"],
+
+    "@cubecore/skin": ["@cubecore/skin@workspace:packages/skin"],
 
     "@cubecore/timeline": ["@cubecore/timeline@workspace:packages/timeline"],
 

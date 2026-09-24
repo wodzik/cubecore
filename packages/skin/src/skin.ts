@@ -114,3 +114,8 @@ export function mix(hex: string, towards: string, amount: number): string {
   const a = p(hex), b = p(towards);
   return "#" + a.map((v, i) => Math.round(v + (b[i] - v) * amount).toString(16).padStart(2, "0")).join("");
 }
+
+/** The same skin with other sticker colours (U R F D L B home-face order) — e.g. a Japanese scheme or a custom one. */
+export function withColors(skin: Skin, colors: readonly [string, string, string, string, string, string]): Skin {
+  return { ...skin, stickers: { ...skin.stickers, colors } };
+}

@@ -40,10 +40,23 @@ import {
 } from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
-import { CUBIES, FACELETS, type Mask, type Move, type State, colorAt, maskStateAt, solvedState, applyMove } from "@cubecore/core";
+import {
+  CUBIES,
+  type CenterSpins,
+  FACELETS,
+  FACE_BASIS,
+  type Mask,
+  type Move,
+  type State,
+  advanceSpins,
+  applyMove,
+  colorAt,
+  maskStateAt,
+  solvedSpins,
+  solvedState,
+} from "@cubecore/core";
+import { SKINS, type Skin, type StickerShape, roundedOutline, stickerColor, stickerLayout, stickerlessOutline } from "@cubecore/skin";
 import { layerTurn, defaultDuration } from "./layers";
-import { SKINS, type Skin, stickerColor } from "./skin";
-import { FACE_BASIS, type StickerShape, roundedOutline, stickerLayout, stickerlessOutline } from "./shapes";
 
 export interface CameraOptions {
   /** Degrees above the horizon. */
@@ -96,6 +109,8 @@ export class CubeRenderer {
   private skin: Skin;
   private cam: CameraOptions;
   private state: State = solvedState();
+  /** Centre spins, tracked through every move so a logo keeps its orientation. */
+  private spins: CenterSpins = solvedSpins();
   private mask: Mask | null = null;
   private partial: Partial3 | null = null;
   private frameRequested = false;
@@ -140,18 +155,24 @@ export class CubeRenderer {
 
   // ─── public API ───
 
-  /** Show a state immediately (cancels running and queued animations). */
-  setState(state: State): void {
+  /**
+   * Show a state immediately (cancels running and queued animations). A
+   * permutation can't say how centres are turned — pass `spins` (see
+   * `spinsAfter`) when a logo's orientation matters; default: all upright.
+   */
+  setState(state: State, spins: CenterSpins = solvedSpins()): void {
     this.finishAll(false);
     this.state = new Uint8Array(state);
+    this.spins = new Uint8Array(spins);
     this.partial = null;
     this.requestRender();
   }
 
   /** Show `state` with `move` part-way (0..1) — for scrubbing / time-accurate replay. */
-  showPartial(state: State, move: Move | null, progress = 0): void {
+  showPartial(state: State, move: Move | null, progress = 0, spins: CenterSpins = solvedSpins()): void {
     this.finishAll(false);
     this.state = new Uint8Array(state);
+    this.spins = new Uint8Array(spins);
     this.partial = move && progress > 0 && progress < 1 ? { move, progress } : null;
     this.requestRender();
   }
@@ -170,6 +191,10 @@ export class CubeRenderer {
       if (this.active) this.completeActive();
       this.requestRender();
     });
+  }
+
+  get currentSpins(): CenterSpins {
+    return new Uint8Array(this.spins);
   }
 
   get currentState(): State {
@@ -372,7 +397,10 @@ export class CubeRenderer {
     logo.visible = visible;
     if (!visible) return;
     this.cubieGroups[this.cubieOfFacelet[pos]].add(logo);
-    logo.quaternion.copy(sticker.quaternion);
+    // A centre's spin isn't in the permutation — turn the logo by the tracked spin.
+    const id = this.skin.logo.sticker;
+    const spin = id % 9 === 4 ? this.spins[Math.floor(id / 9)] : 0;
+    logo.quaternion.copy(sticker.quaternion).multiply(new Quaternion().setFromAxisAngle(Z, (spin * Math.PI) / 2));
     const n = new Vector3(0, 0, 1).applyQuaternion(sticker.quaternion);
     logo.position.copy(sticker.position).addScaledVector(n, logo.userData.lift as number);
   }
@@ -422,7 +450,7 @@ export class CubeRenderer {
     // and animate only that one, so the picture never trails the real cube.
     while (!this.active && this.queue.length > 1) {
       const skipped = this.queue.shift()!;
-      this.state = applyMove(this.state, skipped.move);
+      this.step(skipped.move);
       skipped.resolve();
     }
     if (!this.active && this.queue.length) {
@@ -450,9 +478,14 @@ export class CubeRenderer {
     if (again) this.requestRender();
   }
 
+  private step(move: Move): void {
+    this.spins = advanceSpins(this.spins, this.state, move);
+    this.state = applyMove(this.state, move);
+  }
+
   private completeActive(): void {
     if (!this.active) return;
-    this.state = applyMove(this.state, this.active.move);
+    this.step(this.active.move);
     this.partial = null;
     const done = this.active.resolve;
     this.active = null;
@@ -464,7 +497,7 @@ export class CubeRenderer {
     this.active = null;
     this.queue = [];
     for (const p of pending) {
-      if (apply) this.state = applyMove(this.state, p.move);
+      if (apply) this.step(p.move);
       p.resolve();
     }
   }
@@ -501,11 +534,16 @@ export function showPosition(
   start: State,
   moves: readonly Move[],
   position: { applied: number; active?: { index: number; progress: number } },
+  startSpins: CenterSpins = solvedSpins(),
 ): void {
   let s = start;
-  for (let i = 0; i < position.applied; i++) s = applyMove(s, moves[i]);
+  let spins = startSpins;
+  for (let i = 0; i < position.applied; i++) {
+    spins = advanceSpins(spins, s, moves[i]);
+    s = applyMove(s, moves[i]);
+  }
   const active = position.active ? moves[position.active.index] : null;
-  renderer.showPartial(s, active, position.active?.progress ?? 0);
+  renderer.showPartial(s, active, position.active?.progress ?? 0, spins);
 }
 
 /** Outline of a custom SVG path (0..1 box, y down) scaled to `side`, rotated by `quarters` CCW, centred. */

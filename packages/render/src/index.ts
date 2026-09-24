@@ -1,4 +1,3 @@
 export * from "./layers";
-export * from "./skin";
-export * from "./shapes";
+export * from "@cubecore/skin";
 export * from "./renderer";

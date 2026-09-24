@@ -1,4 +1,5 @@
-import { CFOP, MASK_PRESETS, type MaskPreset, MethodTracker, applyMoves, formatMove, invert, parseAlg, presetMask, solvedState } from "../packages/core/src/index";
+import { CFOP, MASK_PRESETS, type Mask, type MaskPreset, MethodTracker, applyMoves, formatMove, invert, parseAlg, presetMask, solvedState, spinsAfter } from "../packages/core/src/index";
+import { SvgCache, svgKey } from "../packages/image/src/index";
 import { CubeRenderer, SKINS, type Skin, showPosition } from "../packages/render/src/index";
 import { ReplayClock, recording } from "../packages/timeline/src/index";
 
@@ -15,7 +16,8 @@ $("run").onclick = async () => {
   for (const m of parseAlg($<HTMLInputElement>("alg").value)) await renderer.animate(m);
 };
 const SCR = "D2 F' L2 U R2 B' D L' F2 U' R B2 L D' F R' U2 B L2 D";
-$("scramble").onclick = () => renderer.setState(applyMoves(solvedState(), SCR));
+// A permutation can't say how the centres are turned: pass the spins so the logo keeps its orientation.
+$("scramble").onclick = () => renderer.setState(applyMoves(solvedState(), SCR), spinsAfter(solvedState(), SCR));
 $("reset").onclick = () => renderer.setState(solvedState());
 // Smart cubes can send moves faster than any fixed tempo: queued moves must not lag behind.
 $("burst").onclick = () => {
@@ -74,15 +76,19 @@ const DEMO_SKINS: Record<string, Skin> = {
 };
 for (const name of Object.keys(DEMO_SKINS)) $<HTMLSelectElement>("skin").add(new Option(name, name));
 for (const p of MASK_PRESETS) $<HTMLSelectElement>("mask").add(new Option(p, p));
+let skin: Skin = SKINS.standard;
+let mask: Mask | null = null;
 function applySkin() {
   const base = DEMO_SKINS[$<HTMLSelectElement>("skin").value];
+  skin = base;
   renderer.setSkin({ ...base, hints: { ...base.hints, enabled: $<HTMLInputElement>("hints").checked } });
 }
 $("skin").onchange = applySkin;
 $("hints").onchange = applySkin;
 $("mask").onchange = () => {
   const v = $<HTMLSelectElement>("mask").value as MaskPreset | "";
-  renderer.setMask(v ? presetMask(v) : null);
+  mask = v ? presetMask(v) : null;
+  renderer.setMask(mask);
 };
 const camera = () => renderer.setCamera({ latitude: Number($<HTMLInputElement>("lat").value), longitude: Number($<HTMLInputElement>("lon").value) });
 $("lat").oninput = camera;
@@ -102,3 +108,16 @@ $("gyro").onchange = () => {
     renderer.setOrientation({ x: sx * cy, y: cx * sy, z: -sx * sy, w: cx * cy }, 0.8);
   }, 50);
 };
+
+// ─── the same skin in 2D (@cubecore/image) ───
+// Pictures follow whatever the 3D view shows — same colours, tile shapes, logo and its orientation.
+const pictures = new SvgCache(200);
+let shown = "";
+setInterval(() => {
+  const state = renderer.currentState, spins = renderer.currentSpins;
+  const opts = (view: "iso" | "top" | "net") => ({ view, size: view === "net" ? 260 : 150, skin, spins, ...(mask ? { mask } : {}) });
+  const key = svgKey(state, opts("net"));
+  if (key === shown) return;
+  shown = key;
+  $("flat").innerHTML = (["iso", "top", "net"] as const).map((v) => pictures.get(state, opts(v))).join("");
+}, 100);

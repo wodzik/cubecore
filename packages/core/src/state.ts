@@ -129,3 +129,17 @@ export class CubeState {
 
 // Re-exported for convenience.
 export { CUBIE_OF_FACELET, FACELETS };
+
+/**
+ * The state whose solution is the way from `from` to `to`: solving it gives
+ * moves M with applyMoves(from, M) = to. Lets any solver (and so any
+ * scramble generator) work from wherever the physical cube is now — a smart
+ * cube between attempts doesn't have to be solved first.
+ */
+export function relativeState(from: State, to: State): State {
+  const toInverse = new Uint8Array(FACELET_COUNT);
+  for (let i = 0; i < FACELET_COUNT; i++) toInverse[to[i]] = i;
+  const out = new Uint8Array(FACELET_COUNT);
+  for (let j = 0; j < FACELET_COUNT; j++) out[j] = toInverse[from[j]];
+  return out;
+}

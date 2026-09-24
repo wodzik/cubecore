@@ -56,3 +56,21 @@ describe("random-state scrambles", () => {
     expect(checks.f2lSolved(state)).toBe(false); // not the D-cross F2L
   });
 });
+
+describe("scrambles from where the cube is", () => {
+  it("solveBetween takes one state to another", async () => {
+    const { applyMoves, relativeState, statesEqual } = await import("@cubecore/core");
+    const a = applyMoves(solvedState(), "R U R' F2 D"), b = applyMoves(solvedState(), "L2 B U' R");
+    const moves = sharedSolver().solveBetween(a, b)!;
+    expect(statesEqual(applyMoves(a, moves), b)).toBe(true);
+    expect(statesEqual(relativeState(a, a), solvedState())).toBe(true);
+  });
+
+  it("a preset scramble from an unsolved cube still lands on a case of that preset", () => {
+    const from = applyMoves(solvedState(), "F2 R' D L2 R U");
+    const { moves, state } = randomScramble({ preset: "ll", from, random: seeded(9) });
+    expect(checks.f2lSolved(state)).toBe(true);
+    expect(isSolved(state)).toBe(false);
+    expect(applyMoves(from, moves).join()).toBe(state.join());
+  });
+});

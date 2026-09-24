@@ -15,7 +15,7 @@
  * Pieces use the Kociemba numbering of core `cubies.ts`.
  */
 
-import { type Move, type State, applyMove, parity, permRank, permUnrank, solvedState, toCubies, transformMoves } from "@cubecore/core";
+import { type Move, type State, applyMove, parity, permRank, permUnrank, relativeState, solvedState, toCubies, transformMoves } from "@cubecore/core";
 
 // ─── cubie level ───
 
@@ -202,6 +202,11 @@ export class TwoPhase {
     const moves = this.search(c, options.maxLength ?? 21, performance.now() + (options.timeoutMs ?? 5000));
     if (!moves) return null;
     return cubies.frame.id === 0 ? moves : transformMoves(moves, cubies.frame);
+  }
+
+  /** Moves taking `from` to `to` (e.g. from the cube's current state to a scramble's target). */
+  solveBetween(from: State, to: State, options: SolveOptions = {}): Move[] | null {
+    return this.solve(relativeState(from, to), options);
   }
 
   private search(c: CC, maxLength: number, deadline: number): Move[] | null {

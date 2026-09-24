@@ -114,23 +114,41 @@ export interface ScrambleOptions extends RandomStateOptions, SolveOptions {
   frame?: Frame;
   /** A solver to reuse (default: one shared instance, built on first use). */
   solver?: TwoPhase;
+  /**
+   * Where the cube is now (e.g. a smart cube's state after the last attempt):
+   * the scramble then goes from here to the random target — no need to solve
+   * the cube first. Default: solved.
+   */
+  from?: State;
 }
 
 let shared: TwoPhase | null = null;
 /** The shared solver (tables built on first call, about half a second). */
 export const sharedSolver = (): TwoPhase => (shared ??= TwoPhase.create());
 
-/** A random-state scramble: the moves, and the state they give from solved. */
+/** A random-state scramble: the moves, and the state they lead to (from `from`, default solved). */
 export function randomScramble(options: ScrambleOptions = {}): { moves: Move[]; state: State } {
   const preset = SCRAMBLE_PRESETS[options.preset ?? "full"];
-  const solver = options.solver ?? sharedSolver();
   for (;;) {
-    const state = randomState({ solved: options.solved ?? preset.solved, oriented: options.oriented ?? preset.oriented, random: options.random });
-    const solution = solver.solve(state, options);
-    if (!solution) continue; // timed out on an unlucky state: draw another
-    if (!solution.length) continue; // drew the solved state itself
-    let moves = invert(solution);
-    if (options.frame && options.frame !== IDENTITY_FRAME) moves = transformMoves(moves, options.frame);
-    return { moves, state: applyMoves(solvedState(), moves) };
+    let target = randomState({ solved: options.solved ?? preset.solved, oriented: options.oriented ?? preset.oriented, random: options.random });
+    if (options.frame && options.frame !== IDENTITY_FRAME) target = relabelTo(target, options.frame);
+    const result = scrambleTo(target, options);
+    if (result) return result;
   }
+}
+
+/** Moves from `options.from` (default solved) to `target`; null if the solver gave up or there is nothing to do. */
+export function scrambleTo(target: State, options: Pick<ScrambleOptions, "from" | "solver" | "maxLength" | "timeoutMs"> = {}): { moves: Move[]; state: State } | null {
+  const solver = options.solver ?? sharedSolver();
+  const from = options.from ?? solvedState();
+  const moves = solver.solveBetween(from, target, options);
+  if (!moves || !moves.length) return null;
+  return { moves, state: applyMoves(from, moves) };
+}
+
+/** A canonical-frame target moved onto `frame` (canonical D → frame.face.D): the same case held another way. */
+function relabelTo(target: State, frame: Frame): State {
+  // Build the target by moves (solve it from solved, replay those moves in the frame).
+  const moves = sharedSolver().solve(target);
+  return moves ? applyMoves(solvedState(), transformMoves(invert(moves), frame)) : target;
 }

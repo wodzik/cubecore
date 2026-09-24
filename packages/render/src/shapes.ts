@@ -109,3 +109,66 @@ export function roundedOutline(side: number, radii: readonly number[], segments 
   });
   return pts;
 }
+
+export interface TileExtents {
+  xMin: number;
+  xMax: number;
+  yMin: number;
+  yMax: number;
+}
+
+/**
+ * Which sides of a tile lie on the cube's outer edge (in local x/y): e.g. the
+ * top-left corner tile of a face has its −x and +y sides on the edge.
+ */
+export function outerSides(layout: StickerLayout): { xMin: boolean; xMax: boolean; yMin: boolean; yMax: boolean } {
+  return { xMin: layout.u === -1, xMax: layout.u === 1, yMin: layout.v === -1, yMax: layout.v === 1 };
+}
+
+/**
+ * Stickerless tiles: sides on the cube's outer edge run all the way to
+ * `edge` (the cubie face half-size plus a little overlap), so two faces'
+ * colours meet directly on the cube's edges and corners with no black line
+ * between them; the other sides keep the gap at `half`. A tile corner where
+ * two outer sides meet (a cube corner) is sharp.
+ */
+export function stickerlessOutline(layout: StickerLayout, side: number, edge: number, segments = 8): [number, number][] {
+  const half = side / 2;
+  const o = outerSides(layout);
+  const ext: TileExtents = { xMin: o.xMin ? -edge : -half, xMax: o.xMax ? edge : half, yMin: o.yMin ? -edge : -half, yMax: o.yMax ? edge : half };
+  // Local corners in order (+,+), (−,+), (−,−), (+,−).
+  const cornerOuter = [
+    [o.xMax, o.yMax],
+    [o.xMin, o.yMax],
+    [o.xMin, o.yMin],
+    [o.xMax, o.yMin],
+  ];
+  const radii = layout.radii.map((r, i) => (cornerOuter[i][0] && cornerOuter[i][1] ? 0 : r * side));
+  return roundedRect(ext, radii, segments);
+}
+
+/** Rectangle with independent extents and absolute per-corner radii, CCW from the (+x,+y) corner. */
+export function roundedRect(ext: TileExtents, radii: readonly number[], segments = 8): [number, number][] {
+  const corners: [number, number, number, number][] = [
+    [ext.xMax, ext.yMax, 1, 1],
+    [ext.xMin, ext.yMax, -1, 1],
+    [ext.xMin, ext.yMin, -1, -1],
+    [ext.xMax, ext.yMin, 1, -1],
+  ];
+  const w = ext.xMax - ext.xMin, h = ext.yMax - ext.yMin;
+  const pts: [number, number][] = [];
+  corners.forEach(([x, y, sx, sy], i) => {
+    const r = Math.min(radii[i], w / 2, h / 2);
+    const cx = x - sx * r, cy = y - sy * r;
+    const start = Math.atan2(sy, sx) - Math.PI / 4;
+    if (r === 0) {
+      pts.push([x, y]);
+      return;
+    }
+    for (let k = 0; k <= segments; k++) {
+      const t = start + (k / segments) * (Math.PI / 2);
+      pts.push([cx + r * Math.cos(t), cy + r * Math.sin(t)]);
+    }
+  });
+  return pts;
+}

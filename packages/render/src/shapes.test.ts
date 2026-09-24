@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { FACELETS } from "@cubecore/core";
-import { FACE_BASIS, roundedOutline, stickerLayout } from "./shapes";
+import { FACE_BASIS, roundedOutline, stickerLayout, stickerlessOutline } from "./shapes";
 
 const SHAPE = { corner: { inner: 0.4, outer: 0.05 }, edge: { inner: 0.3, outer: 0.05 }, center: 0.45 };
 const LOCAL = [[1, 1], [-1, 1], [-1, -1], [1, -1]];
@@ -49,5 +49,21 @@ describe("sticker layout", () => {
     expect(pts.some(([x, y]) => Math.abs(x - 0.5) < 1e-9 && Math.abs(y + 0.5) < 1e-9)).toBe(true);
     // fully rounded corner never reaches (0.5, 0.5)
     expect(pts.some(([x, y]) => x > 0.49 && y > 0.49)).toBe(false);
+  });
+});
+
+describe("stickerlessOutline", () => {
+  it("runs outer sides to the cube edge (no seam between a piece's faces), keeps inner gaps", () => {
+    for (const f of FACELETS) {
+      const layout = stickerLayout(f.index, SHAPE);
+      const pts = stickerlessOutline(layout, 0.9, 0.52);
+      const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+      expect(Math.max(...xs)).toBeCloseTo(layout.u === 1 ? 0.52 : 0.45);
+      expect(Math.min(...xs)).toBeCloseTo(layout.u === -1 ? -0.52 : -0.45);
+      expect(Math.max(...ys)).toBeCloseTo(layout.v === 1 ? 0.52 : 0.45);
+      expect(Math.min(...ys)).toBeCloseTo(layout.v === -1 ? -0.52 : -0.45);
+      // A cube-corner tile is sharp at the cube corner.
+      if (layout.kind === "corner") expect(pts.some(([x, y]) => x === 0.52 * layout.u && y === 0.52 * layout.v)).toBe(true);
+    }
   });
 });

@@ -43,7 +43,7 @@ import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
 import { CUBIES, FACELETS, type Mask, type Move, type State, colorAt, maskStateAt, solvedState, applyMove } from "@cubecore/core";
 import { layerTurn, defaultDuration } from "./layers";
 import { SKINS, type Skin, stickerColor } from "./skin";
-import { FACE_BASIS, type StickerShape, roundedOutline, stickerLayout } from "./shapes";
+import { FACE_BASIS, type StickerShape, roundedOutline, stickerLayout, stickerlessOutline } from "./shapes";
 
 export interface CameraOptions {
   /** Degrees above the horizon. */
@@ -258,10 +258,16 @@ export class CubeRenderer {
     const geometryFor = (fi: number): BufferGeometry => {
       const layout = stickerLayout(fi, shape);
       const path = s.stickers.paths?.[layout.kind];
-      const key = path ? `p|${layout.kind}|${layout.pathQuarters}` : `r|${layout.radii.join(",")}`;
+      const fill = !path && s.stickers.fillOuter === true;
+      const key = path ? `p|${layout.kind}|${layout.pathQuarters}` : `r|${layout.radii.join(",")}|${fill ? `${layout.u},${layout.v}` : ""}`;
       let g = geometries.get(key);
       if (!g) {
-        const outline = path ? pathOutline(path, side, layout.pathQuarters) : roundedOutline(side, layout.radii);
+        // Stickerless tiles reach past the cubie edge by their own thickness, so neighbouring faces' tiles meet.
+        const outline = path
+          ? pathOutline(path, side, layout.pathQuarters)
+          : fill
+            ? stickerlessOutline(layout, side, size / 2 + thickness + 0.002)
+            : roundedOutline(side, layout.radii);
         const sh = new Shape(outline.map(([x, y]) => new Vector2(x, y)));
         g = thickness > 0 ? new ExtrudeGeometry(sh, { depth: thickness, bevelEnabled: false, curveSegments: 4 }) : new ShapeGeometry(sh);
         geometries.set(key, g);

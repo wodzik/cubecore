@@ -26,6 +26,12 @@ export interface Skin {
     paths?: StickerPaths;
     /** How far a tile stands out from the plastic (cubie units) — stickerless tiles are thicker. */
     thickness?: number;
+    /**
+     * Stickerless: tile sides on the cube's outer edge reach the edge, so two
+     * faces' colours meet directly on edges and corners (no black line there);
+     * gaps remain only between neighbouring pieces on a face.
+     */
+    fillOuter?: boolean;
   };
   /**
    * A picture on one sticker, e.g. a brand logo on a centre. It follows that
@@ -59,7 +65,7 @@ export const SKINS = {
     body: "#1c1c1c",
     cubieSize: 0.97,
     cubieRadius: 0.08,
-    stickers: { colors: WESTERN, size: 0.94, radius: 0.1 },
+    stickers: { colors: WESTERN, size: 0.94, radius: 0.1, fillOuter: true },
     mask: { ignored: "#4a4a4a", oriented: "#39c7d4", dimAmount: 0.55 },
     hints: { enabled: false, distance: 1.4, opacity: 0.75, ignoredOpacity: 0.35 },
     background: null,
@@ -79,6 +85,7 @@ export const SKINS = {
       radius: 0.08,
       shape: { corner: { inner: 0.34, outer: 0.07 }, edge: { inner: 0.3, outer: 0.07 }, center: 0.36 },
       thickness: 0.012,
+      fillOuter: true,
     },
     mask: { ignored: "#5a5a5a", oriented: "#39c7d4", dimAmount: 0.55 },
     hints: { enabled: false, distance: 1.4, opacity: 0.75, ignoredOpacity: 0.35 },

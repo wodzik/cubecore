@@ -307,6 +307,13 @@ export class StageSolver {
         return pos * (p.kind === "edge" ? 2 : 3) + Math.floor(random() * (p.kind === "edge" ? 2 : 3));
       });
       const flip = this.def.eo ? Math.floor(random() * 2048) : 0;
+      if (this.def.eo) {
+        // The tracked edges' orientations are part of the flip: take them from it.
+        const eo = flipBits(flip);
+        this.def.pieces.forEach((p, i) => {
+          if (p.kind === "edge") vals[i] = (vals[i] >> 1) * 2 + eo[vals[i] >> 1];
+        });
+      }
       if (evaluate(vals, flip) === depth) return placement(vals, flip);
     }
     // Short depths are rare among uniform placements: walk away from solved instead.
@@ -326,6 +333,14 @@ export class StageSolver {
     }
     return null;
   }
+}
+
+/** Orientation of the edge at each position (0..11) for a flip coordinate. */
+export function flipBits(flip: number): number[] {
+  const eo = new Array(12).fill(0);
+  for (let i = 10, t = flip; i >= 0; i--, t >>= 1) eo[i] = t & 1;
+  eo[11] = eo.reduce((a, x) => a + x, 0) % 2;
+  return eo;
 }
 
 /** Where some pieces are: piece → value (pos × 2 + ori for edges, pos × 3 + ori for corners); `flip` = orientation of all edges. */

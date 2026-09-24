@@ -21,11 +21,11 @@ import {
   type State,
   applyMoves,
   fromCubies,
-  invert,
   parity,
   solvedState,
-  transformMoves,
+  unreframe,
 } from "@cubecore/core";
+import { type Placement, type StageDef, flipBits, stageSolver } from "./stage";
 import { type SolveOptions, TwoPhase } from "./twophase";
 
 export type PiecePredicate = (cubie: Cubie) => boolean;
@@ -33,6 +33,8 @@ export type PiecePredicate = (cubie: Cubie) => boolean;
 export interface RandomStateOptions {
   /** Pieces kept solved (in place, oriented). */
   solved?: PiecePredicate;
+  /** Pieces put exactly here (e.g. a cross sampled at a given distance), and optionally all edges' orientation. */
+  place?: Placement;
   /** Pieces kept oriented, but permuted among themselves. */
   oriented?: PiecePredicate;
   /** Random source in [0, 1). Default Math.random. */
@@ -55,26 +57,47 @@ export function randomState(options: RandomStateOptions = {}): State {
   const random = options.random ?? Math.random;
   const solved = options.solved ?? (() => false);
   const oriented = options.oriented ?? (() => false);
+  const placed = { edge: new Map<number, number>(), corner: new Map<number, number>() };
+  for (const [piece, value] of options.place?.pieces ?? []) placed[piece.kind].set(piece.id, value);
+  const flip = options.place?.flip;
 
-  const place = (n: number, cubieOf: (j: number) => Cubie, twists: number) => {
-    const free = Array.from({ length: n }, (_, j) => j).filter((j) => !solved(cubieOf(j)));
-    const perm = Array.from({ length: n }, (_, j) => j);
-    const shuffled = shuffle([...free], random);
-    free.forEach((pos, k) => (perm[pos] = shuffled[k]));
+  const place = (kind: "edge" | "corner", n: number, cubieOf: (j: number) => Cubie, twists: number) => {
+    const perm = new Array(n).fill(-1);
     const ori = new Array(n).fill(0);
-    // Pieces free to twist / flip; the last of them absorbs the sum rule.
-    const turnable = free.filter((pos) => !oriented(cubieOf(perm[pos])));
-    for (const pos of turnable) ori[pos] = Math.floor(random() * twists);
-    if (turnable.length) {
-      const last = turnable[turnable.length - 1];
-      const rest = ori.reduce((a, b, i) => (i === last ? a : a + b), 0);
-      ori[last] = (twists - (rest % twists)) % twists;
+    const taken = new Set<number>();
+    // Placed pieces, then solved ones, at their fixed positions.
+    for (const [id, value] of placed[kind]) {
+      const pos = Math.floor(value / twists);
+      perm[pos] = id;
+      ori[pos] = value % twists;
+      taken.add(id);
+    }
+    for (let j = 0; j < n; j++) {
+      if (taken.has(j) || !solved(cubieOf(j))) continue;
+      perm[j] = j;
+      taken.add(j);
+    }
+    const free = perm.map((p, pos) => (p < 0 ? pos : -1)).filter((pos) => pos >= 0);
+    const pieces = shuffle(Array.from({ length: n }, (_, j) => j).filter((j) => !taken.has(j)), random);
+    free.forEach((pos, k) => (perm[pos] = pieces[k]));
+    if (kind === "edge" && flip !== undefined) {
+      const eo = flipBits(flip);
+      free.forEach((pos) => (ori[pos] = eo[pos]));
+    } else {
+      // Pieces free to twist / flip; the last of them absorbs the sum rule.
+      const turnable = free.filter((pos) => !oriented(cubieOf(perm[pos])));
+      for (const pos of turnable) ori[pos] = Math.floor(random() * twists);
+      if (turnable.length) {
+        const last = turnable[turnable.length - 1];
+        const rest = ori.reduce((a, b, i) => (i === last ? a : a + b), 0);
+        ori[last] = (twists - (rest % twists)) % twists;
+      }
     }
     return { perm, ori, free };
   };
 
-  const corners = place(8, cornerCubie, 3);
-  const edges = place(12, edgeCubie, 2);
+  const corners = place("corner", 8, cornerCubie, 3);
+  const edges = place("edge", 12, edgeCubie, 2);
   // Permutation parities must match: swap two free edges (or corners) if they don't.
   if (parity(corners.perm) !== parity(edges.perm)) {
     const swap = (p: { perm: number[]; ori: number[]; free: number[] }) => {
@@ -131,7 +154,7 @@ export function randomScramble(options: ScrambleOptions = {}): { moves: Move[]; 
   const preset = SCRAMBLE_PRESETS[options.preset ?? "full"];
   for (;;) {
     let target = randomState({ solved: options.solved ?? preset.solved, oriented: options.oriented ?? preset.oriented, random: options.random });
-    if (options.frame && options.frame !== IDENTITY_FRAME) target = relabelTo(target, options.frame);
+    if (options.frame && options.frame !== IDENTITY_FRAME) target = unreframe(target, options.frame);
     const result = scrambleTo(target, options);
     if (result) return result;
   }
@@ -146,9 +169,29 @@ export function scrambleTo(target: State, options: Pick<ScrambleOptions, "from" 
   return { moves, state: applyMoves(from, moves) };
 }
 
-/** A canonical-frame target moved onto `frame` (canonical D → frame.face.D): the same case held another way. */
-function relabelTo(target: State, frame: Frame): State {
-  // Build the target by moves (solve it from solved, replay those moves in the frame).
-  const moves = sharedSolver().solve(target);
-  return moves ? applyMoves(solvedState(), transformMoves(invert(moves), frame)) : target;
+// ─── trainer scrambles ───
+
+export interface StageScrambleOptions extends Omit<ScrambleOptions, "preset" | "solved" | "oriented" | "place"> {
+  /** The stage and how many moves its optimal solution must take. */
+  stage: StageDef;
+  length: number;
+}
+
+/**
+ * A trainer scramble: a random-state scramble whose `stage` (cross, xcross,
+ * EOCross…) takes exactly `length` moves at best — on any face (`frame`),
+ * from wherever the cube is (`from`). Null if no such case was found.
+ */
+export function stageScramble(options: StageScrambleOptions): { moves: Move[]; state: State } | null {
+  const solver = stageSolver(options.stage);
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const place = solver.sample(options.length, options.random);
+    if (!place) return null;
+    let target = randomState({ place, random: options.random });
+    if (options.frame && options.frame !== IDENTITY_FRAME) target = unreframe(target, options.frame);
+    const result = scrambleTo(target, options);
+    // Defence in depth: the scrambled cube must really be `length` away.
+    if (result && solver.distance(result.state, { frame: options.frame }) === options.length) return result;
+  }
+  return null;
 }

@@ -70,6 +70,14 @@ export function reframe(state: State, frame: Frame): State {
   return out;
 }
 
+/** Inverse of `reframe`: a state described in `frame` back in the cube's own positions and names. */
+export function unreframe(state: State, frame: Frame): State {
+  if (frame === IDENTITY_FRAME) return new Uint8Array(state);
+  const out = new Uint8Array(FACELET_COUNT);
+  for (let i = 0; i < FACELET_COUNT; i++) out[frame.map[i]] = frame.map[state[i]];
+  return out;
+}
+
 /** Short human label, e.g. "D-bottom, F-front" style: canonical D and F mapped to physical faces. */
 export function frameLabel(frame: Frame): string {
   return `${frame.face.D}${frame.face.F}`;

@@ -64,3 +64,29 @@ describe("stage solvers", () => {
     expect(parseAlg("R").length).toBe(1);
   });
 });
+
+describe("trainer scrambles", () => {
+  it("a cross in exactly N moves — on any face, from an unsolved cube", async () => {
+    const { stageScramble } = await import("./index");
+    let seed = 7;
+    const random = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const from = applyMoves(S, "R U F D2");
+    for (const length of [3, 6]) {
+      const frame = frameFor("U");
+      const r = stageScramble({ stage: STAGES.cross(), length, frame, from, random })!;
+      expect(cross.distance(r.state, { frame })).toBe(length);
+      expect(applyMoves(from, r.moves).join()).toBe(r.state.join());
+      expect(r.moves.length).toBeGreaterThan(8); // a real random-state scramble, not just the cross
+    }
+  });
+
+  it("xcross and EOCross cases at a given length", async () => {
+    const { stageScramble } = await import("./index");
+    let seed = 3;
+    const random = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const x = stageScramble({ stage: STAGES.xcross("FR"), length: 7, random })!;
+    expect(new StageSolver(STAGES.xcross("FR")).distance(x.state)).toBe(7);
+    const e = stageScramble({ stage: STAGES.eocross(), length: 6, random })!;
+    expect(new StageSolver(STAGES.eocross()).distance(e.state)).toBe(6);
+  });
+});

@@ -102,6 +102,12 @@ interface Ring {
   oz: number;
   off: number;
   ophi: number;
+  /**
+   * Deep rings (piece skirts): inset every vertex by `d`, then cut with the
+   * mitre planes (x ≤ edge + z on an outer side) — exact at any depth, where
+   * the blended edge weights used near the top would skew the corners.
+   */
+  clamp?: boolean;
 }
 
 /** Sweep `outline` through `rings` (bottom up); optionally close the top with a flat cap. */
@@ -117,6 +123,16 @@ function sweep(outlineIn: readonly Pt[], rings: readonly Ring[], mitre: Mitre | 
   }));
   const place = (i: number, ring: Ring): [number, number, number] => {
     let [x, y] = outline[i];
+    if (ring.clamp) {
+      x -= vn[i].n[0] * ring.d * vn[i].scale;
+      y -= vn[i].n[1] * ring.d * vn[i].scale;
+      if (mitre) {
+        const limit = mitre.edge + ring.z;
+        if (mitre.u !== 0) x = mitre.u > 0 ? Math.min(x, limit) : Math.max(x, -limit);
+        if (mitre.v !== 0) y = mitre.v > 0 ? Math.min(y, limit) : Math.max(y, -limit);
+      }
+      return [x, y, ring.z];
+    }
     const { ku, kv } = weights[i];
     // The inner offset fades out towards the outer edge; outer sides follow the mitre / edge round.
     const innerWeight = (1 - ku) * (1 - kv);
@@ -213,8 +229,8 @@ export function skirtSolid(outline: readonly Pt[], shape: { top: number; depth: 
   const h = Math.max(1e-6, shape.depth - shape.top);
   const phi = -Math.atan2(shape.taper, h); // walls lean inwards going down: normals tilt downwards
   const rings: Ring[] = [
-    { z: -shape.depth, d: shape.taper, phi, oz: -shape.depth, off: -shape.depth, ophi: 0 },
-    { z: -shape.top, d: 0, phi, oz: -shape.top, off: -shape.top, ophi: 0 },
+    { z: -shape.depth, d: shape.taper, phi, oz: -shape.depth, off: -shape.depth, ophi: 0, clamp: true },
+    { z: -shape.top, d: 0, phi, oz: -shape.top, off: -shape.top, ophi: 0, clamp: true },
   ];
   return sweep(outline, rings, mitre, false);
 }

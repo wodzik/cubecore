@@ -1,0 +1,136 @@
+/**
+ * Random-state scrambles: draw a random reachable state (optionally with
+ * some pieces kept solved or oriented), solve it with the two-phase solver,
+ * and use the inverse of the solution — every state is equally likely, like
+ * WCA scrambles.
+ *
+ * Constraints are written for the canonical frame (first layer D, last layer
+ * U, Roux blocks on L/R), so presets read naturally; `frame` then puts the
+ * same case on any face — colour neutral, e.g. "LL scramble with the cross
+ * on white": `randomScramble({ preset: "ll", frame: frameFor("U") })`.
+ */
+
+import {
+  CORNER_FACELETS,
+  CUBIE_OF_FACELET,
+  type Cubie,
+  EDGE_FACELETS,
+  type Frame,
+  IDENTITY_FRAME,
+  type Move,
+  type State,
+  applyMoves,
+  fromCubies,
+  invert,
+  parity,
+  solvedState,
+  transformMoves,
+} from "@cubecore/core";
+import { type SolveOptions, TwoPhase } from "./twophase";
+
+export type PiecePredicate = (cubie: Cubie) => boolean;
+
+export interface RandomStateOptions {
+  /** Pieces kept solved (in place, oriented). */
+  solved?: PiecePredicate;
+  /** Pieces kept oriented, but permuted among themselves. */
+  oriented?: PiecePredicate;
+  /** Random source in [0, 1). Default Math.random. */
+  random?: () => number;
+}
+
+const cornerCubie = (j: number) => CUBIE_OF_FACELET[CORNER_FACELETS[j][0]];
+const edgeCubie = (j: number) => CUBIE_OF_FACELET[EDGE_FACELETS[j][0]];
+
+function shuffle<T>(items: T[], random: () => number): T[] {
+  for (let i = items.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [items[i], items[j]] = [items[j], items[i]];
+  }
+  return items;
+}
+
+/** A uniformly random reachable state (centres at home) honouring the constraints. */
+export function randomState(options: RandomStateOptions = {}): State {
+  const random = options.random ?? Math.random;
+  const solved = options.solved ?? (() => false);
+  const oriented = options.oriented ?? (() => false);
+
+  const place = (n: number, cubieOf: (j: number) => Cubie, twists: number) => {
+    const free = Array.from({ length: n }, (_, j) => j).filter((j) => !solved(cubieOf(j)));
+    const perm = Array.from({ length: n }, (_, j) => j);
+    const shuffled = shuffle([...free], random);
+    free.forEach((pos, k) => (perm[pos] = shuffled[k]));
+    const ori = new Array(n).fill(0);
+    // Pieces free to twist / flip; the last of them absorbs the sum rule.
+    const turnable = free.filter((pos) => !oriented(cubieOf(perm[pos])));
+    for (const pos of turnable) ori[pos] = Math.floor(random() * twists);
+    if (turnable.length) {
+      const last = turnable[turnable.length - 1];
+      const rest = ori.reduce((a, b, i) => (i === last ? a : a + b), 0);
+      ori[last] = (twists - (rest % twists)) % twists;
+    }
+    return { perm, ori, free };
+  };
+
+  const corners = place(8, cornerCubie, 3);
+  const edges = place(12, edgeCubie, 2);
+  // Permutation parities must match: swap two free edges (or corners) if they don't.
+  if (parity(corners.perm) !== parity(edges.perm)) {
+    const swap = (p: { perm: number[]; ori: number[]; free: number[] }) => {
+      const [a, b] = p.free;
+      [p.perm[a], p.perm[b]] = [p.perm[b], p.perm[a]];
+      [p.ori[a], p.ori[b]] = [p.ori[b], p.ori[a]];
+    };
+    if (edges.free.length >= 2) swap(edges);
+    else if (corners.free.length >= 2) swap(corners);
+  }
+  return fromCubies({ frame: IDENTITY_FRAME, cp: corners.perm, co: corners.ori, ep: edges.perm, eo: edges.ori });
+}
+
+// ─── presets (canonical: first layer D, last layer U; Roux blocks on L/R) ───
+
+const y = (c: Cubie) => c.pos[1];
+const isCrossEdge = (c: Cubie) => c.kind === "edge" && y(c) === -1;
+const inF2L = (c: Cubie) => y(c) <= 0;
+const inFR = (c: Cubie) => c.pos[0] === 1 && c.pos[2] === 1 && y(c) <= 0;
+
+export type ScramblePreset = "full" | "f2l" | "ls" | "ll" | "zbll" | "pll" | "ell" | "cmll";
+
+export const SCRAMBLE_PRESETS: Record<ScramblePreset, { label: string; solved?: PiecePredicate; oriented?: PiecePredicate }> = {
+  full: { label: "Random state" },
+  f2l: { label: "F2L (cross solved)", solved: isCrossEdge },
+  ls: { label: "Last slot (FR) + last layer", solved: (c) => inF2L(c) && !inFR(c) },
+  ll: { label: "Last layer (OLL + PLL)", solved: inF2L },
+  zbll: { label: "ZBLL (last-layer edges oriented)", solved: inF2L, oriented: (c) => c.kind === "edge" },
+  pll: { label: "PLL (last layer oriented)", solved: inF2L, oriented: () => true },
+  ell: { label: "ELL (corners solved)", solved: (c) => inF2L(c) || c.kind === "corner" },
+  cmll: { label: "CMLL (Roux blocks solved)", solved: (c) => c.pos[0] !== 0 && y(c) <= 0 },
+};
+
+export interface ScrambleOptions extends RandomStateOptions, SolveOptions {
+  preset?: ScramblePreset;
+  /** Put the case on another face: canonical D (cross / first block bottom) goes to `frame.face.D`. */
+  frame?: Frame;
+  /** A solver to reuse (default: one shared instance, built on first use). */
+  solver?: TwoPhase;
+}
+
+let shared: TwoPhase | null = null;
+/** The shared solver (tables built on first call, about half a second). */
+export const sharedSolver = (): TwoPhase => (shared ??= TwoPhase.create());
+
+/** A random-state scramble: the moves, and the state they give from solved. */
+export function randomScramble(options: ScrambleOptions = {}): { moves: Move[]; state: State } {
+  const preset = SCRAMBLE_PRESETS[options.preset ?? "full"];
+  const solver = options.solver ?? sharedSolver();
+  for (;;) {
+    const state = randomState({ solved: options.solved ?? preset.solved, oriented: options.oriented ?? preset.oriented, random: options.random });
+    const solution = solver.solve(state, options);
+    if (!solution) continue; // timed out on an unlucky state: draw another
+    if (!solution.length) continue; // drew the solved state itself
+    let moves = invert(solution);
+    if (options.frame && options.frame !== IDENTITY_FRAME) moves = transformMoves(moves, options.frame);
+    return { moves, state: applyMoves(solvedState(), moves) };
+  }
+}

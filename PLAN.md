@@ -57,7 +57,7 @@ packages/
   petrus/      @cubecore/petrus    Petrus stages, masks
   lbl/         @cubecore/lbl       beginner layer-by-layer stages, masks
   methods/     @cubecore/methods   optional: all methods together (METHODS), method auto-detection
-  solve/       @cubecore/solve     IDA* + pruning tables (cross, xcross, EO, F2L pair, LL cases) — TS, worker
+  solve/       @cubecore/solve     two-phase solver + random-state scrambles (done); cross / xcross / EO / pair solvers — TS, worker
   solve-wasm/  @cubecore/solve-wasm  two-phase / optimal full-cube solver (Rust→WASM), optional
   timeline/    @cubecore/timeline  timed recordings, replay clock, stage timings
   skin/        @cubecore/skin      Skin data + tile geometry, shared by render and image
@@ -320,7 +320,18 @@ re-export shims in core — they would make core depend on the method packages
   replaces `centerHoles`) — per sticker, so e.g. a charging port only on the
   yellow centre; everything follows its sticker and turns with it (core
   `stickerTurn`). Same in SVG pictures. Guide: `docs/skins.md`.
-- Next: per-theme skins, gyroscope adapter from smart-cube drivers, then
+- 2026-09-24 — **smart-cube notation, codecs, scrambles** (from the
+  cubing.js comparison): `toFaceTurns` / `OrientationTracker` (an algorithm
+  as the face turns a smart cube reports — r U → L F — and where the centres
+  are afterwards), `MoveCollapser` (live log: R R → R2, R R' kept, opposite
+  faces together → M/E/S in any reporting order), `cubies.ts` + a 15-char
+  state codec, share links in timeline, colour-neutral `frameFor` /
+  `frameForColors` and more masks (LS, ELS, CLS, VLS, ZBLS, EPLL, CPLL, ZBLL,
+  EOCross, LSE EO, UL/UR, centres, void). New `@cubecore/solve`: two-phase
+  solver in TS (tables ~0.5 s, solves in a few ms, ≤ 21 moves) and
+  random-state scrambles with presets (full, F2L, last slot, LL, ZBLL, PLL,
+  ELL, CMLL) on any face via frames.
+- Next: glTF piece models, per-theme skins, gyroscope adapter from smart-cube drivers, then
   `solve` (cross/xcross).
 
 ### Gyroscope (planned)

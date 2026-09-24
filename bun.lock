@@ -81,6 +81,13 @@
         "@cubecore/core": "workspace:*",
       },
     },
+    "packages/solve": {
+      "name": "@cubecore/solve",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cubecore/core": "workspace:*",
+      },
+    },
     "packages/timeline": {
       "name": "@cubecore/timeline",
       "version": "0.0.0",
@@ -117,6 +124,8 @@
     "@cubecore/roux": ["@cubecore/roux@workspace:packages/roux"],
 
     "@cubecore/skin": ["@cubecore/skin@workspace:packages/skin"],
+
+    "@cubecore/solve": ["@cubecore/solve@workspace:packages/solve"],
 
     "@cubecore/timeline": ["@cubecore/timeline@workspace:packages/timeline"],
 

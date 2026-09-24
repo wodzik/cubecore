@@ -47,12 +47,16 @@ export function maskStateAt(mask: Mask, state: State, position: number): MaskSta
 // Method-specific presets (OLL, CMLL, EOLine…) live in the method packages as
 // `MaskRule`s: `buildMask(CFOP_MASKS.oll, frame)`.
 
-export type MaskPreset = "full" | "first-layer" | "ll";
+export type MaskPreset = "full" | "first-layer" | "ll" | "centers" | "void";
 
 const RULES: Record<MaskPreset, MaskRule> = {
   full: () => "regular",
   "first-layer": (f, c) => (c.kind === "center" || c.pos[1] === -1 ? "regular" : "ignored"),
   ll: () => "regular",
+  /** Only the centres in colour — orientation practice, colour-neutral recognition. */
+  centers: (f, c) => (c.kind === "center" ? "regular" : "ignored"),
+  /** Void cube: no centres. */
+  void: (f, c) => (c.kind === "center" ? "invisible" : "regular"),
 };
 
 export const MASK_PRESETS = Object.keys(RULES) as MaskPreset[];

@@ -99,3 +99,25 @@ describe("CFOP masks", () => {
     for (const name of Object.keys(CFOP_MASKS) as (keyof typeof CFOP_MASKS)[]) expect(cfopMask(name).length).toBe(54);
   });
 });
+
+describe("more CFOP masks", () => {
+  it("last slot: the FR pair in colour, other pairs dimmed, last layer hidden; any slot via frames", async () => {
+    const { frameFor } = await import("@cubecore/core");
+    const m = cfopMask("ls");
+    const pair = CUBIES.filter((c) => c.pos[0] === 1 && c.pos[2] === 1 && c.pos[1] <= 0);
+    for (const c of pair) for (const f of c.facelets) expect(maskStateAt(m, S, f)).toBe("regular");
+    expect(maskStateAt(m, S, CUBIES.find((c) => c.pos.join() === "-1,-1,-1")!.facelets[0])).toBe("dim");
+    expect(maskStateAt(m, S, 0)).toBe("ignored"); // a U corner sticker
+    // Held with the cross on U and B in front, the canonical FR slot is a different physical slot.
+    const other = cfopMask("ls", frameFor("U", "B"));
+    expect(countState(other, "regular")).toBe(countState(m, "regular"));
+    expect([...other].join()).not.toBe([...m].join());
+  });
+
+  it("EPLL shows last-layer edges, CPLL last-layer corners", () => {
+    const e = cfopMask("epll"), c = cfopMask("cpll");
+    const uEdge = 1, uCorner = 0; // U-face stickers of UB edge and ULB corner
+    expect([maskStateAt(e, S, uEdge), maskStateAt(e, S, uCorner)]).toEqual(["regular", "dim"]);
+    expect([maskStateAt(c, S, uEdge), maskStateAt(c, S, uCorner)]).toEqual(["ignored", "regular"]);
+  });
+});

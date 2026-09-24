@@ -65,6 +65,30 @@ export function framesWith(face: Face, physical: Face): Frame[] {
   return FRAMES.filter((f) => f.face[face] === physical);
 }
 
+/**
+ * The frame that holds physical face `bottom` down (and `front` towards you,
+ * if given): e.g. `frameFor("U")` looks at a cube whose cross was built on U
+ * as if it were on D, so canonical masks / checks apply.
+ */
+export function frameFor(bottom: Face, front?: Face): Frame {
+  const f = FRAMES.find((fr) => fr.face.D === bottom && (!front || fr.face.F === front));
+  if (!f) throw new Error(`No frame with ${bottom} down and ${front} in front`);
+  return f;
+}
+
+/**
+ * Colour neutral: the frame with the face whose centre shows colour class
+ * `bottomColor` down (and `frontColor` in front). Colour classes are home
+ * faces (0..5 = U R F D L B, or the letters): with the western scheme
+ * `frameForColors(state, "D")` = yellow down, whatever the scheme's colours.
+ * Uses the centres of `state`, so it works after rotations and slices.
+ */
+export function frameForColors(state: State, bottomColor: Face | number, frontColor?: Face | number): Frame {
+  const cls = (c: Face | number) => (typeof c === "number" ? c : FACES.indexOf(c));
+  const faceWith = (c: number) => FACES.find((f) => Math.floor(state[FACES.indexOf(f) * 9 + 4] / 9) === c)!;
+  return frameFor(faceWith(cls(bottomColor)), frontColor === undefined ? undefined : faceWith(cls(frontColor)));
+}
+
 // ─── Re-expressing moves in another frame ───
 
 

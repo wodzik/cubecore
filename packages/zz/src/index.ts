@@ -31,12 +31,14 @@ export const ZZ: Method = {
   ],
 };
 
-export type ZzMask = "eoline" | "f2l";
+export type ZzMask = "eoline" | "eocross" | "f2l";
 
 export const ZZ_MASKS: Record<ZzMask, MaskRule> = {
   // Every edge shown as good/bad orientation material, the line in colour.
   eoline: (f, c) =>
     c.kind === "edge" ? (c.pos[1] === -1 && c.pos[0] === 0 ? "regular" : "oriented") : c.kind === "center" ? "regular" : "ignored",
+  // EOCross: the whole cross in colour, the other edges as orientation material.
+  eocross: (f, c) => (c.kind === "edge" ? (c.pos[1] === -1 ? "regular" : "oriented") : c.kind === "center" ? "regular" : "ignored"),
   f2l: (f, c) => (c.pos[1] <= 0 || c.kind === "center" ? "regular" : "ignored"),
 };
 

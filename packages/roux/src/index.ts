@@ -130,7 +130,7 @@ export const ROUX: Method = {
 
 // ─── masks (canonical: blocks on L/R, bottom layer) ───
 
-export type RouxMask = "fb" | "blocks" | "cmll" | "lse";
+export type RouxMask = "fb" | "blocks" | "cmll" | "lse" | "eo" | "ulur";
 
 const y = (c: Cubie) => c.pos[1];
 
@@ -139,6 +139,14 @@ export const ROUX_MASKS: Record<RouxMask, MaskRule> = {
   blocks: (f, c) => (c.pos[0] !== 0 && y(c) <= 0 ? "regular" : c.kind === "center" ? "dim" : "ignored"),
   cmll: (f, c) => (c.kind === "corner" && y(c) === 1 ? "regular" : c.pos[0] !== 0 && y(c) <= 0 ? "dim" : "ignored"),
   lse: (f, c) => (c.pos[0] === 0 || (c.kind === "edge" && y(c) === 1) ? "regular" : "dim"),
+  // LSE step by step: EO shows the six edges as orientation material; UL/UR puts those two in colour.
+  eo: (f, c) => (c.kind === "center" ? "regular" : lse6(c) ? "oriented" : "dim"),
+  ulur: (f, c) => (c.kind === "center" ? "regular" : c.kind === "edge" && y(c) === 1 && c.pos[0] !== 0 ? "regular" : lse6(c) ? "ignored" : "dim"),
 };
+
+/** The last six edges: the M slice plus UL and UR. */
+function lse6(c: Cubie): boolean {
+  return c.kind === "edge" && (c.pos[0] === 0 || y(c) === 1);
+}
 
 export const rouxMask = (name: RouxMask, frame: Frame = IDENTITY_FRAME): Mask => buildMask(ROUX_MASKS[name], frame);

@@ -22,3 +22,15 @@ describe("frames", () => {
     }
   });
 });
+
+describe("choosing a frame (colour neutral)", () => {
+  it("by faces, and by centre colours — also after rotations", async () => {
+    const { frameFor, frameForColors } = await import("./index");
+    expect(frameFor("U").face.D).toBe("U");
+    expect(frameFor("F", "R").face.F).toBe("R");
+    // Yellow (colour class D) is on top after x2: "cross on yellow" is then the physical U face.
+    const s = applyMoves(solvedState(), "x2");
+    expect(frameForColors(s, "D").face.D).toBe("U");
+    expect(frameForColors(solvedState(), 3, 2).face.F).toBe("F");
+  });
+});

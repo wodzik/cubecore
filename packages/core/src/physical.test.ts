@@ -59,6 +59,18 @@ describe("move log (smart cube → written moves)", () => {
     expect(run("R2 L2")).toBe("M2");
   });
 
+  it("a double slice is recognised whatever order the cube reports its four quarter turns in", () => {
+    const orders: Record<string, string[]> = {
+      M2: ["R R L' L'", "R L' R L'", "R L' L' R", "L' R R L'", "L' L' R R", "L' R L' R"],
+      "M2'": ["R' R' L L", "R' L R' L", "L R' R' L"], // the same half turn: written M2
+      E2: ["U U D' D'", "U D' D' U", "D' U U D'"],
+      S2: ["F' F' B B", "F' B B F'", "B F' F' B"],
+    };
+    for (const [expected, list] of Object.entries(orders)) {
+      for (const order of list) expect(`${order} → ${run(order)}`).toBe(`${order} → ${expected.replace("'", "")}`);
+    }
+  });
+
   it("slices only when the two turns come together; windows are adjustable", () => {
     expect(run("R L'", 1000)).toBe("R L'");
     expect(run("R L'", 1000, { sliceWindowMs: Infinity })).toBe("M");

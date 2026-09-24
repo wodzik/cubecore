@@ -16,7 +16,9 @@
 
 import { type Move, type State, applyMove, parseAlg, solvedState, stateFromFacelets, statesEqual } from "@cubecore/core";
 import type { ConnectSmartCubeOptions, SmartCubeCapabilities, SmartCubeCommand, SmartCubeEvent } from "smartcube-web-bluetooth";
+import type { Skin } from "@cubecore/skin";
 import { ClockSync } from "./clock";
+import { skinForCube } from "./cubeSkins";
 import { type AxisMap, GAN_AXES, GyroCalibrator, type Quat } from "./gyro";
 
 /** What the session needs from a connection — smartcube-web-bluetooth's, or a SimulatedCube. */
@@ -104,6 +106,11 @@ export class SmartCubeSession {
   get hardware(): HardwareInfo {
     return this._hardware;
   }
+  /** A skin that suits this cube (see cubeSkins.ts; refines once the hardware name arrives). */
+  get suggestedSkin(): Skin {
+    return skinForCube({ protocol: this.connection.protocol, name: this.connection.deviceName, hardwareName: this._hardware.name });
+  }
+
   get isConnected(): boolean {
     return this.connected;
   }

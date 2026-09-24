@@ -80,3 +80,16 @@ describe("clock sync and gyro", () => {
     expect(g.orientation({ x: 0, y: 1, z: 0, w: 0 }).w).toBeCloseTo(1);
   });
 });
+
+describe("skins for cubes", async () => {
+  const { registerCubeSkin, skinForCube } = await import("./index");
+  const { SKINS } = await import("@cubecore/skin");
+  it("GAN i4 → ganI4, other GAN → gan, the rest → stickerless; app rules come first", () => {
+    expect(skinForCube({ protocol: { id: "gan-gen4" }, name: "GAN i4 AB12" })).toBe(SKINS.ganI4);
+    expect(skinForCube({ protocol: { id: "gan-gen3" }, name: "GAN356 i Carry" })).toBe(SKINS.gan);
+    expect(skinForCube({ protocol: { id: "moyu32" }, name: "WCU_MY32_1234" })).toBe(SKINS.stickerless);
+    registerCubeSkin({ protocol: "moyu", skin: "standard" });
+    expect(skinForCube({ protocol: { id: "moyu32" } })).toBe(SKINS.standard);
+    expect(session().s.suggestedSkin).toBe(SKINS.stickerless); // simulated
+  });
+});

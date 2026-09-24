@@ -50,7 +50,7 @@ function renderStages() {
 
 function use(s: SmartCubeSession) {
   session = s;
-  detachPlayer = player.attach(s, { gyro: $<HTMLInputElement>("gyro").checked });
+  detachPlayer = player.attach(s, { gyro: $<HTMLInputElement>("gyro").checked, autoSkin: true }); // skin picked for this cube
   scrambleEl.attach(s);
   restart(s.state);
   const info = () => {

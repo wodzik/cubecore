@@ -34,6 +34,11 @@ emits a `state` event with reason `"facelets"` if they disagreed.
 `CubeRenderer.setOrientation`: the first reading — or `calibrate()` — means
 "held as shown". Axes default to GAN's; pass `axes` for other cubes.
 
+**Looks.** `session.suggestedSkin` picks a skin for the connected cube (GAN
+i4 → `ganI4`, other GAN → `gan`, else `stickerless`); `player.attach(cube,
+{ autoSkin: true })` uses it. Add your own models first with
+`registerCubeSkin({ protocol: "moyu", name: /V10/, skin: myMoyuSkin })`.
+
 **Without a cube.** `new SmartCubeSession(new SimulatedCube())` behaves like a
 connected cube: `turn("R U R'")`, `turn("U", { delayMs: 3000 })` (a late
 notification), `turn("F", { dropLocalTime: true })` (a resent move),

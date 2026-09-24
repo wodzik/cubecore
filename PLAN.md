@@ -387,8 +387,12 @@ re-export shims in core — they would make core depend on the method packages
   `hintColor`, `hints.colors`), presets carry a light-page theme (lighter
   masked greys, blue-grey white back sticker); renderer `theme` /
   `setTheme`, `renderSvg({ theme })`, `<cube-player theme="light|dark|auto">`.
-- Next (in order): smart-cube skin presets (+ auto-pick from the connected cube),
-  leftovers (compress pauses, cubing.js parity test, table cache, more
+- 2026-09-25 — **skins for smart cubes**: `skinForCube` rules (protocol /
+  device / hardware name → skin; GAN i4 → ganI4, GAN → gan, else
+  stickerless), `registerCubeSkin` for app rules, `session.suggestedSkin`,
+  `player.attach(…, { autoSkin })`. Per-model skins beyond i4 wait for
+  reference photos (to be prepared before act adoption).
+- Next (in order): leftovers (compress pauses, cubing.js parity test, table cache, more
   trainer stages), React bindings, overall README.
 
 ### Gyroscope (planned)

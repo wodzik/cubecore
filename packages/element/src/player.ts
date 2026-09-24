@@ -41,6 +41,8 @@
 /** What `attach` needs — SmartCubeSession fits; so does anything shaped like it. */
 export interface LiveSource {
   readonly state: State;
+  /** A skin for this cube (SmartCubeSession has one); used with attach(…, { autoSkin: true }). */
+  readonly suggestedSkin?: Skin;
   on(type: "move", listener: (e: { move: Move }) => void): () => void;
   on(type: "state", listener: (e: { state: State; reason: string }) => void): () => void;
   on(type: "orientation", listener: (q: { x: number; y: number; z: number; w: number }) => void): () => void;
@@ -320,12 +322,13 @@ export class CubePlayer extends HTMLElement {
   // ─── live ───
 
   /** Follow a smart cube: its moves animate, resyncs jump, its gyro turns the cube. Returns detach. */
-  attach(source: LiveSource, options: { gyro?: boolean; gyroSmoothing?: number } = {}): () => void {
+  attach(source: LiveSource, options: { gyro?: boolean; gyroSmoothing?: number; autoSkin?: boolean } = {}): () => void {
     this.detach();
     this.pause();
     this.unsubscribe?.();
     this.unsubscribe = null;
     this.setAttribute("live", "");
+    if (options.autoSkin && source.suggestedSkin) this.skin = source.suggestedSkin;
     const r = () => this._renderer;
     r()?.setState(source.state);
     const offs = [

@@ -18,6 +18,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@cubecore/core": "workspace:*",
+        "@cubecore/skin": "workspace:*",
         "smartcube-web-bluetooth": "github:poliva/smartcube-web-bluetooth",
       },
     },

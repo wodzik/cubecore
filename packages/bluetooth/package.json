@@ -9,6 +9,7 @@
   "sideEffects": false,
   "dependencies": {
     "@cubecore/core": "workspace:*",
-    "smartcube-web-bluetooth": "github:poliva/smartcube-web-bluetooth"
+    "smartcube-web-bluetooth": "github:poliva/smartcube-web-bluetooth",
+    "@cubecore/skin": "workspace:*"
   }
 }

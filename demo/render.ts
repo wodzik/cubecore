@@ -1,3 +1,4 @@
+import "./nav";
 import { type Mask, MethodTracker, applyMoves, formatMove, invert, parseAlg, solvedState, spinsAfter } from "../packages/core/src/index";
 import { CFOP } from "../packages/cfop/src/index";
 import { MASK_NAMES, maskByName } from "../packages/methods/src/index";

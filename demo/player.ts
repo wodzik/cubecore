@@ -1,3 +1,4 @@
+import "./nav";
 import { formatMove, invert, parseAlg } from "../packages/core/src/index";
 import { CFOP } from "../packages/cfop/src/index";
 import { type CubePlayer, formatTime } from "../packages/element/src/index";

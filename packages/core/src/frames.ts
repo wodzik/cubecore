@@ -55,6 +55,21 @@ export function view(state: State, frame: Frame): State {
   return out;
 }
 
+/**
+ * The state as if the cube were held in `frame`, with sticker identities
+ * renamed to match — so a solved cube is the identity again, and anything
+ * that reads pieces (toCubies, solvers, codecs) sees the frame's D as D.
+ * `view` keeps the physical sticker names; use it for colour checks.
+ */
+export function reframe(state: State, frame: Frame): State {
+  if (frame === IDENTITY_FRAME) return new Uint8Array(state);
+  const rename = new Uint8Array(FACELET_COUNT);
+  for (let c = 0; c < FACELET_COUNT; c++) rename[frame.map[c]] = c;
+  const out = new Uint8Array(FACELET_COUNT);
+  for (let i = 0; i < FACELET_COUNT; i++) out[i] = rename[state[frame.map[i]]];
+  return out;
+}
+
 /** Short human label, e.g. "D-bottom, F-front" style: canonical D and F mapped to physical faces. */
 export function frameLabel(frame: Frame): string {
   return `${frame.face.D}${frame.face.F}`;

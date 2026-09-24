@@ -34,3 +34,14 @@ describe("choosing a frame (colour neutral)", () => {
     expect(frameForColors(solvedState(), 3, 2).face.F).toBe("F");
   });
 });
+
+describe("reframe", () => {
+  it("a solved cube is the identity in every frame; moves done in a frame reframe to the canonical ones", async () => {
+    const { reframe, statesEqual } = await import("./index");
+    const alg = parseAlg("R U R' F2 D' L");
+    for (const frame of FRAMES) {
+      expect(statesEqual(reframe(solvedState(), frame), solvedState())).toBe(true);
+      expect(statesEqual(reframe(applyMoves(solvedState(), transformMoves(alg, frame)), frame), applyMoves(solvedState(), alg))).toBe(true);
+    }
+  });
+});

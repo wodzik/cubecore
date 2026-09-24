@@ -57,6 +57,7 @@ import {
 } from "@cubecore/core";
 import { SKINS, type Skin, type StickerShape, roundedOutline, stickerColor, stickerLayout, stickerlessOutline } from "@cubecore/skin";
 import { layerTurn, defaultDuration } from "./layers";
+import { type BackView, backPosition, viewports } from "./viewports";
 
 export interface CameraOptions {
   /** Degrees above the horizon. */
@@ -76,6 +77,8 @@ export interface RendererOptions {
   dragToRotate?: boolean;
   /** Quarter-turn animation length in ms. Default 120. */
   quarterTurnMs?: number;
+  /** Second view from the opposite side showing the hidden faces. Default "none". */
+  backView?: BackView;
 }
 
 export interface Quat {
@@ -97,6 +100,10 @@ export class CubeRenderer {
   private renderer: WebGLRenderer;
   private scene = new Scene();
   private camera: PerspectiveCamera;
+  /** Opposite the main camera — sees the three faces the main view hides. */
+  private backCamera: PerspectiveCamera;
+  private backView: BackView;
+  private size = { w: 1, h: 1 };
   private root = new Group(); // gyroscope orientation applies here
   private cubieGroups: Group[] = [];
   private stickerMeshes: Mesh[] = []; // by facelet position
@@ -138,6 +145,8 @@ export class CubeRenderer {
     container.appendChild(this.canvas);
 
     this.camera = new PerspectiveCamera(this.cam.fov, 1, 0.1, 100);
+    this.backCamera = new PerspectiveCamera(this.cam.fov, 1, 0.1, 100);
+    this.backView = options.backView ?? "none";
     this.scene.add(new HemisphereLight(0xffffff, 0x444444, 2.2));
     const sun = new DirectionalLight(0xffffff, 1.4);
     sun.position.set(4, 8, 6);
@@ -215,6 +224,13 @@ export class CubeRenderer {
 
   setCamera(camera: Partial<CameraOptions>): void {
     this.cam = { ...this.cam, ...camera };
+    this.applyCamera();
+    this.requestRender();
+  }
+
+  /** Show the hidden faces in a second view: side by side, as a corner inset, or not at all. */
+  setBackView(mode: BackView): void {
+    this.backView = mode;
     this.applyCamera();
     this.requestRender();
   }
@@ -408,19 +424,33 @@ export class CubeRenderer {
   private applyCamera(): void {
     const lat = (this.cam.latitude * Math.PI) / 180;
     const lon = (this.cam.longitude * Math.PI) / 180;
-    const d = this.cam.distance === "auto" ? this.fitDistance() : this.cam.distance;
+    const dir: [number, number, number] = [Math.cos(lat) * Math.sin(lon), Math.sin(lat), Math.cos(lat) * Math.cos(lon)];
+    const { main, back } = viewports(this.backView, this.size.w, this.size.h);
+    this.camera.aspect = main.w / main.h;
+    // With a corner inset, pull the main cube back a little so the inset covers less of it.
+    const inset = this.backView === "top-right" ? 1.18 : 1;
+    const d = this.cam.distance === "auto" ? this.fitDistance(this.camera.aspect, this.skin.hints.enabled) * inset : this.cam.distance;
     this.camera.fov = this.cam.fov;
-    this.camera.position.set(d * Math.cos(lat) * Math.sin(lon), d * Math.sin(lat), d * Math.cos(lat) * Math.cos(lon));
+    this.camera.position.set(dir[0] * d, dir[1] * d, dir[2] * d);
     this.camera.lookAt(0, 0, 0);
     this.camera.updateProjectionMatrix();
+    if (back) {
+      // Back stickers are hidden in the back view (they'd float between it and the cube), so it fits the bare cube.
+      this.backCamera.aspect = back.w / back.h;
+      this.backCamera.fov = this.cam.fov;
+      const bd = this.cam.distance === "auto" ? this.fitDistance(this.backCamera.aspect, false) : this.cam.distance;
+      this.backCamera.position.set(...backPosition([dir[0] * bd, dir[1] * bd, dir[2] * bd]));
+      this.backCamera.lookAt(0, 0, 0);
+      this.backCamera.updateProjectionMatrix();
+    }
   }
 
   /** Distance at which a sphere around the cube (and its back stickers) fits the narrower field of view, with a margin. */
-  private fitDistance(): number {
-    const reach = this.skin.hints.enabled ? 1 + 0.5 + this.skin.hints.distance + 0.45 : 0;
+  private fitDistance(aspect: number, withHints: boolean): number {
+    const reach = withHints ? 1 + 0.5 + this.skin.hints.distance + 0.45 : 0;
     const radius = Math.max(1.5 * Math.sqrt(3), reach) * 1.06;
     const vfov = (this.cam.fov * Math.PI) / 180;
-    const hfov = 2 * Math.atan(Math.tan(vfov / 2) * (this.camera?.aspect ?? 1));
+    const hfov = 2 * Math.atan(Math.tan(vfov / 2) * aspect);
     return radius / Math.sin(Math.min(vfov, hfov) / 2);
   }
 
@@ -428,7 +458,7 @@ export class CubeRenderer {
     const w = this.container.clientWidth || 1;
     const h = this.container.clientHeight || 1;
     this.renderer.setSize(w, h, false);
-    this.camera.aspect = w / h;
+    this.size = { w, h };
     this.applyCamera();
     this.requestRender();
   }
@@ -474,13 +504,40 @@ export class CubeRenderer {
     }
 
     this.paint();
-    this.renderer.render(this.scene, this.camera);
+    this.draw();
     if (again) this.requestRender();
   }
 
   private step(move: Move): void {
     this.spins = advanceSpins(this.spins, this.state, move);
     this.state = applyMove(this.state, move);
+  }
+
+  private draw(): void {
+    const { main, back } = viewports(this.backView, this.size.w, this.size.h);
+    if (!back) {
+      this.renderer.setScissorTest(false);
+      this.renderer.setViewport(0, 0, this.size.w, this.size.h);
+      this.renderer.render(this.scene, this.camera);
+      return;
+    }
+    this.renderer.setScissorTest(true);
+    this.renderer.setViewport(main.x, main.y, main.w, main.h);
+    this.renderer.setScissor(main.x, main.y, main.w, main.h);
+    this.renderer.render(this.scene, this.camera);
+    const shown = this.hintMeshes.map((m) => m?.visible ?? false);
+    this.hintMeshes.forEach((m) => m && (m.visible = false));
+    this.renderer.setViewport(back.x, back.y, back.w, back.h);
+    this.renderer.setScissor(back.x, back.y, back.w, back.h);
+    // An inset draws over the main view: clear only depth, so it doesn't punch a hole in the main cube.
+    const inset = this.backView === "top-right";
+    if (inset) {
+      this.renderer.autoClear = false;
+      this.renderer.clearDepth();
+    }
+    this.renderer.render(this.scene, this.backCamera);
+    this.renderer.autoClear = true;
+    this.hintMeshes.forEach((m, i) => m && (m.visible = shown[i]));
   }
 
   private completeActive(): void {

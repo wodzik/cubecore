@@ -50,7 +50,13 @@ WCA scramble certification.
 
 ```
 packages/
-  core/        @cubecore/core      state, moves, notation, checks, orientation
+  core/        @cubecore/core      state, moves, notation, check primitives, frames, method engine
+  cfop/        @cubecore/cfop      CFOP stages, masks, case recognition (OLL/PLL…), alg sets
+  roux/        @cubecore/roux      Roux stages, masks, CMLL/LSE cases
+  zz/          @cubecore/zz        ZZ stages (EOLine/EOCross…), masks
+  petrus/      @cubecore/petrus    Petrus stages, masks
+  lbl/         @cubecore/lbl       beginner layer-by-layer stages, masks
+  methods/     @cubecore/methods   optional: all methods together (METHODS), method auto-detection
   solve/       @cubecore/solve     IDA* + pruning tables (cross, xcross, EO, F2L pair, LL cases) — TS, worker
   solve-wasm/  @cubecore/solve-wasm  two-phase / optimal full-cube solver (Rust→WASM), optional
   timeline/    @cubecore/timeline  timed recordings, replay clock, stage timings
@@ -63,7 +69,35 @@ packages/
 ```
 
 Dependency direction is strictly downward: `core` ← `solve`, `timeline` ←
-`render` ← `element` ← `react`. `bluetooth` depends on `core` only.
+`render` ← `element` ← `react`. `bluetooth` depends on `core` only. Method
+packages depend on `core` (and later on `solve` for case scrambles); nothing
+in `core` knows any concrete method.
+
+### Method packages (decided 2026-09-24)
+
+`core` keeps the **engine**: the `Method` / `Stage` interfaces,
+`MethodTracker`, frames, colour-neutral check primitives (block solved, edge
+orientation, pair solved, layer oriented/permuted…) and generic
+`buildMask`. Each method is its own package built only from those
+primitives — so every method stays colour neutral by construction:
+
+- `@cubecore/cfop` — stages (cross, F2L ×4 with slot detail, OLL, PLL, AUF),
+  mask presets (`cross`, `f2l`, `oll`, `pll`, `coll`, `ocll`, `ell`, `cll`),
+  later: OLL/PLL/COLL case recognition from a state (in any frame / AUF),
+  alg sets as data, case scrambles via `solve`.
+- `@cubecore/roux` — FB, SB, CMLL, EO, UL/UR, L4E; masks `roux-fb`,
+  `roux-blocks`, `cmll`, `lse`; later CMLL recognition.
+- `@cubecore/zz` — EOLine/EOCross, blocks, LL; masks `eoline`, `zz-f2l`.
+- `@cubecore/petrus`, `@cubecore/lbl` — stages and masks.
+- `@cubecore/methods` — re-exports all of them as `METHODS` / `methodById`
+  and adds "which method was this solve?" (track all, pick the best fit).
+
+Generic presets (`full`, `ll`, `first-layer`) stay in core. Why separate
+packages rather than one `methods` package with subpaths: recognition tables
+and alg sets make CFOP much larger than the rest, and an app for one method
+shouldn't download or version the others. Migration: move `methods.ts` and
+the method-specific parts of `masks.ts`/`checks.ts` out of core; core keeps
+re-export shims for one release.
 
 ## 3. `@cubecore/core`
 
@@ -246,7 +280,11 @@ Dependency direction is strictly downward: `core` ← `solve`, `timeline` ←
   Centre spins in core (`advanceSpins`, `spinsAfter`): the renderer tracks
   them through every move, `setState`/`showPosition`/`renderSvg` take them,
   so a logo keeps its orientation. Demo `/render` shows the same skin in 2D.
-- Next: per-theme skins, gyroscope adapter from smart-cube drivers, then
+- 2026-09-24 — **back view**: `backView: "none" | "side-by-side" |
+  "top-right"` (option + `setBackView`) — a second camera opposite the main
+  one shows the three hidden faces; one WebGL context, scissored viewports;
+  the inset only clears depth and back stickers are hidden in it.
+- Next: split methods into packages (see §2), per-theme skins, gyroscope adapter from smart-cube drivers, then
   `solve` (cross/xcross).
 
 ### Gyroscope (planned)

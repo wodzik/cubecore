@@ -1,6 +1,6 @@
 import { CFOP, MASK_PRESETS, type Mask, type MaskPreset, MethodTracker, applyMoves, formatMove, invert, parseAlg, presetMask, solvedState, spinsAfter } from "../packages/core/src/index";
 import { SvgCache, svgKey } from "../packages/image/src/index";
-import { CubeRenderer, SKINS, type Skin, showPosition } from "../packages/render/src/index";
+import { type BackView, CubeRenderer, SKINS, type Skin, showPosition } from "../packages/render/src/index";
 import { ReplayClock, recording } from "../packages/timeline/src/index";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -83,6 +83,7 @@ function applySkin() {
   skin = base;
   renderer.setSkin({ ...base, hints: { ...base.hints, enabled: $<HTMLInputElement>("hints").checked } });
 }
+$("backview").onchange = () => renderer.setBackView($<HTMLSelectElement>("backview").value as BackView);
 $("skin").onchange = applySkin;
 $("hints").onchange = applySkin;
 $("mask").onchange = () => {

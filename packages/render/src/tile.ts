@@ -289,7 +289,7 @@ export function tileSolid(outline: readonly Pt[], profile: TileProfile, mitre: M
  */
 export function skirtSolid(
   outline: readonly Pt[],
-  shape: { top: number; depth: number; taper: number; wall?: number; relief?: { at: readonly Pt[]; radius: number; depth: number } },
+  shape: { top: number; depth: number; taper: number; wall?: number; relief?: { at: readonly Pt[]; radius: number; depth: number; start?: number } },
   mitre: Mitre | null,
 ): TileSolid {
   // Straight walls along the tile outline down to `wall`, then leaning in by `taper` at `depth` (a crisp crease between).
@@ -297,10 +297,13 @@ export function skirtSolid(
   const h = Math.max(1e-6, shape.depth - wall);
   const phi = -Math.atan2(shape.taper, h); // walls lean inwards going down: normals tilt downwards
   const inset = (z: number) => (z <= wall ? 0 : ((z - wall) / h) * shape.taper);
-  // Corner relief: a cone cut from the tile's corner(s) next to the centre, 0 at the tile, `radius` at `depth` below it.
+  // Corner relief: a cone cut from the tile's corner(s) next to the centre, `start` wide at the tile, `radius` at `depth` below it.
   const relief = shape.relief && shape.relief.radius > 0 && shape.relief.at.length ? shape.relief : null;
+  const r0 = relief?.start ?? 0;
   const cutAt = (z: number) =>
-    relief ? { at: relief.at, r: relief.radius * Math.min(1, Math.max(0, (z - shape.top) / relief.depth)), slope: relief.radius / relief.depth } : undefined;
+    relief
+      ? { at: relief.at, r: r0 + (relief.radius - r0) * Math.min(1, Math.max(0, (z - shape.top) / relief.depth)), slope: (relief.radius - r0) / relief.depth }
+      : undefined;
   const ring = (z: number, tilt: number): Ring => ({ z: -z, d: inset(z), phi: tilt, oz: -z, off: -z, ophi: 0, clamp: true, cut: cutAt(z) });
   const levels = new Set([shape.top, wall, shape.depth]);
   if (relief) for (let k = 1; k <= 16; k++) levels.add(Math.min(shape.depth, shape.top + (relief.depth * k) / 16));

@@ -379,6 +379,9 @@ export class CubeRenderer {
     this.kit = kit;
     const bodyMat = new MeshStandardMaterial({ color: new Color(s.body), roughness: 0.85, metalness: 0 });
 
+    // The mechanism sits still in the middle; layers turn around it.
+    if (kit.mechanism) this.root.add(new Mesh(kit.mechanism, bodyMat));
+
     const models = s.models;
     let waiting = false;
     this.surface = models?.surface ?? (models ? kit.thickness : null); // built-in tiles: each at its own thickness
@@ -405,7 +408,7 @@ export class CubeRenderer {
         });
         g.add(clone);
       } else {
-        const body = new Mesh(kit.body, bodyMat);
+        const body = new Mesh(cubie.facelets.length === 1 ? kit.centerBody : kit.body, bodyMat);
         body.position.set(...cubie.pos);
         g.add(body);
       }

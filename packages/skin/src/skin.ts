@@ -319,22 +319,23 @@ export const SKINS = {
     // Dark mechanism behind the gaps (as QiYi's app draws it): the tile shapes read, nothing shows through.
     body: "#34322e",
     pictureBody: null, // ivory plastic would blur with the white tiles in 2D
-    cubieSize: 0.992,
-    cubieRadius: 0.07,
+    // Pieces nearly touch: the gaps are hairlines (the core is hidden, so its corners can be sharp).
+    cubieSize: 0.998,
+    cubieRadius: 0.01,
     bodyInset: 0.02,
     // Coloured pieces down to their centre; the core nearly fills each cubie, so no channel shows through.
-    pieces: { depth: 0.32, taper: 0.06, core: 0.97, colored: true, fill: "solid" },
+    pieces: { depth: 0.32, taper: 0.06, core: 0.99, colored: true, fill: "solid" },
     stickers: {
       colors: ["#ebe8df", "#d8061a", "#0bc21a", "#ffe51c", "#fd7501", "#1a72f5"],
-      // Tiles nearly touch; soft, pillowy edges and a well-rounded cube edge (as the real cube).
-      size: 0.99,
+      // Tiles touch; soft, pillowy edges and a well-rounded cube edge (as the real cube).
+      size: 0.996,
       radius: 0.04,
       shape: { corner: { inner: 0.14, outer: 0.03 }, edge: { inner: 0.25, outer: 0.03 }, center: 0.2 },
       paths: QIYI_SC_PATHS,
       thickness: 0.07,
       bevel: 0.06,
-      // The centre cap: a little smaller, a round plateau level with the other tiles, its corners ~1.5 mm lower.
-      kinds: { center: { size: 0.965, dome: { flat: 0.76, drop: 0.09 } } }, // plateau level with the other tiles
+      // The centre cap: a round plateau level with the other tiles, its corners ~1.5 mm lower.
+      kinds: { center: { size: 0.99, dome: { flat: 0.76, drop: 0.09 } } }, // plateau level with the other tiles
       edgeRadius: 0.2,
       material: "plastic",
       roughness: 0.35,

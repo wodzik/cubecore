@@ -27,6 +27,13 @@ export interface TileKit {
   faceOffset: number;
   /** The cubie body (a rounded box, or the small core when pieces are shaped). */
   body: BufferGeometry;
+  /** A centre cubie's body: smaller when the centre cap is domed, so it stays under the cap's lowered corners. */
+  centerBody: BufferGeometry;
+  /**
+   * Shaped pieces: the mechanism in the middle of the cube (the one cell with
+   * no cubie), so gaps never show through to the far side. Null otherwise.
+   */
+  mechanism: BufferGeometry | null;
   /** The tile at facelet position `fi`, in its face's local frame (x = a, y = b, z = outward). */
   tile(fi: number): BufferGeometry;
   /** The piece's plastic under that tile (`skin.pieces`), or null. */
@@ -53,7 +60,12 @@ export function tileKit(skin: Skin): TileKit {
 
   // With shaped pieces the box is only the hidden core; the visible plastic is the skirts under the tiles.
   const bodySize = skin.pieces ? skin.pieces.core * size : size - 2 * inset;
-  const body = new RoundedBoxGeometry(bodySize, bodySize, bodySize, 3, Math.min(skin.cubieRadius * size, bodySize / 2));
+  const box = (s: number) => new RoundedBoxGeometry(s, s, s, 3, Math.min(skin.cubieRadius * size, s / 2));
+  const body = box(bodySize);
+  const dome = skin.stickers.kinds?.center?.dome;
+  // The core's top must stay under the dome's lowest point (its corners, `drop` below the face).
+  const centerBody = skin.pieces && dome ? box(Math.min(bodySize, size - 2 * (dome.drop + inset + 0.01))) : body;
+  const mechanism = skin.pieces ? box(size) : null;
 
   const outlineFor = (fi: number) => {
     const layout = stickerLayout(fi, shape);
@@ -86,6 +98,8 @@ export function tileKit(skin: Skin): TileKit {
     thicknessOf,
     faceOffset,
     body,
+    centerBody,
+    mechanism,
     tile(fi) {
       const { outline, mitre, key, thickness: t, layout } = outlineFor(fi);
       const bevel = Math.min(skin.stickers.bevel ?? 0, t);

@@ -3,8 +3,9 @@
  * layer that is about to turn — centred on its row, flat side to the cube,
  * rounding the cube's edges — the way the layer moves.
  *
- * One length for every arrow, over the face you see best and a little onto
- * the next one seen best; as many heads as quarter turns (1–3).
+ * One length for every arrow; two per layer on opposite sides, travelling
+ * round the layer the way they point (so one is always in view, and the
+ * motion shows the direction); as many heads as quarter turns (1–3).
  * Shapes: "box" follows the faces at an even height, "circle" is an arc of
  * a circle over them (clear of the corners).
  *
@@ -29,7 +30,15 @@ export interface ArrowStyle {
   scale?: number;
   /** "box": even height over the faces, round over the edges (default); "circle": an arc over them. */
   shape?: ArrowShape;
+  /**
+   * How fast the arrows travel round the layer the way they point, in
+   * quarter turns per second (default 0.35); 0 keeps them still.
+   */
+  speed?: number;
 }
+
+/** Default travel speed of the arrows (quarter turns per second). */
+export const ARROW_SPEED = 0.35;
 
 export type ArrowShape = "box" | "circle";
 
@@ -119,29 +128,47 @@ export function arrowStrips(quarters: number, centre: number, scale = 1, shape: 
   return strips;
 }
 
-/** Strips as a mesh around the layer (layer frame: axis = z, the row's middle at z = 0); width along the axis. */
-function wrap(strips: readonly Strip[], shape: ArrowShape): BufferGeometry {
+/** Vertex positions of strips around the layer (layer frame: axis = z, the row's middle at z = 0); width along the axis. */
+function positionsOf(strips: readonly Strip[], shape: ArrowShape): number[] {
   const pos: number[] = [];
-  const index: number[] = [];
   for (const strip of strips) {
-    const first = pos.length / 3;
     for (const [t, half] of strip) {
       const [u, v] = pathPoint(t, shape);
       pos.push(u, v, half, u, v, -half);
     }
+  }
+  return pos;
+}
+
+function wrap(strips: readonly Strip[], shape: ArrowShape): BufferGeometry {
+  const index: number[] = [];
+  let first = 0;
+  for (const strip of strips) {
     for (let i = 0; i < strip.length - 1; i++) {
       const k = first + 2 * i;
       index.push(k, k + 1, k + 2, k + 1, k + 3, k + 2);
     }
+    first += 2 * strip.length;
   }
   const g = new BufferGeometry();
-  g.setAttribute("position", new Float32BufferAttribute(pos, 3));
+  g.setAttribute("position", new Float32BufferAttribute(positionsOf(strips, shape), 3));
   g.setIndex(index);
   g.computeBoundingSphere();
   return g;
 }
 
-/** Meshes for `arrows`, placed at `centres` (quarters along the path, one per arrow). Dispose with disposeArrows. */
+interface ArrowMeshData {
+  quarters: number;
+  centre: number;
+  scale: number;
+  shape: ArrowShape;
+}
+
+/**
+ * Meshes for `arrows`: for each turning layer two arrows on opposite sides,
+ * the first at `centres[i]` (quarters along the path). Move them with
+ * `moveArrows`; dispose with `disposeArrows`.
+ */
 export function buildArrows(arrows: readonly TurnArrow[], centres: readonly number[], style: ArrowStyle = {}): Group {
   const group = new Group();
   const material = new MeshBasicMaterial({
@@ -151,19 +178,37 @@ export function buildArrows(arrows: readonly TurnArrow[], centres: readonly numb
     side: DoubleSide,
     depthWrite: false,
   });
+  const shape = style.shape ?? "box";
+  const scale = style.scale ?? 1;
   arrows.forEach((arrow, i) => {
     const [e1, e2, n] = PLANE[arrow.axis];
-    const shape = style.shape ?? "box";
-    const geometry = wrap(arrowStrips(arrow.quarters, centres[i], style.scale ?? 1, shape), shape);
-    for (const layer of arrow.layers) {
-      const mesh = new Mesh(geometry, material);
-      mesh.matrixAutoUpdate = false;
-      mesh.matrix.copy(new Matrix4().makeBasis(e1, e2, n).setPosition(n.clone().multiplyScalar(layer)));
-      mesh.renderOrder = 1; // after the cube, so the see-through ribbon blends over it
-      group.add(mesh);
+    for (const centre of [centres[i], centres[i] + 2]) {
+      for (const layer of arrow.layers) {
+        // Own geometry per mesh: each is moved along the path separately.
+        const mesh = new Mesh(wrap(arrowStrips(arrow.quarters, centre, scale, shape), shape), material);
+        mesh.matrixAutoUpdate = false;
+        mesh.matrix.copy(new Matrix4().makeBasis(e1, e2, n).setPosition(n.clone().multiplyScalar(layer)));
+        mesh.renderOrder = 1; // after the cube, so the see-through ribbon blends over it
+        mesh.userData.arrow = { quarters: arrow.quarters, centre, scale, shape } satisfies ArrowMeshData;
+        mesh.frustumCulled = false; // it moves; its bounding sphere would go stale
+        group.add(mesh);
+      }
     }
   });
   return group;
+}
+
+/** Slide every arrow `travel` quarters along its layer, the way it points (a travelling arrow shows the direction). */
+export function moveArrows(group: Group, travel: number): void {
+  for (const o of group.children) {
+    const m = o as Mesh;
+    const d = m.userData.arrow as ArrowMeshData | undefined;
+    if (!d) continue;
+    const strips = arrowStrips(d.quarters, d.centre + Math.sign(d.quarters) * (travel % 4), d.scale, d.shape);
+    const attr = m.geometry.getAttribute("position") as Float32BufferAttribute;
+    (attr.array as Float32Array).set(positionsOf(strips, d.shape));
+    attr.needsUpdate = true;
+  }
 }
 
 export function disposeArrows(group: Group): void {

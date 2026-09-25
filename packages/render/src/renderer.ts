@@ -56,7 +56,7 @@ import { type TileKit, tileKit } from "./build/tiles";
 import { loadModel, readyModel } from "./build/models";
 import { PLACEMENTS, stickerFaceOf } from "./pieceModels";
 import { type BackView, backPosition, viewports } from "./viewports";
-import { type ArrowStyle, ARROW_REACH, arrowCentre, buildArrows, disposeArrows } from "./arrows";
+import { type ArrowStyle, ARROW_REACH, ARROW_SPEED, arrowCentre, buildArrows, disposeArrows, moveArrows } from "./arrows";
 
 export interface CameraOptions {
   /** Degrees above the horizon. */
@@ -135,7 +135,7 @@ export class CubeRenderer {
   private disposed = false;
   /** Arrows were shown: the camera keeps room for them (so it doesn't jump each time they come and go). */
   private arrowRoom = false;
-  private arrows: { arrows: TurnArrow[]; style: ArrowStyle; group: Group | null; key: string } | null = null;
+  private arrows: { arrows: TurnArrow[]; style: ArrowStyle; group: Group | null; key: string; since: number } | null = null;
   private targetOrientation = new Quaternion();
   private orientationSmoothing = 0;
 
@@ -281,7 +281,7 @@ export class CubeRenderer {
    */
   setTurnArrows(arrows: readonly TurnArrow[] | null, style: ArrowStyle = {}): void {
     if (this.arrows?.group) disposeArrows(this.arrows.group);
-    this.arrows = arrows?.length ? { arrows: [...arrows], style, group: null, key: "" } : null;
+    this.arrows = arrows?.length ? { arrows: [...arrows], style, group: null, key: "", since: performance.now() } : null;
     if (this.arrows && !this.arrowRoom) {
       this.arrowRoom = true;
       this.applyCamera(); // places the arrows too
@@ -582,6 +582,14 @@ export class CubeRenderer {
       if (this.root.quaternion.angleTo(this.targetOrientation) < 1e-4) this.root.quaternion.copy(this.targetOrientation);
       else again = true;
       this.placeArrows();
+    }
+
+    // Travelling arrows: slide them on every frame while they're shown.
+    const a = this.arrows;
+    const speed = a?.style.speed ?? ARROW_SPEED;
+    if (a?.group && speed > 0) {
+      moveArrows(a.group, ((now - a.since) / 1000) * speed);
+      again = true;
     }
 
     this.paint();

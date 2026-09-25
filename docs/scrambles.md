@@ -109,7 +109,10 @@ the next. Every arrow has the same length; the heads say how far — one per
 quarter turn (R, R2, R3). The direction is the one written — `R2'` the other
 way than `R2` (the parser keeps it in `move.written`).
 `arrow-shape="circle"` draws an arc of a circle over the faces instead of a
-ribbon following them. After a slip it shows the undo move
+ribbon following them. Each layer gets two arrows on opposite sides that
+travel round it the way they point — one is always in view, and the motion
+shows the direction (`renderer.setTurnArrows(arrows, { speed })`, quarter
+turns per second, default 0.35; 0 keeps them still). After a slip it shows the undo move
 instead; in practice it stays hidden with the move (Hint or a slip shows it).
 It follows the gyro and camera drags.
 

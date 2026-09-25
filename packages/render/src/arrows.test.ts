@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { Vector3 } from "three";
-import { arrowCentre, arrowSpan, arrowStrips, buildArrows, pathPoint } from "./arrows";
+import { arrowCentre, arrowSpan, arrowStrips, buildArrows, moveArrows, pathPoint } from "./arrows";
 
 describe("turn arrows", () => {
   it("hover just above the faces, round over the edges", () => {
@@ -35,6 +35,21 @@ describe("turn arrows", () => {
     expect(arrowStrips(1, 0)).toHaveLength(2);
     expect(arrowStrips(-2, 0.5)).toHaveLength(3);
     expect(arrowStrips(3, 0.5)).toHaveLength(4);
-    expect(buildArrows([{ axis: 0, layers: [1, 0], quarters: -1 }], [0]).children).toHaveLength(2); // wide r
+    expect(buildArrows([{ axis: 0, layers: [1, 0], quarters: -1 }], [0]).children).toHaveLength(4); // wide r: 2 layers × 2 opposite arrows
+  });
+
+  it("two arrows on opposite sides travel the way they point", () => {
+    const g = buildArrows([{ axis: 1, layers: [1], quarters: 1 }], [0]);
+    const tip = (i: number) => {
+      const p = (g.children[i] as import("three").Mesh).geometry.getAttribute("position");
+      return [p.getX(p.count - 1), p.getY(p.count - 1)];
+    };
+    const [a0, b0] = [tip(0), tip(1)];
+    expect(a0[0]).toBeCloseTo(-b0[0]); // point-symmetric: opposite sides
+    expect(a0[1]).toBeCloseTo(-b0[1]);
+    moveArrows(g, 0.25);
+    const a1 = tip(0);
+    const turned = Math.atan2(a1[1], a1[0]) - Math.atan2(a0[1], a0[0]);
+    expect((turned + 2 * Math.PI) % (2 * Math.PI)).toBeLessThan(Math.PI); // counter-clockwise (quarters > 0)
   });
 });

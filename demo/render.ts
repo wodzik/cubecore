@@ -70,6 +70,7 @@ const DEMO_SKINS: Record<string, Skin> = {
   "coloured pieces": { ...SKINS.gan356m, body: "#e8e8e8", pieces: { ...SKINS.gan356m.pieces, colored: true } },
   // The logo is yours to supply (demo/assets is git-ignored: brand logos stay out of the repo).
   "gan 356 m + logo": { ...SKINS.gan356m, decals: [{ select: { stickers: [4] }, image: "/assets/gan-logo.png", size: 0.75, blend: "multiply" }] },
+  "qiyi sc + logo": { ...SKINS.qiyiSC, decals: [{ select: { stickers: [4] }, image: "/assets/qiyi-logo.png", size: 0.96, rotate: 3 }] },
   "gan i4 + logo": { ...SKINS.ganI4, decals: [{ select: { stickers: [4] }, image: "/assets/gan-logo.png", size: 0.62, blend: "multiply" }] },
   // Pieces from glTF files: the standard skin's settings, but every piece is a model (here: i4-style templates
   // exported by scripts/export-models.ts) — if you see i4 pieces, the models are what's drawn.

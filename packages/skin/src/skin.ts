@@ -281,6 +281,38 @@ export const SKINS = {
     background: null,
     themes: { light: LIGHT_PAGE },
   },
+  /**
+   * QiYi QY-SC smart cube (from photos): stickerless, moulded in colour
+   * (a corner is three coloured parts, an edge two) around an ivory core;
+   * thick "pillow" tiles with minimal gaps — corner tiles nearly square,
+   * edge tiles rounded towards the centre, a smaller raised squircle
+   * centre. The brand logo is up to the app (a decal).
+   */
+  qiyiSC: {
+    body: "#ebe7da",
+    cubieSize: 0.992,
+    cubieRadius: 0.07,
+    bodyInset: 0.02,
+    // A fuller inside than other skins (the core nearly fills each piece): no see-through channels.
+    pieces: { depth: 0.32, taper: 0.06, core: 0.9, colored: true },
+    stickers: {
+      colors: ["#ebe8df", "#d8061a", "#0bc21a", "#ffe51c", "#fd7501", "#1a72f5"],
+      size: 0.985,
+      radius: 0.04,
+      shape: { corner: { inner: 0.06, outer: 0.03 }, edge: { inner: 0.25, outer: 0.03 }, center: 0.2 },
+      thickness: 0.035,
+      bevel: 0.022,
+      kinds: { center: { size: 0.965, thickness: 0.06 } }, // the centre cap: a little smaller, standing out
+      edgeRadius: 0.05,
+      material: "plastic",
+      roughness: 0.35,
+      fillOuter: true,
+    },
+    mask: { ignored: "#5a5a5a", oriented: "#39c7d4", dimAmount: 0.55 },
+    hints: { enabled: false, distance: 1.4, opacity: 0.75, ignoredOpacity: 0.35 },
+    background: null,
+    themes: { light: LIGHT_PAGE },
+  },
 } satisfies Record<string, Skin>;
 
 /** Tile side of a piece kind, relative to a cubie face (`stickers.kinds` or `stickers.size`). */

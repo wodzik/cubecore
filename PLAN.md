@@ -511,3 +511,8 @@ Still open:
   `analyzeZZ({ start: "eoline" })` — EOLine, both blocks in the better order,
   OCLL + PLL. Stages with `moves` now build their tables with those moves
   (exact, tiny: ms); unreachable placements pruned. /analyze ZZ switch.
+- 2026-09-25 — Skin `qiyiSC` (QiYi QY-SC, from the user's photos): tile shapes
+  measured from a face-on photo, colours from a product photo, pieces
+  moulded in colour around a fuller ivory core; picked automatically for
+  QY-QYSC cubes. The logo (cut from a close-up) stays in git-ignored
+  demo/assets; /render "qiyi sc + logo".

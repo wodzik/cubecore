@@ -18,7 +18,7 @@ headless packages also run in Node / Bun / workers.
 | `@cubecore/methods` | all methods together, masks by name |
 | `@cubecore/solve` | two-phase solver (≤ 21 moves, ms), optimal stage solvers (cross, EOCross, xcross, xxcross, slot, Roux blocks), random-state scrambles with presets, trainer scrambles (a stage in exactly N moves), from the cube's current state, any face; Web Worker with a Promise API; tables kept in IndexedDB |
 | `@cubecore/timeline` | recordings, replay clock (moves end at their recorded time), stage timings, sections for progress bars, pause compression, recording and share codecs |
-| `@cubecore/skin` | skins as data: tile shapes, stickerless tiles, piece shapes, decals (PNG / SVG), features (`defineFeature`), glTF piece models, light / dark themes; presets `standard`, `stickerless`, `gan`, `ganI4`, `gan356m` |
+| `@cubecore/skin` | skins as data: tile shapes, stickerless tiles, piece shapes, decals (PNG / SVG), features (`defineFeature`), glTF piece models, light / dark themes; presets `standard`, `stickerless`, `gan`, `ganI4`, `gan356m`, `qiyiSC` |
 | `@cubecore/render` | three.js `CubeRenderer`: skins, masks, back stickers, back view, gyro orientation, partial layers, glTF pieces (+ templates exporter) |
 | `@cubecore/image` | SVG pictures (iso / top / net) from the same skin; PNG in the browser or via resvg on a server; cache keys |
 | `@cubecore/bld` | Blindfolded (Old Pochmann): letter schemes (ruwix, Speffz), memo, execution followed letter by letter, a skin with letters |

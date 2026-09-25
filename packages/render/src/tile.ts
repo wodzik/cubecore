@@ -221,17 +221,22 @@ export function tileSolid(outline: readonly Pt[], profile: TileProfile, mitre: M
  * The piece's plastic under a tile: the tile outline continued down into the
  * cubie from `top` to `depth` (both below the face, positive numbers),
  * narrowing by `taper` on the inner sides — the front of a piece is larger
- * than its back, and a centre piece is as round as its tile. Outer sides
+ * than its back, and a centre piece is as round as its tile. With `wall` the
+ * sides first run straight down to that depth (as real pieces: a flat bit of
+ * wall behind the tile, then the narrowing). Outer sides
  * stay on the mitre, so the skirts of one piece's faces close its outside.
  * No caps: the top is covered by the tile, the bottom faces the core.
  */
-export function skirtSolid(outline: readonly Pt[], shape: { top: number; depth: number; taper: number }, mitre: Mitre | null): TileSolid {
-  const h = Math.max(1e-6, shape.depth - shape.top);
+export function skirtSolid(outline: readonly Pt[], shape: { top: number; depth: number; taper: number; wall?: number }, mitre: Mitre | null): TileSolid {
+  // Straight walls along the tile outline down to `wall`, then leaning in by `taper` at `depth` (a crisp crease between).
+  const wall = Math.min(Math.max(shape.wall ?? shape.top, shape.top), shape.depth);
+  const h = Math.max(1e-6, shape.depth - wall);
   const phi = -Math.atan2(shape.taper, h); // walls lean inwards going down: normals tilt downwards
-  const rings: Ring[] = [
-    { z: -shape.depth, d: shape.taper, phi, oz: -shape.depth, off: -shape.depth, ophi: 0, clamp: true },
-    { z: -shape.top, d: 0, phi, oz: -shape.top, off: -shape.top, ophi: 0, clamp: true },
-  ];
+  const ring = (z: number, d: number, tilt: number): Ring => ({ z: -z, d, phi: tilt, oz: -z, off: -z, ophi: 0, clamp: true });
+  const rings: Ring[] =
+    wall > shape.top
+      ? [ring(shape.depth, shape.taper, phi), ring(wall, 0, phi), ring(wall, 0, 0), ring(shape.top, 0, 0)]
+      : [ring(shape.depth, shape.taper, phi), ring(shape.top, 0, phi)];
   return sweep(outline, rings, mitre, false);
 }
 

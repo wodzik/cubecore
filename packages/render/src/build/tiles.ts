@@ -10,7 +10,7 @@
  * attachment — see attachments.ts.
  */
 
-import { BufferGeometry, Float32BufferAttribute, Shape, ShapeGeometry, ShapeUtils, Vector2 } from "three";
+import { BufferGeometry, Float32BufferAttribute, Shape, ShapeGeometry, ShapeUtils, SphereGeometry, Vector2 } from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
 import { type PieceKind, type Skin, type StickerShape, reachEdge, roundedOutline, stickerLayout, stickerlessOutline, tileSize, tileThickness } from "@cubecore/skin";
@@ -30,8 +30,9 @@ export interface TileKit {
   /** A centre cubie's body: smaller when the centre cap is domed, so it stays under the cap's lowered corners. */
   centerBody: BufferGeometry;
   /**
-   * Shaped pieces: the mechanism in the middle of the cube (the one cell with
-   * no cubie), so gaps never show through to the far side. Null otherwise.
+   * Shaped pieces: the mechanism in the middle of the cube (a dark ball round
+   * the one cell with no cubie), so gaps never show through to the far side.
+   * Null otherwise.
    */
   mechanism: BufferGeometry | null;
   /** The tile at facelet position `fi`, in its face's local frame (x = a, y = b, z = outward). */
@@ -65,7 +66,8 @@ export function tileKit(skin: Skin): TileKit {
   const dome = skin.stickers.kinds?.center?.dome;
   // The core's top must stay under the dome's lowest point (its corners, `drop` below the face).
   const centerBody = skin.pieces && dome ? box(Math.min(bodySize, size - 2 * (dome.drop + inset + 0.01))) : body;
-  const mechanism = skin.pieces ? box(size) : null;
+  // A ball: the same from every side, so layers turn round it; only its dark surface shows deep in the gaps.
+  const mechanism = skin.pieces ? new SphereGeometry(skin.pieces.mechanism ?? 1.15, 32, 24) : null;
 
   const outlineFor = (fi: number) => {
     const layout = stickerLayout(fi, shape);
@@ -121,10 +123,12 @@ export function tileKit(skin: Skin): TileKit {
       const pieces = skin.pieces;
       if (!pieces) return null;
       const { outline, mitre, key } = outlineFor(fi);
-      // Solid pieces: down to the cubie's centre. The walls lean in, so where two meet inside
-      // the piece the one from the nearer tile is outermost — the colours split on the diagonals.
-      const depth = pieces.fill === "solid" ? size / 2 : pieces.depth;
-      return cached(`skirt|${key}|${depth}`, () => solidToGeometry(skirtSolid(outline, { top: inset + 0.002, depth, taper: pieces.taper }, mitre)));
+      // Solid pieces: through the whole cubie. The walls lean in, so where two meet inside the
+      // piece the one from the nearer tile is outermost — the colours split on the diagonals.
+      const depth = pieces.fill === "solid" ? size : pieces.depth;
+      return cached(`skirt|${key}|${depth}`, () =>
+        solidToGeometry(skirtSolid(outline, { top: inset + 0.002, depth, taper: pieces.taper, wall: pieces.wall }, mitre)),
+      );
     },
     hint(fi) {
       const { layout, side: s } = outlineFor(fi);

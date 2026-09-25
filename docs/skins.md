@@ -36,11 +36,14 @@ centre caps; `qiyiSC` matches the cap in QiYi's app to ~0.001). A domed
 centre's core shrinks so it stays under the lowered corners.
 
 **Solid coloured pieces:** `pieces: { …, colored: true, fill: "solid" }` —
-the plastic under each tile keeps its rounded, tapered shape but runs down to
-the piece's centre, so the piece is filled with colour; where the walls meet
-inside, the nearer tile's is outermost (the colours split along the diagonals:
-a corner in three, an edge in two) — a turned layer shows colour inside, not
-tiles on a light core.
+the plastic under each tile keeps its tile's outline and runs through the
+whole piece, so the piece is solid colour; where the walls meet inside, the
+nearer tile's is outermost (the colours split along the diagonals: a corner
+in three, an edge in two) — a turned layer shows colour inside. `wall: 0.35`
+keeps the sides straight that deep before they narrow by `taper` (real pieces:
+a flat bit of wall behind the tile, then the narrowing). Shaped pieces get a
+dark mechanism ball in the middle (`mechanism`, radius, default 1.15), so the
+gaps never show through the cube.
 
 **2D pictures:** `pictureBody` — the plastic between tiles in
 `@cubecore/image` pictures; `null` makes the gaps see-through (light plastic

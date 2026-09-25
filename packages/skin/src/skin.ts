@@ -45,12 +45,20 @@ export interface Skin {
     colored?: boolean;
     /**
      * "skirt" (default): plastic `depth` deep under each tile; "solid": the
-     * same shape run down to the piece's centre, so the piece is filled with
+     * same shape run through the whole piece, so the piece is filled with
      * colour — the tapered walls meet inside it, the nearer tile's outermost,
      * so inner faces split along the diagonals (a corner in three colours, an
      * edge in two). Needs `colored`.
      */
     fill?: "skirt" | "solid";
+    /**
+     * Straight walls: the plastic first runs straight down along the tile
+     * outline to this depth, then narrows (`taper`) — real pieces have a flat
+     * bit of wall behind the tile before they narrow. Default: narrows at once.
+     */
+    wall?: number;
+    /** Radius of the dark mechanism ball in the middle (cubie units). Default 1.15. */
+    mechanism?: number;
   };
   stickers: {
     /** Colour of each colour class, U R F D L B home-face order. */
@@ -324,8 +332,9 @@ export const SKINS = {
     cubieSize: 0.998,
     cubieRadius: 0.01,
     bodyInset: 0.02,
-    // Coloured pieces down to their centre; the core nearly fills each cubie, so no channel shows through.
-    pieces: { depth: 0.32, taper: 0.06, core: 0.99, colored: true, fill: "solid" },
+    // Pieces solid in colour, following the tile outline: straight walls 0.35 deep, then narrowing towards the
+    // middle (as the real pieces); the small core stays hidden, the mechanism ball fills the middle.
+    pieces: { depth: 0.32, taper: 0.35, wall: 0.35, core: 0.5, colored: true, fill: "solid" },
     stickers: {
       colors: ["#ebe8df", "#d8061a", "#0bc21a", "#ffe51c", "#fd7501", "#1a72f5"],
       // Tiles touch; soft, pillowy edges and a well-rounded cube edge (as the real cube).

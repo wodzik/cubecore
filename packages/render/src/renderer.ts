@@ -106,7 +106,7 @@ export class CubeRenderer {
   /** Tile frame at each facelet position (z = 0 on the cubie face): where decals and features attach. */
   private anchors: Object3D[] = [];
   /** Height of the sticker surface above the anchors. */
-  private surface = 0;
+  private surface: number | null = null;
   private hintMeshes: Mesh[] = [];
   private kit: TileKit | null = null;
   private attachments: AttachmentSet | null = null;
@@ -337,7 +337,7 @@ export class CubeRenderer {
 
     const models = s.models;
     let waiting = false;
-    this.surface = models?.surface ?? kit.thickness;
+    this.surface = models?.surface ?? (models ? kit.thickness : null); // built-in tiles: each at its own thickness
 
     CUBIES.forEach((cubie, ci) => {
       const g = new Group();

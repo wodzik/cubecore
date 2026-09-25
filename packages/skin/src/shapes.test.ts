@@ -67,3 +67,13 @@ describe("stickerlessOutline", () => {
     }
   });
 });
+
+describe("per-kind tiles", async () => {
+  const { SKINS, tileSize, tileThickness } = await import("./skin");
+  it("gan356m: a smaller, thicker centre cap; the rest as usual", () => {
+    const s = SKINS.gan356m;
+    expect(tileSize(s, "center")).toBeLessThan(tileSize(s, "edge"));
+    expect(tileThickness(s, "center")).toBeGreaterThan(tileThickness(s, "corner"));
+    expect(tileSize(SKINS.standard, "center")).toBe(SKINS.standard.stickers.size);
+  });
+});

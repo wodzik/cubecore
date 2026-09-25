@@ -13,6 +13,16 @@ preset and change what you need:
 | `ganI4` | GAN i4 smart cube (from product photos) |
 | `gan356m` | GAN 356 M: square corner tiles, round edge tongues, near-round centres — measured from "GAN CUBE 356s M air" by Amyyu (Sketchfab, CC BY 4.0) |
 
+**Per piece kind:** `stickers.kinds` gives corner / edge / centre tiles their
+own size and thickness — e.g. a centre cap that is smaller and stands out
+more (`gan356m`: `kinds: { center: { size: 0.979, thickness: 0.04 } }`).
+Decals and features sit on their own tile's top. `tileSize(skin, kind)` /
+`tileThickness(skin, kind)` read the values.
+
+**Logo:** a decal on the centre sticker (`select: { stickers: [4] }` = the
+U centre), e.g. `{ image: "/assets/gan-logo.png", size: 0.75, blend: "multiply" }`.
+Brand logos are trademarks — the library ships none; bring your own file.
+
 Measuring a skin from a 3D model: a model with separate sticker / tile
 meshes gives each tile's size and corner radii (per piece kind, inner corner
 towards the face centre vs the others) and the colours — that's how

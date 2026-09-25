@@ -64,6 +64,8 @@ $("scrub").oninput = () => {
 const DEMO_SKINS: Record<string, Skin> = {
   ...SKINS,
   "gan + logo": { ...SKINS.gan, decals: [{ select: { stickers: [4] }, image: "/assets/gan-logo.png", size: 0.72, blend: "multiply" }] },
+  // The logo is yours to supply (demo/assets is git-ignored: brand logos stay out of the repo).
+  "gan 356 m + logo": { ...SKINS.gan356m, decals: [{ select: { stickers: [4] }, image: "/assets/gan-logo.png", size: 0.75, blend: "multiply" }] },
   "gan i4 + logo": { ...SKINS.ganI4, decals: [{ select: { stickers: [4] }, image: "/assets/gan-logo.png", size: 0.62, blend: "multiply" }] },
   // Pieces from glTF files: the standard skin's settings, but every piece is a model (here: i4-style templates
   // exported by scripts/export-models.ts) — if you see i4 pieces, the models are what's drawn.

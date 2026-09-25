@@ -13,14 +13,16 @@
 import { BufferGeometry, Float32BufferAttribute, Shape, ShapeGeometry, ShapeUtils, Vector2 } from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
-import { type Skin, type StickerShape, roundedOutline, stickerLayout, stickerlessOutline } from "@cubecore/skin";
+import { type PieceKind, type Skin, type StickerShape, roundedOutline, stickerLayout, stickerlessOutline, tileSize, tileThickness } from "@cubecore/skin";
 import { type Mitre, type TileSolid, skirtSolid, tileSolid } from "../tile";
 
 export interface TileKit {
-  /** Tile side (cubie units). */
+  /** Tile side (cubie units) — the usual one; `sideOf` per piece kind. */
   side: number;
-  /** Height of a tile's top above the cubie face. */
+  /** Height of a tile's top above the cubie face — the usual one; `thicknessOf` per piece kind. */
   thickness: number;
+  sideOf(kind: PieceKind): number;
+  thicknessOf(kind: PieceKind): number;
   /** Distance from a cubie's centre to the plane its tiles sit on. */
   faceOffset: number;
   /** The cubie body (a rounded box, or the small core when pieces are shaped). */
@@ -39,7 +41,8 @@ export function tileKit(skin: Skin): TileKit {
   const inset = skin.bodyInset ?? 0;
   const side = skin.stickers.size * size;
   const thickness = skin.stickers.thickness ?? 0;
-  const bevel = Math.min(skin.stickers.bevel ?? 0, thickness);
+  const sideOf = (kind: PieceKind) => tileSize(skin, kind) * size;
+  const thicknessOf = (kind: PieceKind) => tileThickness(skin, kind);
   const faceOffset = size / 2 + 0.002;
   const edge = faceOffset;
   const shape: StickerShape = skin.stickers.shape ?? {
@@ -56,10 +59,11 @@ export function tileKit(skin: Skin): TileKit {
     const layout = stickerLayout(fi, shape);
     const path = skin.stickers.paths?.[layout.kind];
     const fill = !path && skin.stickers.fillOuter === true;
-    const outline = path ? pathOutline(path, side, layout.pathQuarters) : fill ? stickerlessOutline(layout, side, edge) : roundedOutline(side, layout.radii);
-    const mitre: Mitre | null = fill ? { u: layout.u, v: layout.v, edge, ramp: Math.max(thickness * 4, 0.03) } : null;
-    const key = path ? `p|${layout.kind}|${layout.pathQuarters}` : `r|${layout.radii.join(",")}|${fill ? `${layout.u},${layout.v}` : ""}`;
-    return { outline, mitre, key, layout };
+    const s = sideOf(layout.kind), t = thicknessOf(layout.kind);
+    const outline = path ? pathOutline(path, s, layout.pathQuarters) : fill ? stickerlessOutline(layout, s, edge) : roundedOutline(s, layout.radii);
+    const mitre: Mitre | null = fill ? { u: layout.u, v: layout.v, edge, ramp: Math.max(t * 4, 0.03) } : null;
+    const key = (path ? `p|${layout.kind}|${layout.pathQuarters}` : `r|${layout.radii.join(",")}|${fill ? `${layout.u},${layout.v}` : ""}`) + `|${s}|${t}`;
+    return { outline, mitre, key, layout, thickness: t, side: s };
   };
 
   const cache = new Map<string, BufferGeometry>();
@@ -72,13 +76,16 @@ export function tileKit(skin: Skin): TileKit {
   return {
     side,
     thickness,
+    sideOf,
+    thicknessOf,
     faceOffset,
     body,
     tile(fi) {
-      const { outline, mitre, key } = outlineFor(fi);
+      const { outline, mitre, key, thickness: t } = outlineFor(fi);
+      const bevel = Math.min(skin.stickers.bevel ?? 0, t);
       return cached(`tile|${key}`, () =>
-        thickness > 0
-          ? solidToGeometry(tileSolid(outline, { thickness, bevel, segments: 4, sink: inset + 0.002, edgeRadius: skin.stickers.edgeRadius ?? 0 }, mitre))
+        t > 0
+          ? solidToGeometry(tileSolid(outline, { thickness: t, bevel, segments: 4, sink: inset + 0.002, edgeRadius: skin.stickers.edgeRadius ?? 0 }, mitre))
           : new ShapeGeometry(new Shape(outline.map(([x, y]) => new Vector2(x, y)))),
       );
     },
@@ -89,8 +96,8 @@ export function tileKit(skin: Skin): TileKit {
       return cached(`skirt|${key}`, () => solidToGeometry(skirtSolid(outline, { top: inset + 0.002, depth: pieces.depth, taper: pieces.taper }, mitre)));
     },
     hint(fi) {
-      const { layout } = outlineFor(fi);
-      return cached(`hint|${layout.radii.join(",")}`, () => new ShapeGeometry(new Shape(roundedOutline(side * 0.92, layout.radii).map(([x, y]) => new Vector2(x, y)))));
+      const { layout, side: s } = outlineFor(fi);
+      return cached(`hint|${layout.radii.join(",")}|${s}`, () => new ShapeGeometry(new Shape(roundedOutline(s * 0.92, layout.radii).map(([x, y]) => new Vector2(x, y)))));
     },
     dispose() {
       body.dispose();

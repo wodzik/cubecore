@@ -5,7 +5,7 @@
 
 import type { MaskState } from "@cubecore/core";
 import type { Decal, FeatureUse } from "./attachments";
-import type { StickerPaths, StickerShape } from "./shapes";
+import type { PieceKind, StickerPaths, StickerShape } from "./shapes";
 
 export interface Skin {
   /** Plastic colour. */
@@ -41,6 +41,12 @@ export interface Skin {
     paths?: StickerPaths;
     /** How far a tile stands out from the plastic (cubie units) — stickerless tiles are thicker. */
     thickness?: number;
+    /**
+     * Per piece kind: a different tile size / thickness — e.g. a centre cap
+     * that is smaller and stands out more than the other tiles. Unset values
+     * fall back to `size` / `thickness`.
+     */
+    kinds?: Partial<Record<PieceKind, { size?: number; thickness?: number }>>;
     /** Radius of the rounded top edge of a tile (cubie units, ≤ thickness). Default 0 (sharp). */
     bevel?: number;
     /**
@@ -246,6 +252,7 @@ export const SKINS = {
       radius: 0.015,
       shape: { corner: { inner: 0.016, outer: 0.014 }, edge: { inner: 0.375, outer: 0.015 }, center: 0.285 },
       thickness: 0.014,
+      kinds: { center: { size: 0.979, thickness: 0.04 } }, // the centre cap: a little smaller, standing out more
       bevel: 0.006,
       edgeRadius: 0.02,
       material: "plastic",
@@ -258,6 +265,11 @@ export const SKINS = {
     themes: { light: LIGHT_PAGE },
   },
 } satisfies Record<string, Skin>;
+
+/** Tile side of a piece kind, relative to a cubie face (`stickers.kinds` or `stickers.size`). */
+export const tileSize = (skin: Skin, kind: PieceKind): number => skin.stickers.kinds?.[kind]?.size ?? skin.stickers.size;
+/** How far a piece kind's tiles stand out (`stickers.kinds` or `stickers.thickness`). */
+export const tileThickness = (skin: Skin, kind: PieceKind): number => skin.stickers.kinds?.[kind]?.thickness ?? skin.stickers.thickness ?? 0;
 
 export function stickerColor(skin: Skin, colorClass: number, state: MaskState): string | null {
   const base = skin.stickers.colors[colorClass];

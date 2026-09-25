@@ -39,18 +39,22 @@ import {
   view as frameView,
 } from "@cubecore/core";
 import {
+  type PieceKind,
   SKINS,
   type Skin,
   type StickerShape,
   type Theme,
   featureDef,
   imageUrl,
+  kindOfSticker,
   roundedOutline,
   selectedStickers,
   stickerColor,
   stickerLayout,
   stickerlessOutline,
   themed,
+  tileSize,
+  tileThickness,
 } from "@cubecore/skin";
 
 export type View = "iso" | "top" | "net";
@@ -200,7 +204,7 @@ export function renderSvg(state: State, options: SvgOptions = {}): string {
   const skin: Skin = themed(options.skin ?? SKINS.standard, options.theme ?? "dark");
   const v = VIEWS[viewName];
   const s = options.frame && options.frame !== IDENTITY_FRAME ? frameView(state, options.frame) : state;
-  const side = skin.stickers.size * skin.cubieSize;
+  const sideOf = (kind: PieceKind) => tileSize(skin, kind) * skin.cubieSize;
   const shape = tileShape(skin);
 
   let out = "";
@@ -220,12 +224,13 @@ export function renderSvg(state: State, options: SvgOptions = {}): string {
     if (!fill) continue;
     const layout = stickerLayout(f.index, shape);
     const path = skin.stickers.paths?.[layout.kind];
+    const kindSide = sideOf(layout.kind);
     if (path) {
-      out += `<path d="${attr(path)}" transform="${boxTransform(f, side, layout.pathQuarters, v.project)}" fill="${fill}"/>`;
+      out += `<path d="${attr(path)}" transform="${boxTransform(f, kindSide, layout.pathQuarters, v.project)}" fill="${fill}"/>`;
       continue;
     }
     // Stickerless: outer sides reach the cube edge (a hair past it, so neighbouring faces overlap instead of leaving an anti-aliased seam).
-    const outline = skin.stickers.fillOuter ? stickerlessOutline(layout, side, 0.506, 6) : roundedOutline(side, layout.radii, 6);
+    const outline = skin.stickers.fillOuter ? stickerlessOutline(layout, kindSide, 0.506, 6) : roundedOutline(kindSide, layout.radii, 6);
     out += `<path d="${polygon(outline.map(([x, y]) => v.project(f.face, onFace(f, x, y))))}" fill="${fill}"/>`;
   }
 
@@ -244,18 +249,20 @@ export function renderSvg(state: State, options: SvgOptions = {}): string {
   for (const use of skin.features ?? []) {
     const def = featureDef(use.type);
     if (!def?.svg) continue;
-    const markup = def.svg({ side, thickness: skin.stickers.thickness ?? 0, params: use.params ?? {} });
     for (const sticker of selectedStickers(use.select)) {
       const f = placed(sticker, false);
-      if (f) out += `<g transform="${boxTransform(f, side, turnOf(sticker), v.project)}">${markup}</g>`;
+      const kind = kindOfSticker(sticker);
+      const markup = def.svg({ side: sideOf(kind), thickness: tileThickness(skin, kind), params: use.params ?? {} });
+      if (f) out += `<g transform="${boxTransform(f, sideOf(kind), turnOf(sticker), v.project)}">${markup}</g>`;
     }
   }
   for (const decal of skin.decals ?? []) {
     const blend = decal.blend === "multiply" ? ` style="mix-blend-mode:multiply"` : "";
-    const offset: Pt = [((decal.offset?.[0] ?? 0) * side) / 2, ((decal.offset?.[1] ?? 0) * side) / 2];
     for (const sticker of selectedStickers(decal.select)) {
       const f = placed(sticker, decal.onlyRegular ?? true);
       if (!f) continue;
+      const side = sideOf(kindOfSticker(sticker));
+      const offset: Pt = [((decal.offset?.[0] ?? 0) * side) / 2, ((decal.offset?.[1] ?? 0) * side) / 2];
       const t = boxTransform(f, side * decal.size, turnOf(sticker), v.project, offset, decal.rotate ?? 0);
       out += `<image href="${attr(imageUrl(decal.image))}" width="1" height="1" preserveAspectRatio="xMidYMid meet" transform="${t}"${blend}/>`;
     }

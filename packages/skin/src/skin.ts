@@ -57,6 +57,13 @@ export interface Skin {
      * bit of wall behind the tile before they narrow. Default: narrows at once.
      */
     wall?: number;
+    /**
+     * Corner-cutting relief: behind the tile, the material at the tile's
+     * corner(s) next to the face centre is cut away in a cone — `radius` wide
+     * at `depth` below the tile, nothing at the tile itself. The tile's corner
+     * overhangs and passes in front of the centre when you cut a corner.
+     */
+    relief?: { radius: number; depth: number };
     /** Radius of the dark mechanism ball in the middle (cubie units). Default 1.15. */
     mechanism?: number;
   };
@@ -334,7 +341,9 @@ export const SKINS = {
     bodyInset: 0.02,
     // Pieces solid in colour, following the tile outline: straight walls 0.35 deep, then narrowing towards the
     // middle (as the real pieces); the small core stays hidden, the mechanism ball fills the middle.
-    pieces: { depth: 0.32, taper: 0.35, wall: 0.35, core: 0.5, colored: true, fill: "solid" },
+    // Behind each tile corner next to the centre, a corner-cutting relief (keeps a corner clear of the
+    // centre when U and R are ~12° off — checked by turning the geometry).
+    pieces: { depth: 0.32, taper: 0.35, wall: 0.35, relief: { radius: 0.3, depth: 0.25 }, core: 0.5, colored: true, fill: "solid" },
     stickers: {
       colors: ["#ebe8df", "#d8061a", "#0bc21a", "#ffe51c", "#fd7501", "#1a72f5"],
       // Tiles touch; soft, pillowy edges and a well-rounded cube edge (as the real cube).

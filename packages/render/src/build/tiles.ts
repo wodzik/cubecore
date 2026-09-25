@@ -122,12 +122,17 @@ export function tileKit(skin: Skin): TileKit {
     skirt(fi) {
       const pieces = skin.pieces;
       if (!pieces) return null;
-      const { outline, mitre, key } = outlineFor(fi);
+      const { outline, mitre, key, layout, side: s } = outlineFor(fi);
       // Solid pieces: through the whole cubie. The walls lean in, so where two meet inside the
       // piece the one from the nearer tile is outermost — the colours split on the diagonals.
       const depth = pieces.fill === "solid" ? size : pieces.depth;
+      // Corner-cutting relief behind the tile corner(s) next to the face centre.
+      const h = s / 2, su = -Math.sign(layout.u), sv = -Math.sign(layout.v);
+      const at: [number, number][] =
+        layout.kind === "corner" ? [[su * h, sv * h]] : layout.kind === "edge" ? (layout.u ? [[su * h, h], [su * h, -h]] : [[h, sv * h], [-h, sv * h]]) : [];
+      const relief = pieces.relief ? { at, ...pieces.relief } : undefined;
       return cached(`skirt|${key}|${depth}`, () =>
-        solidToGeometry(skirtSolid(outline, { top: inset + 0.002, depth, taper: pieces.taper, wall: pieces.wall }, mitre)),
+        solidToGeometry(skirtSolid(relief ? densify(outline, 192) : outline, { top: inset + 0.002, depth, taper: pieces.taper, wall: pieces.wall, relief }, mitre)),
       );
     },
     hint(fi) {

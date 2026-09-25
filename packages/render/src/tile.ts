@@ -108,6 +108,59 @@ interface Ring {
    * the blended edge weights used near the top would skew the corners.
    */
   clamp?: boolean;
+  /** Corner relief: outline points within `r` of any of `at` are pushed out onto that circle (a cone when r grows with depth). */
+  cut?: { at: readonly Pt[]; r: number; slope: number };
+}
+
+/**
+ * Cut a disc of radius `r` round `c` out of a closed ring of points (in place,
+ * keeping the point count): the run of points inside the disc is laid out
+ * along the arc between where the ring enters and leaves it, with normals of
+ * a cone facing its axis and downwards (`slope`: how fast the radius grows with depth).
+ */
+function cutCorner(pts: [number, number, number][], nrm: [number, number, number][], c: Pt, r: number, slope: number): void {
+  const n = pts.length;
+  const inside = pts.map(([x, y]) => Math.hypot(x - c[0], y - c[1]) < r);
+  if (inside.every(Boolean) || !inside.some(Boolean)) return;
+  // Find each run of inside points (the ring is closed).
+  let start = inside.findIndex((v, i) => v && !inside[(i - 1 + n) % n]);
+  const visited = new Set<number>();
+  while (start >= 0 && !visited.has(start)) {
+    visited.add(start);
+    const run: number[] = [];
+    for (let i = start; inside[i % n] && run.length < n; i++) run.push(i % n);
+    const before = pts[(start - 1 + n) % n], after = pts[(run[run.length - 1] + 1) % n];
+    // Where the ring crosses the circle: between the last outside point and the first inside one (and back).
+    const cross = (p: number[], q: number[]): number => {
+      let lo = 0, hi = 1; // p outside, q inside
+      for (let k = 0; k < 30; k++) {
+        const m = (lo + hi) / 2, x = p[0] + (q[0] - p[0]) * m, y = p[1] + (q[1] - p[1]) * m;
+        if (Math.hypot(x - c[0], y - c[1]) < r) hi = m; else lo = m;
+      }
+      const m = (lo + hi) / 2;
+      return Math.atan2(p[1] + (q[1] - p[1]) * m - c[1], p[0] + (q[0] - p[0]) * m - c[0]);
+    };
+    const a0 = cross(before, pts[run[0]]);
+    let a1 = cross(after, pts[run[run.length - 1]]);
+    // The arc away from the corner: the shorter way round (the removed bit is less than half the disc).
+    let da = a1 - a0;
+    while (da > Math.PI) da -= 2 * Math.PI;
+    while (da < -Math.PI) da += 2 * Math.PI;
+    a1 = a0 + da;
+    // Place each point by its distance along the original outline (entry → exit), so neighbouring rings stay in step.
+    const z = pts[run[0]][2], nl = Math.hypot(1, slope);
+    const path = [before, ...run.map((i) => pts[i]), after];
+    const cum = [0];
+    for (let k = 1; k < path.length; k++) cum.push(cum[k - 1] + Math.hypot(path[k][0] - path[k - 1][0], path[k][1] - path[k - 1][1]));
+    const total = cum[cum.length - 1] || 1;
+    run.forEach((idx, k) => {
+      const a = a0 + (cum[k + 1] / total) * (a1 - a0);
+      pts[idx] = [c[0] + r * Math.cos(a), c[1] + r * Math.sin(a), z];
+      nrm[idx] = [-Math.cos(a) / nl, -Math.sin(a) / nl, -slope / nl]; // the tile overhangs the cut: it faces down
+    });
+    const next = inside.findIndex((v, i) => i > run[run.length - 1] && v && !inside[(i - 1 + n) % n]);
+    start = next;
+  }
 }
 
 /** Sweep `outline` through `rings` (bottom up); optionally close the top with a flat cap. */
@@ -121,11 +174,15 @@ function sweep(outlineIn: readonly Pt[], rings: readonly Ring[], mitre: Mitre | 
     ku: mitre ? edgeWeight(x, mitre.u, mitre) : 0,
     kv: mitre ? edgeWeight(y, mitre.v, mitre) : 0,
   }));
+  // Deep rings shrink the outline towards the tile centre (so its inner sides move in by `d`): unlike an
+  // offset along the normals, this can't turn a corner inside out when `d` exceeds the corner's radius.
+  const innerHalf = Math.min(...[0, 1].flatMap((k) => [Math.max(...outline.map((p) => p[k])), -Math.min(...outline.map((p) => p[k]))]));
   const place = (i: number, ring: Ring): [number, number, number] => {
     let [x, y] = outline[i];
     if (ring.clamp) {
-      x -= vn[i].n[0] * ring.d * vn[i].scale;
-      y -= vn[i].n[1] * ring.d * vn[i].scale;
+      const k = Math.max(0, 1 - ring.d / innerHalf);
+      x *= k;
+      y *= k;
       if (mitre) {
         const limit = mitre.edge + ring.z;
         if (mitre.u !== 0) x = mitre.u > 0 ? Math.min(x, limit) : Math.max(x, -limit);
@@ -161,9 +218,12 @@ function sweep(outlineIn: readonly Pt[], rings: readonly Ring[], mitre: Mitre | 
   };
 
   for (const ring of rings) {
+    const pts = outline.map((_, i) => place(i, ring));
+    const nrm = outline.map((_, i) => normal(i, ring));
+    if (ring.cut && ring.cut.r > 0) for (const c of ring.cut.at) cutCorner(pts, nrm, c, ring.cut.r, ring.cut.slope);
     for (let i = 0; i < n; i++) {
-      positions.push(...place(i, ring));
-      normals.push(...normal(i, ring));
+      positions.push(...pts[i]);
+      normals.push(...nrm[i]);
     }
   }
   const sides: number[] = [];
@@ -227,16 +287,29 @@ export function tileSolid(outline: readonly Pt[], profile: TileProfile, mitre: M
  * stay on the mitre, so the skirts of one piece's faces close its outside.
  * No caps: the top is covered by the tile, the bottom faces the core.
  */
-export function skirtSolid(outline: readonly Pt[], shape: { top: number; depth: number; taper: number; wall?: number }, mitre: Mitre | null): TileSolid {
+export function skirtSolid(
+  outline: readonly Pt[],
+  shape: { top: number; depth: number; taper: number; wall?: number; relief?: { at: readonly Pt[]; radius: number; depth: number } },
+  mitre: Mitre | null,
+): TileSolid {
   // Straight walls along the tile outline down to `wall`, then leaning in by `taper` at `depth` (a crisp crease between).
   const wall = Math.min(Math.max(shape.wall ?? shape.top, shape.top), shape.depth);
   const h = Math.max(1e-6, shape.depth - wall);
   const phi = -Math.atan2(shape.taper, h); // walls lean inwards going down: normals tilt downwards
-  const ring = (z: number, d: number, tilt: number): Ring => ({ z: -z, d, phi: tilt, oz: -z, off: -z, ophi: 0, clamp: true });
-  const rings: Ring[] =
-    wall > shape.top
-      ? [ring(shape.depth, shape.taper, phi), ring(wall, 0, phi), ring(wall, 0, 0), ring(shape.top, 0, 0)]
-      : [ring(shape.depth, shape.taper, phi), ring(shape.top, 0, phi)];
+  const inset = (z: number) => (z <= wall ? 0 : ((z - wall) / h) * shape.taper);
+  // Corner relief: a cone cut from the tile's corner(s) next to the centre, 0 at the tile, `radius` at `depth` below it.
+  const relief = shape.relief && shape.relief.radius > 0 && shape.relief.at.length ? shape.relief : null;
+  const cutAt = (z: number) =>
+    relief ? { at: relief.at, r: relief.radius * Math.min(1, Math.max(0, (z - shape.top) / relief.depth)), slope: relief.radius / relief.depth } : undefined;
+  const ring = (z: number, tilt: number): Ring => ({ z: -z, d: inset(z), phi: tilt, oz: -z, off: -z, ophi: 0, clamp: true, cut: cutAt(z) });
+  const levels = new Set([shape.top, wall, shape.depth]);
+  if (relief) for (let k = 1; k <= 16; k++) levels.add(Math.min(shape.depth, shape.top + (relief.depth * k) / 16));
+  const zs = [...levels].sort((a, b) => b - a); // bottom up
+  const rings: Ring[] = [];
+  for (const z of zs) {
+    if (z === wall && wall > shape.top) rings.push(ring(z, phi), ring(z, 0)); // the crease: two normals
+    else rings.push(ring(z, wall > shape.top && z <= wall ? 0 : phi));
+  }
   return sweep(outline, rings, mitre, false);
 }
 

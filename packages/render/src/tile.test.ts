@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { roundedOutline, stickerLayout, stickerlessOutline } from "@cubecore/skin";
-import { dedupe, skirtSolid, tileSolid } from "./tile";
+import { densify, dedupe, skirtSolid, tileSolid } from "./tile";
 
 const SHAPE = { corner: { inner: 0.34, outer: 0.07 }, edge: { inner: 0.3, outer: 0.07 }, center: 0.36 };
 const PROFILE = { thickness: 0.035, bevel: 0.024, segments: 4, sink: 0.02 };
@@ -80,5 +80,34 @@ describe("tile solids", () => {
     expect(minAt(-0.02)).toBeCloseTo(-side / 2, 3);
     // (±0.005: the rounded corner next to the outer side is cut by the mitre, not re-rounded — hidden deep inside.)
     expect(Math.abs(minAt(-0.3) - (-side / 2 + 0.07))).toBeLessThan(0.005);
+  });
+});
+
+describe("corner relief", () => {
+  const outline = densify(roundedOutline(0.96, [0.1, 0.1, 0.1, 0.1]), 160);
+  const c: [number, number] = [0.48, 0.48];
+  const relief = { at: [c], radius: 0.3, depth: 0.25 };
+  const s = skirtSolid(outline, { top: 0.02, depth: 1, taper: 0.2, wall: 0.35, relief }, null);
+  const pts = Array.from({ length: s.positions.length / 3 }, (_, i) => [s.positions[i * 3], s.positions[i * 3 + 1], s.positions[i * 3 + 2]]);
+
+  it("leaves the tile's own outline alone and cuts a widening cone below it", () => {
+    const at = (z: number) => pts.filter((p) => Math.abs(p[2] + z) < 1e-6);
+    const dist = (p: number[]) => Math.hypot(p[0] - c[0], p[1] - c[1]);
+    expect(Math.min(...at(0.02).map(dist))).toBeLessThan(0.1); // at the tile: the corner is still there
+    expect(Math.min(...at(0.27).map(dist))).toBeGreaterThan(0.3 - 1e-6); // full depth of the cut: nothing within the radius
+  });
+
+  it("keeps every triangle facing the way its normals do", () => {
+    const P = s.positions, N = s.normals, I = s.sides;
+    let flipped = 0;
+    for (let t = 0; t < I.length; t += 3) {
+      const [a, b, d] = [I[t], I[t + 1], I[t + 2]];
+      const u = [0, 1, 2].map((k) => P[b * 3 + k] - P[a * 3 + k]), v = [0, 1, 2].map((k) => P[d * 3 + k] - P[a * 3 + k]);
+      const n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+      if (Math.hypot(...n) < 1e-10) continue;
+      const vn = [0, 1, 2].map((k) => N[a * 3 + k] + N[b * 3 + k] + N[d * 3 + k]);
+      if (n[0] * vn[0] + n[1] * vn[1] + n[2] * vn[2] < 0) flipped++;
+    }
+    expect(flipped).toBe(0);
   });
 });

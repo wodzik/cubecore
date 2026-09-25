@@ -41,7 +41,11 @@ whole piece, so the piece is solid colour; where the walls meet inside, the
 nearer tile's is outermost (the colours split along the diagonals: a corner
 in three, an edge in two) — a turned layer shows colour inside. `wall: 0.35`
 keeps the sides straight that deep before they narrow by `taper` (real pieces:
-a flat bit of wall behind the tile, then the narrowing). Shaped pieces get a
+a flat bit of wall behind the tile, then the narrowing). `relief: { radius,
+depth }` cuts a cone behind the tile corner(s) next to the face centre —
+nothing at the tile, `radius` wide at `depth` below it — so the tile's corner
+overhangs and the piece clears the centre when a corner is cut (`qiyiSC`:
+clear up to ~12° with the layers off by the same angle). Shaped pieces get a
 dark mechanism ball in the middle (`mechanism`, radius, default 1.15), so the
 gaps never show through the cube.
 

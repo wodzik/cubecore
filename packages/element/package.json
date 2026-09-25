@@ -15,7 +15,8 @@
     "@cubecore/skin": "workspace:*",
     "@cubecore/timeline": "workspace:*",
     "three": "^0.186.1",
-    "@cubecore/image": "workspace:*"
+    "@cubecore/image": "workspace:*",
+    "@cubecore/bld": "workspace:*"
   },
   "devDependencies": {
     "@cubecore/cfop": "workspace:*"

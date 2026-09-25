@@ -1,0 +1,12 @@
+{
+  "name": "@cubecore/bld",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "sideEffects": false,
+  "dependencies": {
+    "@cubecore/core": "workspace:*",
+    "@cubecore/skin": "workspace:*"
+  }
+}

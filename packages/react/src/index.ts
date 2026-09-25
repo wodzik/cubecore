@@ -27,6 +27,8 @@ import {
 } from "react";
 import type { Mask, Method, Move, State } from "@cubecore/core";
 import type {
+  BldMessages,
+  CubeBld as CubeBldElement,
   CubeAlg as CubeAlgElement,
   CubeAlgPractice as CubeAlgPracticeElement,
   CubePlayer as CubePlayerElement,
@@ -259,6 +261,47 @@ export const CubeAlgPractice = forwardRef<CubeAlgPracticeElement | null, CubeAlg
       className: p.className,
       style: p.style,
     },
+    p.children,
+  );
+});
+
+// ─── <CubeBld> ───
+
+export interface CubeBldProps {
+  /** Follow a smart cube: memo of it as it is now, then its execution letter by letter. */
+  source?: MoveSource | null;
+  /** "ruwix" (default) or "speffz". */
+  scheme?: "ruwix" | "speffz";
+  /** How the cube is held, as rotations (e.g. "x2 y'" = yellow top, orange front). */
+  rotation?: string;
+  /** Letters still to do: "all" shown (default), "done" hidden until done, "none" hidden. */
+  reveal?: "all" | "done" | "none";
+  headless?: boolean;
+  messages?: Partial<BldMessages>;
+  onProgress?: Handler<unknown>;
+  onLetter?: Handler<unknown>;
+  onWrong?: Handler<unknown>;
+  onComplete?: Handler<unknown>;
+  id?: string;
+  className?: string;
+  style?: CSSProperties;
+  children?: ReactNode;
+}
+
+export const CubeBld = forwardRef<CubeBldElement | null, CubeBldProps>(function CubeBld(p, ref) {
+  const el = useRef<CubeBldElement | null>(null);
+  useImperativeHandle(ref, () => el.current!, []);
+  useEffect(() => {
+    if (!el.current || !p.source) return;
+    return el.current.attach(p.source);
+  }, [p.source]);
+  useEffect(() => {
+    if (el.current && p.messages) el.current.messages = p.messages;
+  }, [p.messages]);
+  useEvents(el, { progress: p.onProgress, letter: p.onLetter, wrong: p.onWrong, complete: p.onComplete } as Record<string, Handler<never> | undefined>);
+  return createElement(
+    "cube-bld",
+    { ref: el, scheme: p.scheme, rotation: p.rotation, reveal: p.reveal, headless: p.headless ? "" : undefined, id: p.id, className: p.className, style: p.style },
     p.children,
   );
 });

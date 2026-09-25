@@ -11,6 +11,7 @@ export const DEMOS = [
   { path: "/player", title: "Player", hint: "<cube-player>: controls, progress bar, theming, your own controls" },
   { path: "/react", title: "React", hint: "@cubecore/react: <CubePlayer>, <CubeAlg>, <CubeScramble>, useSmartCube, useSolverWorker" },
   { path: "/sequences", title: "Scramble & practice", hint: "Test <cube-scramble> (generated or your own) and <cube-alg-practice> (hide / hint / restart) on a smart cube, with turn arrows" },
+  { path: "/bld", title: "Blindfolded", hint: "Old Pochmann: letters on the stickers, memo from a scramble, execution followed letter by letter on a smart cube" },
   { path: "/bluetooth", title: "Smart cube", hint: "Bluetooth cubes live: moves with the cube's clock, written log, stages, gyro — or a simulated cube" },
 ] as const;
 

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>cubecore blindfolded</title>
+    <style>
+      :root { color-scheme: dark; --bg: #0b0b0c; --panel: #151517; --line: #2a2a2e; --text: #e6e6e6; --muted: #8b8b93; --accent: #7aa2ff; }
+      * { box-sizing: border-box; }
+      body { margin: 0; font: 14px/1.45 system-ui, sans-serif; background: var(--bg); color: var(--text); }
+      main { max-width: 760px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+      .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+      button, select { background: #232327; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 7px 11px; font: 13px system-ui; }
+      button { cursor: pointer; }
+      button:hover:not(:disabled) { border-color: var(--accent); }
+      button.primary { background: var(--accent); color: #0b0b0c; border-color: var(--accent); font-weight: 600; }
+      button:disabled { opacity: 0.45; cursor: default; }
+      label.opt { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
+      .muted { color: var(--muted); font-size: 12px; }
+      .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+      h2 { font-size: 12px; margin: 0; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+      .memo { font: 13px/1.6 ui-monospace, monospace; color: #b9bcc6; }
+      .memo b { color: var(--text); letter-spacing: 0.04em; }
+      cube-scramble, cube-bld { --cc-accent: var(--accent); --cc-seq-size: 22px; }
+      cube-player { height: min(56vh, 520px); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+      .keys { font: 12px ui-monospace, monospace; color: var(--muted); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="row">
+        <button id="connect" class="primary">Connect cube</button>
+        <button id="simulate">Simulated cube</button>
+        <button id="solved" disabled>Mark solved</button>
+        <span class="muted" id="info">Not connected.</span>
+      </div>
+      <div class="row">
+        <label class="opt">Hold
+          <select id="hold">
+            <option value="">white top, green front</option>
+            <option value="x2 y'">yellow top, orange front (ruwix)</option>
+          </select>
+        </label>
+        <label class="opt">Letters
+          <select id="scheme">
+            <option value="ruwix">ruwix (U F R B L D)</option>
+            <option value="speffz">Speffz (U L F R B D)</option>
+          </select>
+        </label>
+        <label class="opt">Cube
+          <select id="view">
+            <option value="colours">colours</option>
+            <option value="letters" selected>colours + letters</option>
+            <option value="lettersOnly">letters only</option>
+            <option value="hidden">hidden (blindfold)</option>
+          </select>
+        </label>
+      </div>
+
+      <section class="panel">
+        <h2>1 · Scramble</h2>
+        <cube-scramble id="scramble" editable player="player" arrows></cube-scramble>
+        <div class="row">
+          <button id="newScramble" disabled>New scramble</button>
+          <span class="muted" id="scrambleInfo">Solve the cube, connect it, get a scramble (or paste your own).</span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>2 · Memo &amp; execution</h2>
+        <div class="memo" id="memoText">The letters appear once the cube is scrambled.</div>
+        <div class="row">
+          <label class="opt">Letters to do
+            <select id="reveal">
+              <option value="all">shown</option>
+              <option value="done">hidden until done</option>
+              <option value="none">hidden</option>
+            </select>
+          </label>
+          <button id="memoNow" disabled>Memo the cube as it is</button>
+        </div>
+        <cube-bld id="bld"></cube-bld>
+        <span class="muted" id="bldInfo">Edges: T-perm with setup moves (buffer UR). Corners: Y-perm (buffer ULB). Parity after the edges when their count is odd.</span>
+      </section>
+
+      <cube-player id="player" controls="none"></cube-player>
+      <p class="keys" id="keys" hidden>Simulated cube: U R F D L B · Shift = prime</p>
+    </main>
+    <script type="module" src="./bld.ts"></script>
+  </body>
+</html>

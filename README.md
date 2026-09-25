@@ -21,7 +21,8 @@ headless packages also run in Node / Bun / workers.
 | `@cubecore/skin` | skins as data: tile shapes, stickerless tiles, piece shapes, decals (PNG / SVG), features (`defineFeature`), glTF piece models, light / dark themes; presets `standard`, `stickerless`, `gan`, `ganI4` |
 | `@cubecore/render` | three.js `CubeRenderer`: skins, masks, back stickers, back view, gyro orientation, partial layers, glTF pieces (+ templates exporter) |
 | `@cubecore/image` | SVG pictures (iso / top / net) from the same skin; PNG in the browser or via resvg on a server; cache keys |
-| `@cubecore/element` | `<cube-player>` (algorithms at a tempo or timed solves; controls, progress bar with stage sections, 2D views, live mode), `<cube-scramble>` (follows a scramble on a smart cube; paste your own), `<cube-alg-practice>` (algorithm practice: hidden moves, hints, mistakes, TPS), `<cube-alg>` (the text in sync) |
+| `@cubecore/bld` | Blindfolded (Old Pochmann): letter schemes (ruwix, Speffz), memo, execution followed letter by letter, a skin with letters |
+| `@cubecore/element` | `<cube-player>` (algorithms at a tempo or timed solves; controls, progress bar with stage sections, 2D views, live mode), `<cube-scramble>` (follows a scramble on a smart cube; paste your own), `<cube-alg-practice>` (algorithm practice: hidden moves, hints, mistakes, TPS), `<cube-bld>` (blindfolded memo and execution), `<cube-alg>` (the text in sync) |
 | `@cubecore/bluetooth` | `SmartCubeSession` over smartcube-web-bluetooth (GAN, MoYu, QiYi, GoCube, Giiker): moves timed by the cube's clock, resync, gyro, battery; skin per cube; `SimulatedCube` |
 | `@cubecore/react` | `<CubePlayer>`, `<CubeScramble>`, `<CubeAlgPractice>`, `<CubeAlg>`, `useSmartCube()`, `useSolverWorker()` |
 

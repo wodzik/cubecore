@@ -460,3 +460,9 @@ Still open:
   the turning layer's row (not a ring around the cube); single over one
   face, double / triple over two with 2 / 3 heads; direction as written
   (`R2'`, `R3` kept by the parser in `Move.written`; `formatMove` keeps it).
+- 2026-09-25 — **Blindfolded** (`@cubecore/bld`): letter schemes (ruwix, Speffz),
+  Old Pochmann memo (cycle breaks, flips / twists in place, parity; verified
+  on the ruwix example and by simulation), `BldTracker` (letter by letter,
+  wrong letter spotted), `letterSkin` (letters on stickers, as held);
+  `<cube-bld>`, React `<CubeBld>`; demo `/bld` (hold, scheme, colours /
+  letters / letters only / hidden). `Move.written` for R2' / R3.

@@ -18,6 +18,14 @@
         "typescript": "^5.6.0",
       },
     },
+    "packages/bld": {
+      "name": "@cubecore/bld",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cubecore/core": "workspace:*",
+        "@cubecore/skin": "workspace:*",
+      },
+    },
     "packages/bluetooth": {
       "name": "@cubecore/bluetooth",
       "version": "0.0.0",
@@ -42,6 +50,7 @@
       "name": "@cubecore/element",
       "version": "0.0.0",
       "dependencies": {
+        "@cubecore/bld": "workspace:*",
         "@cubecore/core": "workspace:*",
         "@cubecore/image": "workspace:*",
         "@cubecore/render": "workspace:*",
@@ -151,6 +160,8 @@
     },
   },
   "packages": {
+    "@cubecore/bld": ["@cubecore/bld@workspace:packages/bld"],
+
     "@cubecore/bluetooth": ["@cubecore/bluetooth@workspace:packages/bluetooth"],
 
     "@cubecore/cfop": ["@cubecore/cfop@workspace:packages/cfop"],

@@ -180,7 +180,8 @@ button:hover { background: var(--cc-control-bg-hover); }
 button:active { transform: scale(0.94); }
 button:focus-visible { outline: 2px solid var(--cc-accent); outline-offset: 2px; }
 button:disabled { opacity: 0.4; cursor: default; transform: none; }
-button svg { width: 18px; height: 18px; display: block; fill: currentColor; }
+/* Icons never take the click: it always lands on the button itself, even if the icon changes mid-click. */
+button svg { width: 18px; height: 18px; display: block; fill: currentColor; pointer-events: none; }
 .play { min-width: calc(var(--cc-button-size) * 1.25); background: var(--cc-accent); color: #fff; }
 .play:hover { background: color-mix(in srgb, var(--cc-accent) 85%, #000); }
 .time { font: 500 12px/1 var(--cc-font); opacity: 0.75; white-space: nowrap; font-variant-numeric: tabular-nums; }

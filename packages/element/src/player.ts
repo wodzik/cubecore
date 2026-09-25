@@ -424,6 +424,8 @@ export class CubePlayer extends ElementBase {
   }
 
   private lastPos: Position = { applied: 0 };
+  /** Play / pause icon currently shown (null: not drawn yet). */
+  private shownPlaying: boolean | null = null;
 
   private onTime(time: number, pos: Position): void {
     this.lastPos = pos;
@@ -476,9 +478,14 @@ export class CubePlayer extends ElementBase {
     progress.setAttribute("aria-valuenow", String(Math.round(time)));
     progress.setAttribute("aria-valuetext", `${formatTime(time)} of ${formatTime(this.duration)}`);
     this.$(".time").textContent = `${formatTime(time)} / ${formatTime(this.duration)}`;
-    const play = this.$<HTMLButtonElement>(".play");
-    play.innerHTML = this.playing ? ICONS.pause : ICONS.play;
-    play.setAttribute("aria-label", this.playing ? "Pause" : "Play");
+    // Swap the icon only when the state changes: rewriting it every frame replaced the element under the
+    // pointer mid-click, and the browser then drops the click (pause "sometimes didn't work").
+    if (this.shownPlaying !== this.playing) {
+      this.shownPlaying = this.playing;
+      const play = this.$<HTMLButtonElement>(".play");
+      play.innerHTML = this.playing ? ICONS.pause : ICONS.play;
+      play.setAttribute("aria-label", this.playing ? "Pause" : "Play");
+    }
     const atStart = time <= 0, atEnd = time >= this.duration;
     this.$<HTMLButtonElement>(".start").disabled = atStart;
     this.$<HTMLButtonElement>(".back").disabled = atStart;

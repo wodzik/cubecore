@@ -64,6 +64,10 @@ $("scrub").oninput = () => {
 const DEMO_SKINS: Record<string, Skin> = {
   ...SKINS,
   "gan + logo": { ...SKINS.gan, decals: [{ select: { stickers: [4] }, image: "/assets/gan-logo.png", size: 0.72, blend: "multiply" }] },
+  // Finishes and coloured plastic (new skin options): the same cube matte, UV-coated, and moulded in colour.
+  "gan 356 m matte": { ...SKINS.gan356m, stickers: { ...SKINS.gan356m.stickers, finish: "matte" } },
+  "gan 356 m UV": { ...SKINS.gan356m, stickers: { ...SKINS.gan356m.stickers, finish: "uv" } },
+  "coloured pieces": { ...SKINS.gan356m, body: "#e8e8e8", pieces: { ...SKINS.gan356m.pieces, colored: true } },
   // The logo is yours to supply (demo/assets is git-ignored: brand logos stay out of the repo).
   "gan 356 m + logo": { ...SKINS.gan356m, decals: [{ select: { stickers: [4] }, image: "/assets/gan-logo.png", size: 0.75, blend: "multiply" }] },
   "gan i4 + logo": { ...SKINS.ganI4, decals: [{ select: { stickers: [4] }, image: "/assets/gan-logo.png", size: 0.62, blend: "multiply" }] },

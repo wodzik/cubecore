@@ -468,3 +468,6 @@ Still open:
   letters / letters only / hidden). `Move.written` for R2' / R3.
 - 2026-09-25 — Skin `gan356m` measured from a CC BY model (tile sizes, per-kind
   corner radii, colours); the model file stays outside the repo.
+- 2026-09-25 — Skin options: `stickers.kinds` (size / thickness per piece
+  kind), `stickers.finish` ("matte" / "uv": clearcoat + room reflections),
+  `pieces.colored` (plastic in the tile colours). Demo skins on /render.

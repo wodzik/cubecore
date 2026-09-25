@@ -27,7 +27,17 @@ export interface Skin {
    * is as round as its tile), around a rounded core `core` × the cubie size.
    * Cubie units.
    */
-  pieces?: { depth: number; taper: number; core: number };
+  pieces?: {
+    depth: number;
+    taper: number;
+    core: number;
+    /**
+     * Coloured plastic: the piece under each tile takes the tile's colour (a
+     * corner is three coloured parts, an edge two, a centre one — like
+     * stickerless cubes moulded in colour); the core stays `body`.
+     */
+    colored?: boolean;
+  };
   stickers: {
     /** Colour of each colour class, U R F D L B home-face order. */
     colors: readonly [string, string, string, string, string, string];
@@ -56,6 +66,13 @@ export interface Skin {
     material?: "flat" | "plastic";
     /** Plastic finish: 0 = glossy (UV coated) … 1 = matte. Default 0.4. */
     roughness?: number;
+    /**
+     * Sticker finish as on real cubes (implies lit plastic):
+     * "matte" — soft, diffuse, no sharp highlight;
+     * "uv" — UV-coated: a clear glossy coat with sharp reflections.
+     * Overrides `roughness`.
+     */
+    finish?: "matte" | "uv";
     /**
      * Stickerless: rounding of the cube's outer edges (cubie units). The two
      * tiles meeting there each curve over half of it, so colour runs round

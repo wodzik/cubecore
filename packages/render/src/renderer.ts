@@ -21,7 +21,10 @@ import {
   MeshBasicMaterial,
   Object3D,
   MeshStandardMaterial,
+  MeshPhysicalMaterial,
+  PMREMGenerator,
   PerspectiveCamera,
+  type Texture,
   Quaternion,
   Scene,
   Matrix4,
@@ -46,6 +49,7 @@ import {
   solvedState,
 } from "@cubecore/core";
 import { SKINS, type Skin, type Theme, hintColor, stickerColor, themed } from "@cubecore/skin";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { layerTurn, defaultDuration } from "./layers";
 import { type AttachmentSet, buildAttachments, placeAttachments } from "./build/attachments";
 import { type TileKit, tileKit } from "./build/tiles";
@@ -293,6 +297,7 @@ export class CubeRenderer {
     this.finishAll(true);
     this.renderer.dispose();
     for (const m of this.materials.values()) m.dispose();
+    this.envMap?.dispose();
     this.kit?.dispose();
     this.attachments?.dispose();
     this.canvas.remove();
@@ -302,24 +307,57 @@ export class CubeRenderer {
 
   private material(color: string, hint: boolean, opacity = 1): MeshBasicMaterial | MeshStandardMaterial {
     // Tiles of a "plastic" skin are lit; hint stickers always stay flat (they're a see-through aid, not plastic).
-    const lit = !hint && this.skin.stickers.material === "plastic";
-    const roughness = this.skin.stickers.roughness ?? 0.4;
-    const key = `${color}|${hint}|${opacity}|${lit}|${roughness}`;
+    const finish = this.skin.stickers.finish;
+    const lit = !hint && (this.skin.stickers.material === "plastic" || finish !== undefined);
+    const roughness = finish === "matte" ? 1 : finish === "uv" ? 0.4 : (this.skin.stickers.roughness ?? 0.4);
+    const key = `${color}|${hint}|${opacity}|${lit}|${roughness}|${finish ?? ""}`;
     let m = this.materials.get(key);
     if (!m) {
-      m = lit
-        ? // A little of the tile's own colour as emission keeps shaded faces from going muddy; the highlight stays.
-          new MeshStandardMaterial({ color: new Color(color), emissive: new Color(color), emissiveIntensity: 0.32, roughness, metalness: 0 })
-        : new MeshBasicMaterial({
-            color: new Color(color),
-            side: hint ? BackSide : FrontSide,
-            transparent: hint,
-            opacity: hint ? opacity : 1,
-            depthWrite: !hint,
-          });
+      if (lit && finish === "uv") {
+        // UV coat: a clear glossy layer over the colour, reflecting the room — sharp highlights that move as you turn.
+        m = new MeshPhysicalMaterial({
+          color: new Color(color),
+          emissive: new Color(color),
+          emissiveIntensity: 0.3,
+          roughness,
+          metalness: 0,
+          clearcoat: 1,
+          clearcoatRoughness: 0.04,
+          envMap: this.reflections(),
+          envMapIntensity: 0.18,
+        });
+      } else if (lit) {
+        // A little of the tile's own colour as emission keeps shaded faces from going muddy; the highlight stays.
+        m = new MeshStandardMaterial({
+          color: new Color(color),
+          emissive: new Color(color),
+          emissiveIntensity: finish === "matte" ? 0.45 : 0.32,
+          roughness,
+          metalness: 0,
+        });
+      } else {
+        m = new MeshBasicMaterial({
+          color: new Color(color),
+          side: hint ? BackSide : FrontSide,
+          transparent: hint,
+          opacity: hint ? opacity : 1,
+          depthWrite: !hint,
+        });
+      }
       this.materials.set(key, m);
     }
     return m;
+  }
+
+  private envMap: Texture | null = null;
+  /** A soft room to reflect (UV-coated stickers), built once. */
+  private reflections(): Texture {
+    if (!this.envMap) {
+      const pmrem = new PMREMGenerator(this.renderer);
+      this.envMap = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+      pmrem.dispose();
+    }
+    return this.envMap;
   }
 
   private build(): void {
@@ -388,6 +426,8 @@ export class CubeRenderer {
             m.position.copy(mesh.position);
             m.quaternion.copy(mesh.quaternion);
             g.add(m);
+            // Coloured plastic: the piece under the tile is painted like the tile (and follows it through the state).
+            if (s.pieces?.colored) this.paintTargets[fi].push(m);
           }
           this.paintTargets[fi].push(mesh);
           this.anchors[fi] = mesh;

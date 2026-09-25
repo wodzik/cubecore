@@ -19,6 +19,15 @@ more (`gan356m`: `kinds: { center: { size: 0.979, thickness: 0.04 } }`).
 Decals and features sit on their own tile's top. `tileSize(skin, kind)` /
 `tileThickness(skin, kind)` read the values.
 
+**Finish:** `stickers.finish: "matte"` (soft, diffuse) or `"uv"` (UV-coated:
+a clear glossy coat reflecting a soft room, sharp highlights) — lit plastic,
+overriding `roughness`.
+
+**Coloured plastic:** `pieces: { …, colored: true }` paints the plastic under
+each tile in the tile's colour — a corner is three coloured parts, an edge
+two, a centre one (cubes moulded in colour); the core keeps `body` (e.g.
+white stems: `body: "#e8e8e8"`). Needs `pieces` (shaped piece bodies).
+
 **Logo:** a decal on the centre sticker (`select: { stickers: [4] }` = the
 U centre), e.g. `{ image: "/assets/gan-logo.png", size: 0.75, blend: "multiply" }`.
 Brand logos are trademarks — the library ships none; bring your own file.

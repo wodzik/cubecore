@@ -48,6 +48,23 @@ describe("smart cube session", () => {
     expect(isSolved(s.state)).toBe(true);
   });
 
+  it("mark solved on a cube that can't reset and reports its state with every move (QiYi)", () => {
+    const cube = new SimulatedCube({ canReset: false, faceletsOnMove: true });
+    const s = new SmartCubeSession(cube);
+    cube.turn("R U F' D2"); // scrambled
+    s.markSolved(); // the cube itself still thinks it's scrambled
+    const reasons: string[] = [];
+    s.on("state", (e) => reasons.push(e.reason));
+    cube.turn("R");
+    expect(statesEqual(s.state, applyMoves(solvedState(), "R"))).toBe(true); // not back to the cube's own state
+    expect(reasons).not.toContain("facelets");
+    // A missed move is still caught, relative to the mark.
+    cube.setStateSilently(applyMoves(applyMoves(solvedState(), "R U F' D2"), "R L"));
+    s.requestState();
+    expect(reasons.at(-1)).toBe("facelets");
+    expect(statesEqual(s.state, applyMoves(solvedState(), "R L"))).toBe(true);
+  });
+
   it("battery, hardware and disconnect", async () => {
     const { s } = session();
     expect(s.battery).toBe(87);

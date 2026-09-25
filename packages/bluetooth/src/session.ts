@@ -14,7 +14,7 @@
  * MethodTracker or a timeline recording as needed.
  */
 
-import { type Move, type State, applyMove, parseAlg, solvedState, stateFromFacelets, statesEqual } from "@cubecore/core";
+import { type Move, type State, applyMove, parseAlg, relativeState, solvedState, stateFromFacelets, statesEqual } from "@cubecore/core";
 import type { ConnectSmartCubeOptions, SmartCubeCapabilities, SmartCubeCommand, SmartCubeEvent } from "smartcube-web-bluetooth";
 import type { Skin } from "@cubecore/skin";
 import { ClockSync } from "./clock";
@@ -127,10 +127,19 @@ export class SmartCubeSession {
     this.gyro.calibrate();
   }
 
-  /** Tell the session (and the cube, if it can) that the cube is solved now. */
+  /**
+   * Tell the session (and the cube, if it can) that the cube is solved now.
+   * Cubes that can't reset their own state (QiYi, …) keep reporting it: the
+   * next facelets report becomes the reference ("solved" as marked) and
+   * later reports are read relative to it — so they don't undo the mark.
+   */
   markSolved(): void {
     if (this.connection.capabilities.reset) this.send({ type: "REQUEST_RESET" });
     this.setState(solvedState(), "reset");
+    if (this.connection.capabilities.facelets) {
+      this.rebase = true;
+      this.send({ type: "REQUEST_FACELETS" });
+    }
   }
 
   requestState(): void {
@@ -153,6 +162,11 @@ export class SmartCubeSession {
   private emit<K extends keyof Events>(type: K, e: Events[K]): void {
     for (const l of this.listeners.get(type) ?? []) (l as (e: Events[K]) => void)(e);
   }
+
+  /** The cube's own state that counts as solved (after "mark solved" on a cube that didn't reset), or null. */
+  private base: State | null = null;
+  /** "Mark solved" was pressed: the next facelets report sets `base`. */
+  private rebase = false;
 
   private setState(state: State, reason: "move" | "facelets" | "reset"): void {
     this._state = state;
@@ -177,8 +191,16 @@ export class SmartCubeSession {
         break;
       }
       case "FACELETS": {
-        const s = stateFromFacelets(e.facelets);
-        if (s && !statesEqual(s, this._state)) this.setState(s, "facelets");
+        const reported = stateFromFacelets(e.facelets);
+        if (!reported) return;
+        if (this.rebase) {
+          // First report after "mark solved": the cube's own state then (moves since the mark taken off) is the new "solved".
+          this.base = baseOf(reported, this._state);
+          this.rebase = false;
+          return;
+        }
+        const s = this.base ? relativeState(reported, this.base) : reported;
+        if (!statesEqual(s, this._state)) this.setState(s, "facelets");
         break;
       }
       case "GYRO":
@@ -200,4 +222,14 @@ export class SmartCubeSession {
         break;
     }
   }
+}
+
+/**
+ * The cube's own state at the mark: `reported` is it with the moves since
+ * (`sinceMark`, a state from solved) done — so base[x] = reported[inverse(sinceMark)[x]].
+ */
+function baseOf(reported: State, sinceMark: State): State {
+  const inverse = new Uint8Array(sinceMark.length);
+  sinceMark.forEach((v, i) => (inverse[v] = i));
+  return Uint8Array.from(inverse, (_, x) => reported[inverse[x]]);
 }

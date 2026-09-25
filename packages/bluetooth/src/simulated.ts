@@ -13,12 +13,20 @@ export class SimulatedCube implements CubeConnection {
   readonly deviceName = "Simulated cube";
   readonly deviceMAC = "00:00:00:00:00:00";
   readonly protocol = { id: "simulated", name: "Simulated" };
-  readonly capabilities = { gyroscope: true, battery: true, facelets: true, hardware: true, reset: true };
+  readonly capabilities: { gyroscope: boolean; battery: boolean; facelets: boolean; hardware: boolean; reset: boolean };
+  /** Also report the whole state after every move (as QiYi cubes do). */
+  private readonly faceletsOnMove: boolean;
   private subscribers = new Set<(e: SmartCubeEvent) => void>();
   private state: State = solvedState();
   private cubeClock = 0;
   /** Simulated Bluetooth latency added to local arrival times (ms). */
   latency = 20;
+
+  /** `canReset: false` + `faceletsOnMove: true` behave like a QiYi cube. */
+  constructor(options: { canReset?: boolean; faceletsOnMove?: boolean } = {}) {
+    this.capabilities = { gyroscope: true, battery: true, facelets: true, hardware: true, reset: options.canReset ?? true };
+    this.faceletsOnMove = options.faceletsOnMove ?? false;
+  }
 
   readonly events$ = {
     subscribe: (next: (e: SmartCubeEvent) => void) => {
@@ -46,6 +54,7 @@ export class SimulatedCube implements CubeConnection {
           localTimestamp: options.dropLocalTime ? null : arrived,
           cubeTimestamp: this.cubeClock,
         });
+        if (this.faceletsOnMove) this.emit({ type: "FACELETS", timestamp: arrived, facelets: faceletsOf(this.state) });
       }
     }
   }
@@ -64,7 +73,7 @@ export class SimulatedCube implements CubeConnection {
     if (command.type === "REQUEST_FACELETS") this.emit({ type: "FACELETS", timestamp, facelets: faceletsOf(this.state) });
     if (command.type === "REQUEST_BATTERY") this.emit({ type: "BATTERY", timestamp, batteryLevel: 87 });
     if (command.type === "REQUEST_HARDWARE") this.emit({ type: "HARDWARE", timestamp, hardwareName: "Simulated", gyroSupported: true });
-    if (command.type === "REQUEST_RESET") this.state = solvedState();
+    if (command.type === "REQUEST_RESET" && this.capabilities.reset) this.state = solvedState();
   }
 
   async disconnect(): Promise<void> {

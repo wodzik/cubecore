@@ -14,7 +14,7 @@ headless packages also run in Node / Bun / workers.
 | package | what |
 |---|---|
 | `@cubecore/core` | state (sticker permutation + centre spins), notation (parse / format / invert / simplify / mirror, `(…)3`, `[A, B]`, `.` pauses, comments, source ranges), metrics, 24 frames and colour neutrality, check primitives, method engine (`Method`, `MethodTracker`), masks, pieces view (Kociemba), 15-char state codec, facelet strings, face turns as a smart cube reports them (`toFaceTurns`, `OrientationTracker`), live move log (`MoveCollapser`: R R → R2, R L' → M), following a scramble / algorithm (`SequenceTracker`) |
-| `@cubecore/cfop`, `roux`, `zz`, `petrus`, `lbl` | methods: stages, their checks, masks |
+| `@cubecore/cfop`, `roux`, `zz`, `petrus`, `lbl` | methods: stages, their checks, masks, trainer stages; CFOP: OLL / PLL recognition (colour neutral, speedcubedb numbering and names; which case came up after F2L / OLL in a solve) |
 | `@cubecore/methods` | all methods together, masks by name |
 | `@cubecore/solve` | two-phase solver (≤ 21 moves, ms), optimal stage solvers (cross, EOCross, xcross, xxcross, slot, Roux blocks), random-state scrambles with presets, trainer scrambles (a stage in exactly N moves), from the cube's current state, any face; Web Worker with a Promise API; tables kept in IndexedDB |
 | `@cubecore/timeline` | recordings, replay clock (moves end at their recorded time), stage timings, sections for progress bars, pause compression, recording and share codecs |

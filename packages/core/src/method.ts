@@ -17,6 +17,11 @@ export interface Stage {
   done(s: State): boolean;
   /** Canonical slot / sub-step finished at this stage, given the details already reported. */
   detail?(s: State, earlier: readonly string[]): string | undefined;
+  /**
+   * The case this stage starts from (e.g. "OLL 27", "T", "OLL skip"),
+   * recognised on the state the previous stage finished in.
+   */
+  recognize?(s: State): string | undefined;
 }
 
 export interface Method {

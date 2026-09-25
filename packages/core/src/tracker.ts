@@ -24,6 +24,8 @@ export interface StageBoundary {
   time?: number;
   /** e.g. the F2L slot as physical faces ("FR", "UB"…) or "left"/"edges". */
   detail?: string;
+  /** The case the stage started from, when the method recognises one ("OLL 27", "T", "PLL skip"…). */
+  case?: string;
 }
 
 const SLOT_NAME = /^[FB][RL]$/;
@@ -41,15 +43,19 @@ interface FrameProgress {
   stageIndex: number;
   details: string[];
   boundaries: StageBoundary[];
+  /** Case recognised for each stage when it started. */
+  cases: (string | undefined)[];
 }
 
 export class MethodTracker {
   private state: State;
   private moveCount = 0;
-  private progress: FrameProgress[] = FRAMES.map((frame) => ({ frame, stageIndex: 0, details: [], boundaries: [] }));
+  private progress: FrameProgress[] = FRAMES.map((frame) => ({ frame, stageIndex: 0, details: [], boundaries: [], cases: [] }));
 
   constructor(readonly method: Method, start: State | string = solvedState()) {
     this.state = typeof start === "string" ? applyMoves(solvedState(), start) : new Uint8Array(start);
+    const first = method.stages[0];
+    if (first?.recognize) for (const p of this.progress) p.cases[0] = first.recognize(view(this.state, p.frame));
     this.advance(undefined);
   }
 
@@ -86,11 +92,16 @@ export class MethodTracker {
     return this.best.boundaries;
   }
 
-  /** The next stage, whether the method is finished, and the leading frame (null before the first stage). */
-  get current(): { next: string | null; done: boolean; frame: Frame | null } {
+  /**
+   * The next stage, whether the method is finished, the leading frame (null
+   * before the first stage) and the case the next stage started from, if
+   * recognised (e.g. which OLL came up after F2L).
+   */
+  get current(): { next: string | null; done: boolean; frame: Frame | null; case?: string } {
     const best = this.best;
     const next = this.method.stages[best.stageIndex];
-    return { next: next?.id ?? null, done: !next, frame: best.stageIndex > 0 ? best.frame : null };
+    const kase = best.cases[best.stageIndex];
+    return { next: next?.id ?? null, done: !next, frame: best.stageIndex > 0 ? best.frame : null, ...(kase ? { case: kase } : {}) };
   }
 
   /** Physical face the method's canonical D (bottom) settled on — e.g. the cross face for CFOP. */
@@ -108,13 +119,18 @@ export class MethodTracker {
         if (!stage.done(seen)) break;
         const raw = stage.detail?.(seen, p.details);
         if (raw) p.details.push(raw);
+        const kase = p.cases[p.stageIndex];
         p.boundaries.push({
           stage: stage.id,
           moveIndex: this.moveCount,
           ...(time !== undefined ? { time } : {}),
           ...(raw ? { detail: physicalSlot(raw, p.frame) } : {}),
+          ...(kase ? { case: kase } : {}),
         });
         p.stageIndex++;
+        // The next stage starts here: recognise its case now (e.g. the OLL that came up after F2L).
+        const following = this.method.stages[p.stageIndex];
+        if (following?.recognize) p.cases[p.stageIndex] = following.recognize(seen);
       }
     }
   }

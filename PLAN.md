@@ -482,3 +482,9 @@ Still open:
   table from act's 16 EOLR goals, reads smart-cube face turns). Rare deep
   levels: step outwards from one level shallower. Replaces act's GPL or18
   WASM and roux-trainers code.
+- 2026-09-25 — **OLL / PLL recognition** (`@cubecore/cfop`): speedcubedb
+  numbering / names / groups, one standard alg per case; colour-relative
+  patterns (any orientation, any scheme), pre-AUF; all 216 / 288 last-layer
+  states map to exactly one case. `Stage.recognize` → `StageBoundary.case`
+  and `MethodTracker.current.case` ("which OLL came up after F2L").
+  Guide `docs/cases.md`; case shown in the /bluetooth stages table.

@@ -43,7 +43,9 @@ function renderStages() {
   $("stages").innerHTML = CFOP.stages
     .map((s) => {
       const b = got.get(s.id);
-      return `<tr><td>${b ? "✓" : "·"} ${s.label}${b?.detail ? ` <span class="kv">${b.detail}</span>` : ""}</td><td>${b?.time !== undefined ? formatTime(b.time - t0) : ""}</td></tr>`;
+      // Which case came up (OLL / PLL): known once the previous stage is done.
+      const kase = b?.case ?? (tracker?.current.next === s.id ? tracker.current.case : undefined);
+      return `<tr><td>${b ? "✓" : "·"} ${s.label}${b?.detail ? ` <span class="kv">${b.detail}</span>` : ""}${kase ? ` <span class="kv">${kase}</span>` : ""}</td><td>${b?.time !== undefined ? formatTime(b.time - t0) : ""}</td></tr>`;
     })
     .join("");
 }

@@ -6,7 +6,8 @@
  * Later here: OLL / PLL / COLL case recognition and alg sets as data.
  */
 
-import { type Frame, IDENTITY_FRAME, LAST_LAYER_STAGES, type Mask, type MaskRule, type Method, PIECE, type Piece, type StageDef, buildMask, checks as C, countedStages } from "@cubecore/core";
+import { type Frame, IDENTITY_FRAME, LAST_LAYER_STAGES, type Mask, type MaskRule, type Method, PIECE, type Piece, type Stage, type StageDef, type State, buildMask, checks as C, checks, countedStages } from "@cubecore/core";
+import { recognizeOll, recognizePll } from "./cases";
 
 export const CFOP: Method = {
   id: "cfop",
@@ -14,7 +15,7 @@ export const CFOP: Method = {
   stages: [
     { id: "cross", label: "Cross", done: C.crossSolved },
     ...countedStages("f2l", "F2L", C.solvedPairs, C.crossSolved),
-    ...LAST_LAYER_STAGES,
+    ...withLastLayerCases(LAST_LAYER_STAGES),
   ],
 };
 
@@ -109,3 +110,21 @@ export const CFOP_TRAINERS = {
     goals: ["", ...EXTRACTIONS[slot].flatMap((x) => ["", " U", " U2", " U'"].map((auf) => x + auf))],
   }),
 } as const;
+
+export * from "./cases";
+
+/**
+ * Last-layer stages that also say which case came up: OLL gets the OLL case
+ * after F2L ("OLL 27", "OLL skip"), PLL the PLL case after OLL ("T", "PLL
+ * skip") — StageBoundary.case, MethodTracker.current.case. ZZ / Petrus can
+ * use the same.
+ */
+export function withLastLayerCases(stages: readonly Stage[]): Stage[] {
+  return stages.map((st) =>
+    st.id === "oll"
+      ? { ...st, recognize: (s: State) => (checks.f2lSolved(s) ? (recognizeOll(s)?.id ?? "OLL skip") : undefined) }
+      : st.id === "pll"
+        ? { ...st, recognize: (s: State) => (checks.f2lSolved(s) && checks.topOriented(s) ? (recognizePll(s)?.id ?? "PLL skip") : undefined) }
+        : st,
+  );
+}

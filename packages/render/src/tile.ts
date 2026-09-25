@@ -304,7 +304,15 @@ export function tileSolid(outline: readonly Pt[], profile: TileProfile, mitre: M
  */
 export function skirtSolid(
   outline: readonly Pt[],
-  shape: { top: number; depth: number; taper: number; wall?: number; relief?: { at: readonly Pt[]; radius: number; depth: number; start?: number } },
+  shape: {
+    top: number;
+    depth: number;
+    taper: number;
+    wall?: number;
+    relief?: { at: readonly Pt[]; radius: number; depth: number; start?: number };
+    /** Extra evenly spaced rings from the wall down (for cutting the solid afterwards, e.g. a chamfer). */
+    steps?: number;
+  },
   mitre: Mitre | null,
 ): TileSolid {
   // Straight walls along the tile outline down to `wall`, then leaning in by `taper` at `depth` (a crisp crease between).
@@ -322,6 +330,7 @@ export function skirtSolid(
   const ring = (z: number, tilt: number): Ring => ({ z: -z, d: inset(z), phi: tilt, oz: -z, off: -z, ophi: 0, clamp: true, cut: cutAt(z) });
   const levels = new Set([shape.top, wall, shape.depth]);
   if (relief) for (let k = 1; k <= 16; k++) levels.add(Math.min(shape.depth, shape.top + (relief.depth * k) / 16));
+  for (let k = 1; k < (shape.steps ?? 0); k++) levels.add(wall + ((shape.depth - wall) * k) / (shape.steps ?? 1));
   const zs = [...levels].sort((a, b) => b - a); // bottom up
   const rings: Ring[] = [];
   for (const z of zs) {
@@ -401,4 +410,23 @@ export function densify(outlineIn: readonly Pt[], count = 128): Pt[] {
   return out;
 }
 
-
+/**
+ * Cut a solid by a ball (centre `c`, radius `r`, in the solid's frame): points
+ * inside it are moved out onto its surface and face its centre — the pieces
+ * wrapped round the cube's mechanism. Needs rings dense enough where the ball
+ * crosses them.
+ */
+export function ballCut(solid: TileSolid, c: readonly [number, number, number], r: number): TileSolid {
+  const positions = solid.positions.slice();
+  const normals = solid.normals.slice();
+  for (let i = 0; i < positions.length; i += 3) {
+    const d = [positions[i] - c[0], positions[i + 1] - c[1], positions[i + 2] - c[2]];
+    const l = Math.hypot(d[0], d[1], d[2]);
+    if (l >= r || l < 1e-9) continue;
+    for (let k = 0; k < 3; k++) {
+      positions[i + k] = c[k] + (d[k] / l) * r;
+      normals[i + k] = -d[k] / l;
+    }
+  }
+  return { ...solid, positions, normals };
+}

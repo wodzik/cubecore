@@ -14,7 +14,7 @@ import { BufferGeometry, Float32BufferAttribute, Shape, ShapeGeometry, ShapeUtil
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
 import { type PieceKind, type Skin, type StickerShape, reachEdge, roundedOutline, stickerLayout, stickerlessOutline, tileSize, tileThickness } from "@cubecore/skin";
-import { type Mitre, type TileSolid, applyDome, densify, skirtSolid, tileSolid } from "../tile";
+import { type Mitre, type TileSolid, applyDome, ballCut, densify, skirtSolid, tileSolid } from "../tile";
 
 export interface TileKit {
   /** Tile side (cubie units) — the usual one; `sideOf` per piece kind. */
@@ -44,6 +44,9 @@ export interface TileKit {
   dispose(): void;
 }
 
+/** Default radius of the mechanism ball (cubie units). */
+const MECHANISM = 1.15;
+
 export function tileKit(skin: Skin): TileKit {
   const size = skin.cubieSize;
   const inset = skin.bodyInset ?? 0;
@@ -67,7 +70,7 @@ export function tileKit(skin: Skin): TileKit {
   // The core's top must stay under the dome's lowest point (its corners, `drop` below the face).
   const centerBody = skin.pieces && dome ? box(Math.min(bodySize, size - 2 * (dome.drop + inset + 0.01))) : body;
   // A ball: the same from every side, so layers turn round it; only its dark surface shows deep in the gaps.
-  const mechanism = skin.pieces ? new SphereGeometry(skin.pieces.mechanism ?? 1.15, 32, 24) : null;
+  const mechanism = skin.pieces ? new SphereGeometry(skin.pieces.mechanism ?? MECHANISM, 48, 32) : null;
 
   // Corner-cutting relief: the tile corner(s) next to the face centre (corner pieces; edges if asked).
   const reliefAt = (layout: ReturnType<typeof stickerLayout>, s: number): [number, number][] => {
@@ -145,8 +148,18 @@ export function tileKit(skin: Skin): TileKit {
       const depth = pieces.fill === "solid" ? size : pieces.depth;
       const at = reliefAt(layout, s);
       const relief = pieces.relief && at.length ? { at, ...pieces.relief } : undefined;
+      // Wrapped round the mechanism: whatever reaches into its ball is cut away along its surface.
+      // (The cube's centre, in this tile's frame: its cubie is one step out along the face normal, u / v along it.)
+      const ball = pieces.mechanism ?? MECHANISM;
+      const centre: [number, number, number] = [-layout.u, -layout.v, -1 - faceOffset];
       return cached(`skirt|${key}|${depth}`, () =>
-        solidToGeometry(skirtSolid(relief ? densify(outline, 192) : outline, { top: inset + 0.002, depth, taper: pieces.taper, wall: pieces.wall, relief }, mitre)),
+        solidToGeometry(
+          ballCut(
+            skirtSolid(densify(outline, 192), { top: inset + 0.002, depth, taper: pieces.taper, wall: pieces.wall, relief, steps: 32 }, mitre),
+            centre,
+            ball,
+          ),
+        ),
       );
     },
     hint(fi) {

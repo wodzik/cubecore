@@ -67,7 +67,11 @@ export interface Skin {
      * Corner pieces only, unless `edges`.
      */
     relief?: { radius: number; depth: number; start?: number; tile?: number; edges?: boolean };
-    /** Radius of the dark mechanism ball in the middle (cubie units). Default 1.15. */
+    /**
+     * Radius of the dark mechanism ball in the middle (cubie units, default
+     * 1.15). The pieces are cut along its surface, so their insides — a
+     * corner's inner point, an edge's inner edge, a centre's back — wrap round it.
+     */
     mechanism?: number;
   };
   stickers: {

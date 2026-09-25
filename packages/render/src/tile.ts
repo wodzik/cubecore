@@ -238,71 +238,134 @@ export function skirtSolid(outline: readonly Pt[], shape: { top: number; depth: 
 /**
  * A domed top (e.g. QiYi's centre caps): flat inside a circle of `flat` ×
  * the tile's reach, then falling straight to `drop` lower at the outline's
- * farthest points — a visible round plateau with the corners lower. The
- * tile's upper rings are lowered to match and the flat cap is replaced by
- * concentric rings following the surface.
+ * farthest points — a round plateau at the tile's height, the corners
+ * lower. The tile's rings are lowered in proportion to their height above
+ * its bottom (`sink` below the face, which must be deeper than `drop`), and
+ * the flat cap is replaced by a polar mesh with a ring exactly on the
+ * circle, so the plateau's edge is round.
  */
-export function applyDome(solid: TileSolid, dome: { flat: number; drop: number }, rings = 24): TileSolid {
+export function applyDome(solid: TileSolid, dome: { flat: number; drop: number }, sink: number, spokes = 10): TileSolid {
   const ring = solid.topRing;
   if (!ring.length) return solid;
   const reach = Math.max(...ring.map(([x, y]) => Math.hypot(x, y)));
   const r0 = dome.flat * reach;
   const slope = dome.drop / Math.max(1e-6, reach - r0);
-  const lowerBy = (x: number, y: number) => Math.max(0, Math.hypot(x, y) - r0) * slope;
-  // Sides: everything above the cubie face follows the dome.
+  const lowerBy = (r: number) => Math.max(0, r - r0) * slope;
+  const zTop = solid.positions[solid.topStart * 3 + 2];
+  // Sides: lowered in proportion to height, so their bottom stays put.
   const positions = Array.from(solid.positions.subarray(0, solid.topStart * 3));
   const normals = Array.from(solid.normals.subarray(0, solid.topStart * 3));
-  for (let i = 0; i < positions.length; i += 3) if (positions[i + 2] > 0) positions[i + 2] -= lowerBy(positions[i], positions[i + 1]);
-  const zTop = solid.positions[solid.topStart * 3 + 2];
-  // Cap: rings from the outline in to the middle, each point at the dome's height, normals from its slope.
+  for (let i = 0; i < positions.length; i += 3) {
+    const k = (positions[i + 2] + sink) / (zTop + sink);
+    positions[i + 2] -= lowerBy(Math.hypot(positions[i], positions[i + 1])) * Math.max(0, Math.min(1, k));
+  }
+  // Cap: a ray from the middle to each outline point — flat out to the circle, then down the slope.
   const sides = Array.from(solid.sides);
   const start = positions.length / 3;
   const n = ring.length;
-  for (let k = 0; k <= rings; k++) {
-    const s = 1 - k / rings;
-    for (const [x0, y0] of ring) {
-      const x = x0 * s, y = y0 * s, r = Math.hypot(x, y);
-      positions.push(x, y, zTop - lowerBy(x, y));
-      if (r > r0 && r > 1e-9) {
-        const g = slope; // |dz/dr|
-        const nx = (x / r) * g, ny = (y / r) * g, l = Math.hypot(nx, ny, 1);
-        normals.push(nx / l, ny / l, 1 / l);
+  const samples = spokes * 2 + 1;
+  for (const [px, py] of ring) {
+    const R = Math.hypot(px, py) || 1e-9;
+    const ux = px / R, uy = py / R;
+    const rc = Math.min(r0, R);
+    for (let k = 0; k < samples; k++) {
+      const r = k <= spokes ? (rc * k) / spokes : rc + ((R - rc) * (k - spokes)) / spokes;
+      positions.push(ux * r, uy * r, zTop - lowerBy(r));
+      if (r > r0 + 1e-9) {
+        const l = Math.hypot(slope, 1);
+        normals.push((ux * slope) / l, (uy * slope) / l, 1 / l);
       } else normals.push(0, 0, 1);
     }
   }
-  for (let k = 0; k < rings; k++) {
-    for (let i = 0; i < n; i++) {
-      const a = start + k * n + i, b = start + k * n + ((i + 1) % n), c = start + (k + 1) * n + ((i + 1) % n), d = start + (k + 1) * n + i;
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    for (let k = 0; k + 1 < samples; k++) {
+      const a = start + i * samples + k, b = start + i * samples + k + 1, c = start + j * samples + k + 1, d = start + j * samples + k;
       sides.push(a, b, c, a, c, d);
     }
   }
   return { positions: new Float32Array(positions), normals: new Float32Array(normals), sides: new Uint32Array(sides), topStart: positions.length / 3, topRing: [] };
 }
 
-/**
- * Solid coloured plastic under a tile: a pyramid from the tile outline (just
- * below the face, `top`) to the cubie's centre (`apex` below the face). A
- * piece's pyramids split it along its diagonals — a corner into three
- * coloured parts, an edge into two — like cubes moulded in colour.
- */
-export function pyramidSolid(outlineIn: readonly Pt[], top: number, apex: number): TileSolid {
-  const outline = dedupe(outlineIn);
-  const positions: number[] = [];
-  const normals: number[] = [];
-  const sides: number[] = [];
-  const n = outline.length;
-  for (let i = 0; i < n; i++) {
-    const [ax, ay] = outline[i], [bx, by] = outline[(i + 1) % n];
-    const A = [ax, ay, -top], B = [bx, by, -top], C = [0, 0, -apex];
-    // Flat face normal (outward: the outline is counter-clockwise seen from above).
-    const u = [B[0] - A[0], B[1] - A[1], B[2] - A[2]], v = [C[0] - A[0], C[1] - A[1], C[2] - A[2]];
-    let nx = u[1] * v[2] - u[2] * v[1], ny = u[2] * v[0] - u[0] * v[2], nz = u[0] * v[1] - u[1] * v[0];
-    const l = Math.hypot(nx, ny, nz) || 1;
-    nx /= l; ny /= l; nz /= l;
-    const k = positions.length / 3;
-    positions.push(...A, ...B, ...C);
-    for (let j = 0; j < 3; j++) normals.push(nx, ny, nz);
-    sides.push(k, k + 1, k + 2);
+/** The outline resampled to `count` points evenly along its length (dense enough for a domed top to be round). */
+export function densify(outlineIn: readonly Pt[], count = 128): Pt[] {
+  const pts = dedupe(outlineIn);
+  const n = pts.length;
+  const seg = pts.map((p, i) => Math.hypot(pts[(i + 1) % n][0] - p[0], pts[(i + 1) % n][1] - p[1]));
+  const total = seg.reduce((a, b) => a + b, 0);
+  const out: Pt[] = [];
+  let i = 0, acc = 0;
+  for (let k = 0; k < count; k++) {
+    const target = (k / count) * total;
+    while (acc + seg[i] < target && i < n - 1) acc += seg[i++];
+    const t = seg[i] > 0 ? (target - acc) / seg[i] : 0;
+    const a = pts[i], b = pts[(i + 1) % n];
+    out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
   }
-  return { positions: new Float32Array(positions), normals: new Float32Array(normals), sides: new Uint32Array(sides), topStart: positions.length / 3, topRing: [] };
+  return out;
+}
+
+type V3 = [number, number, number];
+
+/**
+ * A piece as a solid coloured block: its cube (half size `half`, local to
+ * its centre) with every face coloured by the sticker whose outer face is
+ * nearest — outer faces by their own sticker (under the tile), inner faces
+ * split along the piece's diagonals (a corner's inner face in two colours,
+ * as on cubes moulded in colour). Returns one convex polygon per face part,
+ * with the facelet it takes its colour from.
+ */
+export function pieceShell(stickers: readonly { facelet: number; normal: V3 }[], half: number): { facelet: number; points: V3[]; normal: V3 }[] {
+  const dot = (a: V3, b: V3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const out: { facelet: number; points: V3[]; normal: V3 }[] = [];
+  const dirs: V3[] = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+  for (const d of dirs) {
+    // The face square, counter-clockwise seen from outside.
+    const axis = d.findIndex((v) => v !== 0);
+    const [u, w] = [0, 1, 2].filter((k) => k !== axis);
+    const corner = (a: number, b: number): V3 => {
+      const p: V3 = [0, 0, 0];
+      p[axis] = d[axis] * half;
+      p[u] = a * half;
+      p[w] = b * half;
+      return p;
+    };
+    let face: V3[] = [corner(-1, -1), corner(1, -1), corner(1, 1), corner(-1, 1)];
+    // Keep the winding outward.
+    const e1 = face[1].map((v, i) => v - face[0][i]), e2 = face[2].map((v, i) => v - face[0][i]);
+    const cr: V3 = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
+    if (dot(cr, d) < 0) face = face.reverse();
+    const own = stickers.find((st) => dot(st.normal, d) > 0.5);
+    if (own) {
+      out.push({ facelet: own.facelet, points: face, normal: d });
+      continue;
+    }
+    // Inner face: split among the stickers, each taking the part nearest its outer face.
+    for (const st of stickers) {
+      let poly = face;
+      for (const other of stickers) {
+        if (other === st) continue;
+        const n: V3 = [st.normal[0] - other.normal[0], st.normal[1] - other.normal[1], st.normal[2] - other.normal[2]];
+        poly = clipPolygon(poly, (p) => dot(n, p));
+        if (poly.length < 3) break;
+      }
+      if (poly.length >= 3) out.push({ facelet: st.facelet, points: poly, normal: d });
+    }
+  }
+  return out;
+}
+
+/** Keep the part of a convex polygon where `f` ≥ 0. */
+function clipPolygon(poly: V3[], f: (p: V3) => number): V3[] {
+  const out: V3[] = [];
+  for (let i = 0; i < poly.length; i++) {
+    const a = poly[i], b = poly[(i + 1) % poly.length];
+    const fa = f(a), fb = f(b);
+    if (fa >= -1e-9) out.push(a);
+    if ((fa >= -1e-9) !== (fb >= -1e-9)) {
+      const t = fa / (fa - fb);
+      out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]);
+    }
+  }
+  return out;
 }

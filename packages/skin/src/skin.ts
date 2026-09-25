@@ -44,9 +44,10 @@ export interface Skin {
      */
     colored?: boolean;
     /**
-     * "skirt" (default): plastic `depth` deep under each tile; "solid": a
-     * pyramid from the tile to the cubie's centre — whole coloured blocks,
-     * split along the piece's diagonals.
+     * "skirt" (default): plastic `depth` deep under each tile; "solid": the
+     * whole piece a coloured block — every face of it in the colour of the
+     * nearest sticker, so inner faces split along the piece's diagonals (a
+     * corner in three colours, an edge in two). Needs `colored`.
      */
     fill?: "skirt" | "solid";
   };
@@ -316,8 +317,8 @@ export const SKINS = {
       shape: { corner: { inner: 0.06, outer: 0.03 }, edge: { inner: 0.25, outer: 0.03 }, center: 0.2 },
       thickness: 0.035,
       bevel: 0.022,
-      // The centre cap: a little smaller, standing out, a round plateau with its corners ~1.5 mm lower.
-      kinds: { center: { size: 0.965, thickness: 0.1, dome: { flat: 0.68, drop: 0.06 } } },
+      // The centre cap: a little smaller, a round plateau level with the other tiles, its corners ~1.5 mm lower.
+      kinds: { center: { size: 0.965, dome: { flat: 0.68, drop: 0.06 } } }, // plateau level with the other tiles
       edgeRadius: 0.05,
       material: "plastic",
       roughness: 0.35,

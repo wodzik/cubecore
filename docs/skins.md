@@ -30,13 +30,13 @@ two, a centre one (cubes moulded in colour); the core keeps `body` (e.g.
 white stems: `body: "#e8e8e8"`). Needs `pieces` (shaped piece bodies).
 
 **Domed tiles:** `kinds: { center: { dome: { flat: 0.68, drop: 0.06 } } }` —
-the top is flat inside a circle (0.68 × the tile's reach) and falls 0.06
-lower at the corners (QiYi's centre caps).
+the top is flat inside a circle (0.68 × the tile's reach), level with the
+other tiles, and slopes 0.06 lower towards the corners (QiYi's centre caps).
 
 **Solid coloured pieces:** `pieces: { …, colored: true, fill: "solid" }` —
-under each tile a pyramid down to the cubie's centre, so the pieces are
-whole coloured blocks split along their diagonals (a corner in three, an
-edge in two), not tiles on a light core.
+each cubie is a whole block coloured by its nearest sticker (the inner faces
+split along the diagonals: a corner in three, an edge in two), so a turned
+layer shows colour inside, not tiles on a light core.
 
 **2D pictures:** `pictureBody` — the plastic between tiles in
 `@cubecore/image` pictures; `null` makes the gaps see-through (light plastic

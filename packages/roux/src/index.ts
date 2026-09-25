@@ -197,6 +197,8 @@ export const ROUX_TRAINERS = {
     features: "eolr",
     goals: ["U' M2", "U M2", "M' U M2", "M' U' M2"].flatMap((head) => ["", " U", " U'", " U2"].map((auf) => head + auf)),
   }),
+  /** The whole of LSE (M / U), from CMLL solved to a solved cube. */
+  lse: (): LseStageDef => ({ name: "roux-lse", kind: "lse", features: "lse", goals: [""] }),
   ss: (side: RouxSide = "front"): StageDef => ({
     name: `roux-ss-${side}`,
     pieces: [...FB_PIECES, PIECE.DR, ...SECOND_SQUARE[side]],

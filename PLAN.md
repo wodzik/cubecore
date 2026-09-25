@@ -499,3 +499,8 @@ Still open:
   by fewest moves or by F2L algorithms, OLL / PLL cases, coverage; worker
   with IndexedDB tables). Demo `/analyze`. Measured: pair-by-pair optimal
   steps ms, XXXCross 0.3–1.5 s, a full analysis ~0.5 s / ~50 ms warm.
+- 2026-09-25 — **Roux analysis** (`analyzeRoux`): per first-block side (best
+  bottom) FB, second square, second block, CMLL (named), LSE optimal in M / U
+  with EO / UL-UR / L4E counts; full LSE table (`features: "lse"`, 184 320
+  states, ~1 s; `ROUX_TRAINERS.lse()`). Worker `analyzeRoux`, /analyze
+  method switch.

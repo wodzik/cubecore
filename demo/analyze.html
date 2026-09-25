@@ -31,6 +31,7 @@
       .known { color: var(--known); }
       td.num { text-align: right; font-variant-numeric: tabular-nums; }
       cube-player { height: 380px; }
+      body.roux .cfop-only { display: none; }
     </style>
   </head>
   <body>
@@ -43,7 +44,13 @@
             <button id="random">Random</button>
           </div>
           <div class="row" style="margin-top: 8px">
-            <label class="muted">Start
+            <label class="muted">Method
+              <select id="method">
+                <option value="cfop">CFOP</option>
+                <option value="roux">Roux</option>
+              </select>
+            </label>
+            <label class="muted cfop-only">Start
               <select id="start">
                 <option value="cross">Full solve (cross)</option>
                 <option value="xcross">Cross+1 (XCross)</option>
@@ -51,7 +58,7 @@
                 <option value="xxxcross">Cross+3 (XXXCross)</option>
               </select>
             </label>
-            <label class="muted">Pairs
+            <label class="muted cfop-only">Pairs
               <select id="f2l">
                 <option value="optimal">fewest moves</option>
                 <option value="algorithms">F2L algorithms</option>
@@ -62,9 +69,9 @@
           </div>
         </section>
         <section class="panel">
-          <h2>By cross colour</h2>
+          <h2 id="byTitle">By cross colour</h2>
           <table>
-            <thead><tr><th>Cross</th><th class="num">Cross</th><th>Pair order</th><th>OLL</th><th>PLL</th><th class="num">Total</th></tr></thead>
+            <thead id="byHead"></thead>
             <tbody id="colours"><tr><td colspan="6" class="muted">Analyze a scramble.</td></tr></tbody>
           </table>
         </section>

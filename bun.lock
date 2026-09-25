@@ -24,6 +24,7 @@
       "dependencies": {
         "@cubecore/cfop": "workspace:*",
         "@cubecore/core": "workspace:*",
+        "@cubecore/roux": "workspace:*",
         "@cubecore/solve": "workspace:*",
       },
     },

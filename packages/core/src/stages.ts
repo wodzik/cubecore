@@ -60,14 +60,15 @@ export const PIECE = {
 /**
  * A last-six-edges stage (Roux): moves are M and U only, the blocks and
  * CMLL stay solved; done in any of `goals` (algorithms from a solved cube),
- * compared on what the stage is about. `features: "eolr"` — edge
- * orientation of the six edges, where UL and UR are, centres and corner
- * AUF (the other four edges' order is the next step's business).
+ * compared on what the stage is about:
+ * `features: "eolr"` — edge orientation of the six edges, where UL and UR
+ * are, centres and corner AUF (the other four edges' order is the next
+ * step's business); `"lse"` — everything (the whole of LSE).
  */
 export interface LseStageDef {
   name: string;
   kind: "lse";
-  features: "eolr";
+  features: "eolr" | "lse";
   goals: readonly string[];
 }
 

@@ -47,6 +47,12 @@ function blocksHome(state: State): State | null {
   return null;
 }
 
+/** Every LSE detail of a blocks-home state: each of the six edges' place and flip, centres, corner AUF. */
+function lseKey(s: State): string {
+  const edges = LSE_SLOTS.map((j) => `${s[EDGE_FACELETS[j][0]]}`).join(".");
+  return `${edges}|${CENTRES.map((c) => s[c]).join(".")}|${U_CORNERS.map((f) => s[f]).join(".")}`;
+}
+
 /** EOLR features of a blocks-home state. */
 function eolrKey(s: State): string {
   const eo = LSE_SLOTS.map((j) => (REFERENCE.has(s[EDGE_FACELETS[j][0]]) ? 0 : 1)).join("");
@@ -62,15 +68,18 @@ export interface LseSolveOptions {
 }
 
 export class LseSolver {
+  private readonly key: (s: State) => string;
   /** feature → distance and one state with those features */
   private readonly table = new Map<string, { d: number; state: State }>();
   private readonly byDepth: State[][] = [];
 
   constructor(readonly def: LseStageDef) {
+    this.key = def.features === "lse" ? lseKey : eolrKey;
+    const keyFn = this.key;
     let frontier: State[] = [];
     for (const g of def.goals) {
       const s = applyMoves(solvedState(), g);
-      const k = eolrKey(s);
+      const k = keyFn(s);
       if (!this.table.has(k)) {
         this.table.set(k, { d: 0, state: s });
         frontier.push(s);
@@ -82,7 +91,7 @@ export class LseSolver {
       for (const s of frontier) {
         for (const m of LSE_MOVES) {
           const t = applyMove(s, m);
-          const k = eolrKey(t);
+          const k = keyFn(t);
           if (!this.table.has(k)) {
             this.table.set(k, { d: d + 1, state: t });
             next.push(t);
@@ -105,14 +114,14 @@ export class LseSolver {
   /** Fewest M / U moves to the stage (−1 if the blocks and CMLL aren't solved). */
   distance(state: State, options: LseSolveOptions = {}): number {
     const s = this.canonical(state, options.frame ?? IDENTITY_FRAME);
-    return s ? (this.table.get(eolrKey(s))?.d ?? -1) : -1;
+    return s ? (this.table.get(this.key(s))?.d ?? -1) : -1;
   }
 
   /** Optimal solutions in M and U moves (every one with `all`). */
   solve(state: State, options: LseSolveOptions = {}): Move[][] {
     const start = this.canonical(state, options.frame ?? IDENTITY_FRAME);
     if (!start) return [];
-    const d0 = this.table.get(eolrKey(start))?.d;
+    const d0 = this.table.get(this.key(start))?.d;
     if (d0 === undefined) return [];
     const limit = options.all ? (options.limit ?? 256) : 1;
     const out: Move[][] = [];
@@ -122,7 +131,7 @@ export class LseSolver {
       for (const m of LSE_MOVES) {
         if (path.length && path[path.length - 1].family === m.family) continue;
         const t = applyMove(s, m);
-        if (this.table.get(eolrKey(t))?.d === d - 1) walk(t, d - 1, [...path, m]);
+        if (this.table.get(this.key(t))?.d === d - 1) walk(t, d - 1, [...path, m]);
       }
     };
     walk(start, d0, []);

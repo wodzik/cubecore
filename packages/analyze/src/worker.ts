@@ -4,22 +4,28 @@
  * by algorithms). Use it through `createAnalyzerWorker()`.
  */
 
-import { indexedDbTableStore, preloadStageTables } from "@cubecore/solve";
-import { type AnalyzeOptions, analyzeScramble, f2lStage } from "./index";
+import { ROUX_TRAINERS } from "@cubecore/roux";
+import { STAGES, indexedDbTableStore, preloadStageTables } from "@cubecore/solve";
+import { type AnalyzeOptions, type RouxAnalyzeOptions, analyzeRoux, analyzeScramble, f2lStage } from "./index";
 
-// The F2L tables (cross + each pair piece) survive reloads in IndexedDB: built once per device.
-const ready =
-  typeof indexedDB !== "undefined" ? preloadStageTables([f2lStage(["FR", "FL", "BL", "BR"])], indexedDbTableStore()).catch(() => undefined) : Promise.resolve();
+// The tables (CFOP: cross + each pair piece; Roux: blocks, squares) survive reloads in IndexedDB: built once per device.
+const STAGE_TABLES = [f2lStage(["FR", "FL", "BL", "BR"]), ROUX_TRAINERS.fb(), ROUX_TRAINERS.ss("front"), ROUX_TRAINERS.ss("back"), STAGES["roux-blocks"]()];
+const ready = typeof indexedDB !== "undefined" ? preloadStageTables(STAGE_TABLES, indexedDbTableStore()).catch(() => undefined) : Promise.resolve();
 
-type Request = { id: number; scramble: string | number[]; options: Omit<AnalyzeOptions, "known"> & { known?: string[] } };
+type Request = {
+  id: number;
+  method?: "cfop" | "roux";
+  scramble: string | number[];
+  options: Omit<AnalyzeOptions & RouxAnalyzeOptions, "known"> & { known?: string[] };
+};
 declare const self: { onmessage: ((e: MessageEvent<Request>) => void) | null; postMessage(r: unknown): void };
 
 self.onmessage = async (e) => {
-  const { id, scramble, options } = e.data;
+  const { id, scramble, options, method } = e.data;
   await ready;
   try {
     const input = typeof scramble === "string" ? scramble : Uint8Array.from(scramble);
-    self.postMessage({ id, ok: true, value: analyzeScramble(input, options) });
+    self.postMessage({ id, ok: true, value: method === "roux" ? analyzeRoux(input, options) : analyzeScramble(input, options) });
   } catch (err) {
     self.postMessage({ id, ok: false, error: err instanceof Error ? err.message : String(err) });
   }

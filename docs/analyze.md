@@ -38,4 +38,21 @@ const analyzer = createAnalyzerWorker();          // or createAnalyzerWorker("/a
 const a = await analyzer.analyze(scramble, { f2l: "algorithms", known: myCases });
 ```
 
-Demo: `/analyze`.
+## Roux
+
+```ts
+const r = analyzeRoux(scramble, { known: myCmllCases });     // or analyzer.analyzeRoux(…) in the worker
+r.best.side / r.best.bottom   // the first block against this face, bottom on that one (best of four bottoms per side)
+r.best.rotation               // hold like this: block on the left, its bottom down
+r.best.steps                  // fb, ss ("front" / "back"), sb, cmll (case named), lse (M / U; eo / ulur / l4e move counts)
+r.bySide                      // all six sides, shortest first (STM: a slice counts one)
+```
+
+Blocks are the fewest face turns (first block optimal; then the better
+second square and the rest of the second block, each optimal keeping what's
+built) — any face turns, so shorter than the usual ⟨R, r, U, M⟩ style; CMLL
+by its algorithm (named, speedcubedb); LSE optimal in M and U from an exact
+table (184 320 states, ~1 s to build). Warm: a whole analysis in ~10 ms;
+the first builds the block tables (~12 s, kept in IndexedDB by the worker).
+
+Demo: `/analyze` (CFOP / Roux).

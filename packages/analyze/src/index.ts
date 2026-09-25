@@ -41,6 +41,10 @@ import {
 } from "@cubecore/core";
 import { type F2LSlot, recognizeF2L, recognizeOll, recognizePll } from "@cubecore/cfop";
 import { stageSolver } from "@cubecore/solve";
+import { rotationFor } from "./rotations";
+
+export * from "./roux";
+export { rotationFor } from "./rotations";
 
 export type AnalysisStart = "cross" | "xcross" | "xxcross" | "xxxcross";
 
@@ -101,20 +105,6 @@ export function f2lStage(slots: readonly F2LSlot[]): StageDef {
   const groups = slots.flatMap((_, i) => [[0, 1, 2, 3, 4 + 2 * i], [0, 1, 2, 3, 5 + 2 * i]]);
   return { name: `cross+${[...slots].sort().join("+")}`, pieces, groups: groups.length ? groups : [[0, 1, 2, 3]] };
 }
-
-/** A rotation for each frame ("x2", "z y'"…): hold the cube like this to have the frame's D at the bottom. */
-const ROTATIONS: Map<number, string> = (() => {
-  const out = new Map<number, string>();
-  const base = ["", "y", "y2", "y'"];
-  for (const tilt of ["", "x", "x2", "x'", "z", "z'"]) {
-    for (const turn of base) {
-      const alg = `${tilt} ${turn}`.trim();
-      const frame = toFaceTurns(alg).frame;
-      if (!out.has(frame.id)) out.set(frame.id, alg);
-    }
-  }
-  return out;
-})();
 
 const combos = <T>(items: readonly T[], k: number): T[][] =>
   k === 0 ? [[]] : items.flatMap((x, i) => combos(items.slice(i + 1), k - 1).map((c) => [x, ...c]));
@@ -186,7 +176,7 @@ function lastLayer(state: State, known: Set<string> | null): { steps: AnalysisSt
 
 /** One cross colour: the whole way through, as held with the cross on the bottom. */
 export function analyzeCross(scrambled: State, face: Face, options: AnalyzeOptions = {}): CrossAnalysis {
-  const frame = FRAMES.find((f) => f.face.D === face && ROTATIONS.has(f.id))!;
+  const frame = FRAMES.find((f) => f.face.D === face)!;
   const known = options.known ? new Set(options.known) : null;
   const mode = options.f2l ?? "optimal";
   // As held: sticker names renamed so the cross face is D (colour logic is unaffected).
@@ -210,7 +200,7 @@ export function analyzeCross(scrambled: State, face: Face, options: AnalyzeOptio
   steps.push(...ll.steps);
   return {
     face,
-    rotation: ROTATIONS.get(frame.id)!,
+    rotation: rotationFor(frame),
     frame,
     steps,
     length: steps.reduce((n, st) => n + moveCount(st.moves), 0),

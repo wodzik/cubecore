@@ -118,6 +118,19 @@ export function outerSides(layout: StickerLayout): { xMin: boolean; xMax: boolea
 }
 
 /**
+ * A custom (path) outline made stickerless: the half of the tile towards
+ * each outer side is stretched so that side reaches `edge` (from `half`), the
+ * inner sides stay put. The path should run straight along its outer sides
+ * and be square where two of them meet (the cube corner — the edge round
+ * shapes it there).
+ */
+export function reachEdge(outline: readonly [number, number][], layout: StickerLayout, half: number, edge: number): [number, number][] {
+  const o = outerSides(layout);
+  const k = edge / half;
+  return outline.map(([x, y]) => [(x < 0 && o.xMin) || (x > 0 && o.xMax) ? x * k : x, (y < 0 && o.yMin) || (y > 0 && o.yMax) ? y * k : y]);
+}
+
+/**
  * Stickerless tiles: sides on the cube's outer edge run all the way to
  * `edge` (the cubie face half-size plus a little overlap), so two faces'
  * colours meet directly on the cube's edges and corners with no black line

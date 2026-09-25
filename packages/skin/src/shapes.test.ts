@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { FACELETS } from "@cubecore/core";
-import { FACE_BASIS, roundedOutline, stickerLayout, stickerlessOutline } from "./shapes";
+import { FACE_BASIS, reachEdge, roundedOutline, stickerLayout, stickerlessOutline } from "./shapes";
 
 const SHAPE = { corner: { inner: 0.4, outer: 0.05 }, edge: { inner: 0.3, outer: 0.05 }, center: 0.45 };
 const LOCAL = [[1, 1], [-1, 1], [-1, -1], [1, -1]];
@@ -75,5 +75,22 @@ describe("per-kind tiles", async () => {
     expect(tileSize(s, "center")).toBeLessThan(tileSize(s, "edge"));
     expect(tileThickness(s, "center")).toBeGreaterThan(tileThickness(s, "corner"));
     expect(tileSize(SKINS.standard, "center")).toBe(SKINS.standard.stickers.size);
+  });
+});
+
+describe("reachEdge", () => {
+  it("stretches a path outline's outer sides to the cube edge, inner sides stay", () => {
+    // A corner tile: find one whose outer sides are −x and +y.
+    const fi = FACELETS.findIndex((_, i) => {
+      const L = stickerLayout(i, SHAPE);
+      return L.kind === "corner" && L.u === -1 && L.v === 1;
+    });
+    const layout = stickerLayout(fi, SHAPE);
+    const square: [number, number][] = [[0.45, 0.45], [-0.45, 0.45], [-0.45, -0.45], [0.45, -0.45]];
+    const out = reachEdge(square, layout, 0.45, 0.5);
+    expect(Math.min(...out.map(([x]) => x))).toBeCloseTo(-0.5); // outer −x
+    expect(Math.max(...out.map(([, y]) => y))).toBeCloseTo(0.5); // outer +y
+    expect(Math.max(...out.map(([x]) => x))).toBeCloseTo(0.45); // inner sides untouched
+    expect(Math.min(...out.map(([, y]) => y))).toBeCloseTo(-0.45);
   });
 });

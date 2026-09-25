@@ -11,7 +11,7 @@ preset and change what you need:
 | `stickerless` | tiles filling the faces |
 | `gan` | GAN-style stickerless (rounded corner / edge tongues, near-round centres) |
 | `ganI4` | GAN i4 smart cube (from product photos) |
-| `qiyiSC` | QiYi QY-SC smart cube (from photos): moulded in colour, ivory core, pillow tiles, smaller raised centre — picked for QiYi cubes named QY-QYSC… |
+| `qiyiSC` | QiYi QY-SC smart cube: moulded in colour, tile outlines traced from QiYi's app model, pillowy tiles, well-rounded cube edges, dark gaps, domed centre — picked for QiYi cubes named QY-QYSC… |
 | `gan356m` | GAN 356 M: square corner tiles, round edge tongues, near-round centres — measured from "GAN CUBE 356s M air" by Amyyu (Sketchfab, CC BY 4.0) |
 
 **Per piece kind:** `stickers.kinds` gives corner / edge / centre tiles their
@@ -74,7 +74,7 @@ different colour scheme is just another `colors` array (`withColors`).
 |---|---|---|
 | Plastic | `body`, `cubieSize`, `cubieRadius`, `bodyInset` | `bodyInset` recesses the core under thick tiles |
 | Piece shape | `pieces: { depth, taper, core }` | plastic under each tile follows the tile outline and narrows inwards (stickerless cubes) |
-| Tile outline (seen from above) | `stickers.size`, `radius`, `shape` (radii per corner / edge / centre, inner vs outer corners), `paths` (your own SVG outline per piece kind) | `paths` use a 0..1 box, face centre towards the bottom-right (corner tiles) / bottom (edge tiles) |
+| Tile outline (seen from above) | `stickers.size`, `radius`, `shape` (radii per corner / edge / centre, inner vs outer corners), `paths` (your own SVG outline per piece kind) | `paths` use a 0..1 box, face centre towards the bottom-right (corner tiles) / bottom (edge tiles); with `fillOuter` the box's outer sides (top / left) are stretched to the cube edge, so draw them straight and square where two meet |
 | Tile cross-section | `stickers.thickness`, `bevel`, `edgeRadius`, `fillOuter` | `fillOuter` + `edgeRadius`: stickerless — colours meet round the cube's edges |
 | Finish | `stickers.material` (`"flat"` exact colours / `"plastic"` lit), `roughness` | |
 | Masks & back stickers | `mask`, `hints` | colours for ignored / oriented / dimmed stickers |

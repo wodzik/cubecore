@@ -13,7 +13,7 @@
 import { BufferGeometry, Float32BufferAttribute, Shape, ShapeGeometry, ShapeUtils, Vector2 } from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
-import { type PieceKind, type Skin, type StickerShape, roundedOutline, stickerLayout, stickerlessOutline, tileSize, tileThickness } from "@cubecore/skin";
+import { type PieceKind, type Skin, type StickerShape, reachEdge, roundedOutline, stickerLayout, stickerlessOutline, tileSize, tileThickness } from "@cubecore/skin";
 import { type Mitre, type TileSolid, applyDome, densify, skirtSolid, tileSolid } from "../tile";
 
 export interface TileKit {
@@ -58,11 +58,17 @@ export function tileKit(skin: Skin): TileKit {
   const outlineFor = (fi: number) => {
     const layout = stickerLayout(fi, shape);
     const path = skin.stickers.paths?.[layout.kind];
-    const fill = !path && skin.stickers.fillOuter === true;
+    const fill = skin.stickers.fillOuter === true;
     const s = sideOf(layout.kind), t = thicknessOf(layout.kind);
-    const outline = path ? pathOutline(path, s, layout.pathQuarters) : fill ? stickerlessOutline(layout, s, edge) : roundedOutline(s, layout.radii);
+    const outline = path
+      ? fill
+        ? reachEdge(pathOutline(path, s, layout.pathQuarters), layout, s / 2, edge)
+        : pathOutline(path, s, layout.pathQuarters)
+      : fill
+        ? stickerlessOutline(layout, s, edge)
+        : roundedOutline(s, layout.radii);
     const mitre: Mitre | null = fill ? { u: layout.u, v: layout.v, edge, ramp: Math.max(t * 4, 0.03) } : null;
-    const key = (path ? `p|${layout.kind}|${layout.pathQuarters}` : `r|${layout.radii.join(",")}|${fill ? `${layout.u},${layout.v}` : ""}`) + `|${s}|${t}`;
+    const key = (path ? `p|${layout.kind}|${layout.pathQuarters}` : `r|${layout.radii.join(",")}`) + `${fill ? `|${layout.u},${layout.v}` : ""}|${s}|${t}`;
     return { outline, mitre, key, layout, thickness: t, side: s };
   };
 

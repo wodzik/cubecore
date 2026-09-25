@@ -174,6 +174,18 @@ export function hintColor(skin: Skin, colorClass: number, state: MaskState): str
 const WESTERN = ["#ffffff", "#e8322f", "#1fb24a", "#ffd500", "#ff8a00", "#1e5eff"] as const;
 
 /**
+ * QiYi SC tile outlines (corner, edge), measured from the plates of the cube
+ * model in QiYi's app: rounded corners, a big round towards the face centre
+ * and the edge tiles' long curve there. Stickerless — outer sides run to the
+ * cube edge.
+ */
+const QIYI_SC_PATHS = {
+  corner:
+    "M0 0.499 L0 0 L0.950 0 L0.978 0.004 L0.993 0.015 L1 0.033 L1 0.856 L0.992 0.899 L0.982 0.926 L0.959 0.959 L0.931 0.979 L0.899 0.992 L0.856 1 L0.033 1 L0.015 0.993 L0.004 0.978 L0 0.950 Z",
+  edge: "M1 0.499 L1 0.782 L0.995 0.810 L0.979 0.850 L0.957 0.879 L0.939 0.898 L0.902 0.927 L0.847 0.955 L0.809 0.968 L0.718 0.988 L0.610 1 L0.393 1 L0.253 0.983 L0.214 0.975 L0.152 0.955 L0.092 0.924 L0.060 0.897 L0.039 0.875 L0.020 0.849 L0 0.788 L0 0.031 L0.013 0.010 L0.044 0 L0.954 0 L0.987 0.009 L1 0.031 Z",
+};
+
+/**
  * Presets are tuned for dark pages; on light ones the greys of masked
  * stickers go lighter and a white back sticker becomes blue-grey (on white it
  * would vanish — cubing.js #394).
@@ -304,23 +316,26 @@ export const SKINS = {
    * centre. The brand logo is up to the app (a decal).
    */
   qiyiSC: {
-    body: "#ebe7da",
+    // Dark mechanism behind the gaps (as QiYi's app draws it): the tile shapes read, nothing shows through.
+    body: "#34322e",
     pictureBody: null, // ivory plastic would blur with the white tiles in 2D
     cubieSize: 0.992,
     cubieRadius: 0.07,
     bodyInset: 0.02,
-    // A fuller inside than other skins (the core nearly fills each piece): no see-through channels.
-    pieces: { depth: 0.32, taper: 0.06, core: 0.55, colored: true, fill: "solid" },
+    // Coloured pieces down to their centre; the core nearly fills each cubie, so no channel shows through.
+    pieces: { depth: 0.32, taper: 0.06, core: 0.97, colored: true, fill: "solid" },
     stickers: {
       colors: ["#ebe8df", "#d8061a", "#0bc21a", "#ffe51c", "#fd7501", "#1a72f5"],
-      size: 0.985,
+      // Tiles nearly touch; soft, pillowy edges and a well-rounded cube edge (as the real cube).
+      size: 0.99,
       radius: 0.04,
-      shape: { corner: { inner: 0.06, outer: 0.03 }, edge: { inner: 0.25, outer: 0.03 }, center: 0.2 },
-      thickness: 0.035,
-      bevel: 0.022,
+      shape: { corner: { inner: 0.14, outer: 0.03 }, edge: { inner: 0.25, outer: 0.03 }, center: 0.2 },
+      paths: QIYI_SC_PATHS,
+      thickness: 0.07,
+      bevel: 0.06,
       // The centre cap: a little smaller, a round plateau level with the other tiles, its corners ~1.5 mm lower.
       kinds: { center: { size: 0.965, dome: { flat: 0.76, drop: 0.09 } } }, // plateau level with the other tiles
-      edgeRadius: 0.05,
+      edgeRadius: 0.2,
       material: "plastic",
       roughness: 0.35,
       fillOuter: true,

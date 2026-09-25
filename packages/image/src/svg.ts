@@ -157,12 +157,15 @@ function onFace(f: Facelet, x: number, y: number): Vec3 {
  * own centre, moved by `offset` (tile-local, cubie units), then turned
  * `quarters` CCW with the sticker.
  */
-function boxTransform(f: Facelet, side: number, quarters: number, project: Projection, offset: Pt = [0, 0], spin = 0): string {
+function boxTransform(f: Facelet, side: number, quarters: number, project: Projection, offset: Pt = [0, 0], spin = 0, reach?: { left: boolean; top: boolean; edge: number }): string {
   const c = Math.cos((quarters * Math.PI) / 2), s = Math.sin((quarters * Math.PI) / 2);
   const c2 = Math.cos((spin * Math.PI) / 2), s2 = Math.sin((spin * Math.PI) / 2);
+  const half = side / 2;
   const at = (px: number, py: number): Pt => {
     // Box point → turned by its own `spin` → moved by `offset` (sticker frame) → turned with the sticker.
-    const bx = (px - 0.5) * side, by = (0.5 - py) * side;
+    // `reach`: stickerless path tiles — the box's outer sides (left / top in the path convention) run out to the cube edge.
+    const bx = reach?.left ? -reach.edge + px * (reach.edge + half) : (px - 0.5) * side;
+    const by = reach?.top ? reach.edge - py * (reach.edge + half) : (0.5 - py) * side;
     const lx = bx * c2 - by * s2 + offset[0], ly = bx * s2 + by * c2 + offset[1];
     return project(f.face, onFace(f, lx * c - ly * s, lx * s + ly * c));
   };
@@ -227,7 +230,8 @@ export function renderSvg(state: State, options: SvgOptions = {}): string {
     const path = skin.stickers.paths?.[layout.kind];
     const kindSide = sideOf(layout.kind);
     if (path) {
-      out += `<path d="${attr(path)}" transform="${boxTransform(f, kindSide, layout.pathQuarters, v.project)}" fill="${fill}"/>`;
+      const reach = skin.stickers.fillOuter && layout.kind !== "center" ? { left: layout.kind === "corner", top: true, edge: 0.506 } : undefined;
+      out += `<path d="${attr(path)}" transform="${boxTransform(f, kindSide, layout.pathQuarters, v.project, [0, 0], 0, reach)}" fill="${fill}"/>`;
       continue;
     }
     // Stickerless: outer sides reach the cube edge (a hair past it, so neighbouring faces overlap instead of leaving an anti-aliased seam).

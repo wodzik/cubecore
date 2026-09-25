@@ -14,8 +14,7 @@ import { BufferGeometry, Float32BufferAttribute, Shape, ShapeGeometry, ShapeUtil
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
 import { type PieceKind, type Skin, type StickerShape, roundedOutline, stickerLayout, stickerlessOutline, tileSize, tileThickness } from "@cubecore/skin";
-import { CUBIES, FACELETS } from "@cubecore/core";
-import { type Mitre, type TileSolid, applyDome, densify, pieceShell, skirtSolid, tileSolid } from "../tile";
+import { type Mitre, type TileSolid, applyDome, densify, skirtSolid, tileSolid } from "../tile";
 
 export interface TileKit {
   /** Tile side (cubie units) — the usual one; `sideOf` per piece kind. */
@@ -32,12 +31,6 @@ export interface TileKit {
   tile(fi: number): BufferGeometry;
   /** The piece's plastic under that tile (`skin.pieces`), or null. */
   skirt(fi: number): BufferGeometry | null;
-  /**
-   * Solid coloured pieces (`pieces.fill: "solid"`): cubie `ci`'s block as
-   * coloured parts, local to the cubie's centre — one geometry per facelet
-   * position whose colour it takes. Empty otherwise.
-   */
-  shell(ci: number): { facelet: number; geometry: BufferGeometry }[];
   /** The flat floating "back" sticker for position `fi`. */
   hint(fi: number): BufferGeometry;
   dispose(): void;
@@ -107,37 +100,10 @@ export function tileKit(skin: Skin): TileKit {
       const pieces = skin.pieces;
       if (!pieces) return null;
       const { outline, mitre, key } = outlineFor(fi);
-      if (pieces.fill === "solid") return null; // the whole piece is coloured instead (shell)
-      return cached(`skirt|${key}`, () => solidToGeometry(skirtSolid(outline, { top: inset + 0.002, depth: pieces.depth, taper: pieces.taper }, mitre)));
-    },
-    shell(ci) {
-      if (skin.pieces?.fill !== "solid") return [];
-      const cubie = CUBIES[ci];
-      // Just inside the tiles and the cubie's rounded box, so neither fights with it.
-      const half = size / 2 - 0.004;
-      const parts = pieceShell(cubie.facelets.map((fi) => ({ facelet: fi, normal: [...FACELETS[fi].normal] as [number, number, number] })), half);
-      const byFacelet = new Map<number, typeof parts>();
-      for (const p of parts) (byFacelet.get(p.facelet) ?? byFacelet.set(p.facelet, []).get(p.facelet)!).push(p);
-      return [...byFacelet].map(([facelet, polys]) => ({
-        facelet,
-        geometry: cached(`shell|${ci}|${facelet}`, () => {
-          const pos: number[] = [], nor: number[] = [], idx: number[] = [];
-          for (const poly of polys) {
-            const base = pos.length / 3;
-            for (const p of poly.points) {
-              pos.push(...p);
-              nor.push(...poly.normal);
-            }
-            for (let i = 1; i + 1 < poly.points.length; i++) idx.push(base, base + i, base + i + 1);
-          }
-          const g = new BufferGeometry();
-          g.setAttribute("position", new Float32BufferAttribute(pos, 3));
-          g.setAttribute("normal", new Float32BufferAttribute(nor, 3));
-          g.setIndex(idx);
-          g.computeBoundingSphere();
-          return g;
-        }),
-      }));
+      // Solid pieces: down to the cubie's centre. The walls lean in, so where two meet inside
+      // the piece the one from the nearer tile is outermost — the colours split on the diagonals.
+      const depth = pieces.fill === "solid" ? size / 2 : pieces.depth;
+      return cached(`skirt|${key}|${depth}`, () => solidToGeometry(skirtSolid(outline, { top: inset + 0.002, depth, taper: pieces.taper }, mitre)));
     },
     hint(fi) {
       const { layout, side: s } = outlineFor(fi);

@@ -34,9 +34,11 @@ the top is flat inside a circle (0.68 × the tile's reach), level with the
 other tiles, and slopes 0.06 lower towards the corners (QiYi's centre caps).
 
 **Solid coloured pieces:** `pieces: { …, colored: true, fill: "solid" }` —
-each cubie is a whole block coloured by its nearest sticker (the inner faces
-split along the diagonals: a corner in three, an edge in two), so a turned
-layer shows colour inside, not tiles on a light core.
+the plastic under each tile keeps its rounded, tapered shape but runs down to
+the piece's centre, so the piece is filled with colour; where the walls meet
+inside, the nearer tile's is outermost (the colours split along the diagonals:
+a corner in three, an edge in two) — a turned layer shows colour inside, not
+tiles on a light core.
 
 **2D pictures:** `pictureBody` — the plastic between tiles in
 `@cubecore/image` pictures; `null` makes the gaps see-through (light plastic

@@ -402,13 +402,6 @@ export class CubeRenderer {
         const body = new Mesh(kit.body, bodyMat);
         body.position.set(...cubie.pos);
         g.add(body);
-        // Solid coloured pieces: the block's faces in its stickers' colours (painted with them).
-        for (const part of kit.shell(ci)) {
-          const m = new Mesh(part.geometry, bodyMat);
-          m.position.set(...cubie.pos);
-          g.add(m);
-          this.paintTargets[part.facelet].push(m);
-        }
       }
       for (const fi of cubie.facelets) {
         const f = FACELETS[fi];

@@ -45,9 +45,10 @@ export interface Skin {
     colored?: boolean;
     /**
      * "skirt" (default): plastic `depth` deep under each tile; "solid": the
-     * whole piece a coloured block — every face of it in the colour of the
-     * nearest sticker, so inner faces split along the piece's diagonals (a
-     * corner in three colours, an edge in two). Needs `colored`.
+     * same shape run down to the piece's centre, so the piece is filled with
+     * colour — the tapered walls meet inside it, the nearer tile's outermost,
+     * so inner faces split along the diagonals (a corner in three colours, an
+     * edge in two). Needs `colored`.
      */
     fill?: "skirt" | "solid";
   };
@@ -309,7 +310,7 @@ export const SKINS = {
     cubieRadius: 0.07,
     bodyInset: 0.02,
     // A fuller inside than other skins (the core nearly fills each piece): no see-through channels.
-    pieces: { depth: 0.32, taper: 0.06, core: 0.9, colored: true, fill: "solid" },
+    pieces: { depth: 0.32, taper: 0.06, core: 0.55, colored: true, fill: "solid" },
     stickers: {
       colors: ["#ebe8df", "#d8061a", "#0bc21a", "#ffe51c", "#fd7501", "#1a72f5"],
       size: 0.985,

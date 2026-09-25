@@ -60,4 +60,20 @@ export const ZZ_TRAINERS = {
     groups: [[0, 1, 2, 3]],
     seeds: { 10: EOCROSS_SEEDS },
   }),
+  /** EOLine: every edge oriented (F/B axis) and DF + DB in place — classic ZZ's first step. */
+  eoline: (): StageDef => ({ name: "eoline", pieces: [PIECE.DF, PIECE.DB], eo: true, groups: [[0, 1]] }),
+  /**
+   * ZZ blocks after EOLine, built with R U L only (edges stay oriented):
+   * the left block (DL + the FL and BL pairs), then the right (DR + FR, BR);
+   * `side` = which one this stage adds (the other may already be built).
+   */
+  block: (side: "left" | "right", other = false): StageDef => {
+    const left = [PIECE.DL, PIECE.FL, PIECE.DLF, PIECE.BL, PIECE.DBL];
+    const right = [PIECE.DR, PIECE.FR, PIECE.DFR, PIECE.BR, PIECE.DRB];
+    const blocks = other ? [left, right] : [side === "left" ? left : right];
+    const pieces = [PIECE.DF, PIECE.DB, ...blocks.flat()];
+    // Tables: line + block edge + one pair, per pair.
+    const groups = blocks.flatMap((_, b) => [[0, 1, 2 + 5 * b, 3 + 5 * b, 4 + 5 * b], [0, 1, 2 + 5 * b, 5 + 5 * b, 6 + 5 * b]]);
+    return { name: `zz-${other ? "blocks" : `${side}-block`}`, pieces, groups, moves: ["R", "U", "L"] };
+  },
 } as const;

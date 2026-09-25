@@ -62,15 +62,18 @@ const next = (p: Piece, value: number, m: number) => (p.kind === "edge" ? EDGE_N
 const tableCache = new Map<string, Int8Array>();
 /** Bump when table contents change, so stored copies are rebuilt. */
 const TABLE_VERSION = 1;
-const groupKey = (pieces: readonly Piece[], goals?: readonly (readonly number[])[]) =>
-  `v${TABLE_VERSION}:${pieces.map((p) => `${p.kind[0]}${p.id}`).join(",")}` + (goals ? `|g:${goals.map((g) => g.join(".")).join(";")}` : "");
+const groupKey = (pieces: readonly Piece[], goals?: readonly (readonly number[])[], moves?: readonly number[]) =>
+  `v${TABLE_VERSION}:${pieces.map((p) => `${p.kind[0]}${p.id}`).join(",")}` +
+  (goals ? `|g:${goals.map((g) => g.join(".")).join(";")}` : "") +
+  (moves ? `|m:${moves.join(".")}` : "");
 
 /**
  * Exact distances for a group of pieces: breadth-first from the goal —
  * the pieces at home, or (`goals`) every given placement of the group at once.
  */
-function groupTable(pieces: readonly Piece[], goals?: readonly (readonly number[])[]): Int8Array {
-  const key = groupKey(pieces, goals);
+function groupTable(pieces: readonly Piece[], goals?: readonly (readonly number[])[], moves?: readonly number[]): Int8Array {
+  const key = groupKey(pieces, goals, moves);
+  const usable = moves ?? Array.from({ length: N_MOVES }, (_, m) => m);
   const cached = tableCache.get(key);
   if (cached) return cached;
   const k = pieces.length;
@@ -96,7 +99,7 @@ function groupTable(pieces: readonly Piece[], goals?: readonly (readonly number[
       t = q;
     }
     const d = dist[s] + 1;
-    for (let m = 0; m < N_MOVES; m++) {
+    for (const m of usable) {
       // Only the pieces a move touches change the index: add their differences.
       let idx = s;
       for (let i = 0; i < k; i++) {
@@ -176,6 +179,11 @@ export const STAGES = {
   }),
 } as const;
 
+/** Move indices a stage may use (`def.moves`; all 18 by default). */
+function allowedMoves(def: StageDef): number[] {
+  return MOVES.map((m, i) => (!def.moves || def.moves.includes(m.family as never) ? i : -1)).filter((i) => i >= 0);
+}
+
 /** Values of all the stage's pieces in each of its goal states (`def.goals`), or undefined for "at home". */
 function goalPlacements(def: StageDef): number[][] | undefined {
   return def.goals?.map((alg) => {
@@ -212,8 +220,9 @@ export class StageSolver {
     this.goal = def.pieces.map(home);
     const goals = goalPlacements(def);
     this.goalSet = goals ? new Set(goals.map((g) => g.join(","))) : null;
-    this.allowed = MOVES.map((m, i) => (!def.moves || def.moves.includes(m.family as never) ? i : -1)).filter((i) => i >= 0);
-    this.tables = def.groups.map((g) => groupTable(g.map((i) => def.pieces[i]), goals?.map((vals) => g.map((i) => vals[i]))));
+    this.allowed = allowedMoves(def);
+    // With restricted moves (ZZ: R U L) the tables are built with those moves too: exact for the group, a much better bound.
+    this.tables = def.groups.map((g) => groupTable(g.map((i) => def.pieces[i]), goals?.map((vals) => g.map((i) => vals[i])), def.moves ? this.allowed : undefined));
     if (def.eo) flipDistances();
   }
 
@@ -248,7 +257,8 @@ export class StageSolver {
         scale *= 24;
       }
       const d = this.tables[gi][idx];
-      if (d > best) best = d;
+      if (d < 0) best = 99; // unreachable with the stage's moves (e.g. a bad edge with R U L only)
+      else if (d > best) best = d;
     });
     return best;
   }
@@ -496,11 +506,12 @@ export async function preloadStageTables(stages: readonly StageDef[], store: Tab
     for (const g of def.groups) {
       const pieces = g.map((i) => def.pieces[i]);
       const groupGoals = goals?.map((vals) => g.map((i) => vals[i]));
-      const key = groupKey(pieces, groupGoals);
+      const moves = def.moves ? allowedMoves(def) : undefined;
+      const key = groupKey(pieces, groupGoals, moves);
       if (tableCache.has(key)) continue;
       const saved = await store.get(key).catch(() => null);
       if (saved && saved.length === 24 ** pieces.length) tableCache.set(key, saved);
-      else await store.set(key, groupTable(pieces, groupGoals)).catch(() => undefined);
+      else await store.set(key, groupTable(pieces, groupGoals, moves)).catch(() => undefined);
     }
   }
 }

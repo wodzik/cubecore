@@ -507,3 +507,7 @@ Still open:
 - 2026-09-25 — **ZZ analysis** (`analyzeZZ`): EOCross on the better EO axis,
   pairs with R U L only (`StageDef.moves`: faces the search may turn; the
   tables stay valid lower bounds), OCLL + PLL. Worker / demo.
+- 2026-09-25 — **ZZ EOLine**: `ZZ_TRAINERS.eoline()` and `block(side)` (R U L);
+  `analyzeZZ({ start: "eoline" })` — EOLine, both blocks in the better order,
+  OCLL + PLL. Stages with `moves` now build their tables with those moves
+  (exact, tiny: ms); unreachable placements pruned. /analyze ZZ switch.

@@ -6,7 +6,7 @@
 
 import { ROUX_TRAINERS } from "@cubecore/roux";
 import { STAGES, indexedDbTableStore, preloadStageTables } from "@cubecore/solve";
-import { type AnalyzeOptions, type RouxAnalyzeOptions, analyzeRoux, analyzeScramble, analyzeZZ, f2lStage } from "./index";
+import { type AnalyzeOptions, type RouxAnalyzeOptions, type ZZAnalyzeOptions, analyzeRoux, analyzeScramble, analyzeZZ, f2lStage } from "./index";
 import { ZZ_TRAINERS } from "@cubecore/zz";
 
 // The tables (CFOP: cross + each pair piece; Roux: blocks, squares) survive reloads in IndexedDB: built once per device.
@@ -17,7 +17,8 @@ type Request = {
   id: number;
   method?: "cfop" | "roux" | "zz";
   scramble: string | number[];
-  options: Omit<AnalyzeOptions & RouxAnalyzeOptions, "known"> & { known?: string[] };
+  /** Options of the method asked for (CFOP / Roux / ZZ). */
+  options: Record<string, unknown> & { known?: string[] };
 };
 declare const self: { onmessage: ((e: MessageEvent<Request>) => void) | null; postMessage(r: unknown): void };
 
@@ -26,7 +27,16 @@ self.onmessage = async (e) => {
   await ready;
   try {
     const input = typeof scramble === "string" ? scramble : Uint8Array.from(scramble);
-    self.postMessage({ id, ok: true, value: method === "roux" ? analyzeRoux(input, options) : method === "zz" ? analyzeZZ(input, options) : analyzeScramble(input, options) });
+    self.postMessage({
+      id,
+      ok: true,
+      value:
+        method === "roux"
+          ? analyzeRoux(input, options as RouxAnalyzeOptions)
+          : method === "zz"
+            ? analyzeZZ(input, options as ZZAnalyzeOptions)
+            : analyzeScramble(input, options as AnalyzeOptions),
+    });
   } catch (err) {
     self.postMessage({ id, ok: false, error: err instanceof Error ? err.message : String(err) });
   }

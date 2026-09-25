@@ -18,7 +18,16 @@ const method = () => $<HTMLSelectElement>("method").value as "cfop" | "roux" | "
 let firstRun = true;
 
 const label = (s: AnalysisStep) =>
-  s.step === "pair" ? `Pair ${s.slot}` : s.step === "cross" ? (method() === "zz" ? "EOCross" : s.slots?.length ? `Cross+${s.slots.length} (${s.slots.join(" ")})` : "Cross") : s.step.toUpperCase();
+  s.step === "pair"
+    ? `Pair ${s.slot}`
+    : s.step === "cross"
+      ? method() === "zz" ? "EOCross" : s.slots?.length ? `Cross+${s.slots.length} (${s.slots.join(" ")})` : "Cross"
+      : s.step === "eoline"
+        ? "EOLine"
+        : s.step === "block"
+          ? `${s.side === "left" ? "Left" : "Right"} block`
+          : s.step.toUpperCase();
+const zzLine = () => method() === "zz" && $<HTMLSelectElement>("zzStart").value === "eoline";
 const caseOf = (s: AnalysisStep) => ("case" in s && s.case ? s.case : "");
 
 async function analyze() {
@@ -35,7 +44,7 @@ async function analyze() {
   }
   if (method() === "zz") {
     // ZZ results have the CFOP shape (EOCross as the "cross" step, R U L pairs, OCLL + PLL).
-    current = (await analyzer.analyzeZZ(scramble)) as unknown as Analysis;
+    current = (await analyzer.analyzeZZ(scramble, { start: $<HTMLSelectElement>("zzStart").value as "eocross" | "eoline" })) as unknown as Analysis;
     firstRun = false;
     $("status").textContent = `${Math.round(performance.now() - t)} ms`;
     renderColours();
@@ -87,14 +96,14 @@ function selectRoux(r: RouxAnalysis) {
 
 function renderColours() {
   $("byTitle").textContent = "By cross colour";
-  const crossName = method() === "zz" ? "EOCross" : "Cross";
-  $("byHead").innerHTML = `<tr><th>${crossName}</th><th class="num">${crossName}</th><th>Pair order</th><th>OLL</th><th>PLL</th><th class="num">Total</th></tr>`;
+  const crossName = zzLine() ? "EOLine" : method() === "zz" ? "EOCross" : "Cross";
+  $("byHead").innerHTML = `<tr><th>${crossName}</th><th class="num">${crossName}</th><th>${zzLine() ? "Blocks" : "Pair order"}</th><th>OLL</th><th>PLL</th><th class="num">Total</th></tr>`;
   $("colours").innerHTML = current!.byCross
     .map((c, i) => {
       const oll = c.steps.find((s) => s.step === "oll");
       const pll = c.steps.find((s) => s.step === "pll");
       return `<tr data-i="${i}"><td><span class="swatch" style="background:${FACE_COLOUR[c.face]}"></span>${COLOUR_NAME[c.face]}${i === 0 ? " <span class=muted>best</span>" : ""}</td>
-        <td class="num">${c.steps[0].moves.length}</td><td>${c.pairOrder.join(" → ")}</td>
+        <td class="num">${c.steps[0].moves.length}</td><td>${zzLine() ? ((c as { blockOrder?: string[] }).blockOrder ?? []).join(" → ") : c.pairOrder.join(" → ")}</td>
         <td class="case">${oll ? caseOf(oll) : ""}</td><td class="case">${pll ? caseOf(pll) : ""}</td><td class="num">${c.length}</td></tr>`;
     })
     .join("");
@@ -103,7 +112,8 @@ function renderColours() {
 
 function select(c: CrossAnalysis) {
   for (const tr of $("colours").querySelectorAll("tr")) tr.classList.toggle("on", current!.byCross[Number(tr.dataset.i)] === c);
-  $("stepsTitle").textContent = `Solution — ${COLOUR_NAME[c.face]} cross, ${c.length} moves${c.rotation ? `, hold: ${c.rotation}` : ""}`;
+  const first = zzLine() ? "line" : method() === "zz" ? "EOCross" : "cross";
+  $("stepsTitle").textContent = `Solution — ${COLOUR_NAME[c.face]} ${first}, ${c.length} moves${c.rotation ? `, hold: ${c.rotation}` : ""}`;
   $("steps").innerHTML = c.steps
     .map((s) => {
       const moves = s.moves.length ? formatAlg(s.moves) : "—";
@@ -114,10 +124,13 @@ function select(c: CrossAnalysis) {
   // Replay: the scramble, then the rotation to the cross grip and every step.
   player.setAttribute("setup", $<HTMLInputElement>("scramble").value);
   player.setAttribute("alg", [c.rotation, ...c.steps.map((s) => formatAlg(s.moves))].filter(Boolean).join(" "));
-  $("replayInfo").textContent = `${c.rotation ? `Rotate ${c.rotation}, then ` : ""}cross, ${c.pairOrder.length} pairs (${c.pairOrder.join(" → ")}), OLL, PLL.`;
+  const blocks = (c as { blockOrder?: string[] }).blockOrder;
+  const f2l = zzLine() && blocks ? `blocks ${blocks.join(" → ")}` : `${c.pairOrder.length} pairs (${c.pairOrder.join(" → ")})`;
+  $("replayInfo").textContent = `${c.rotation ? `Rotate ${c.rotation}, then ` : ""}${first}, ${f2l}, OLL, PLL.`;
 }
 
 $("go").onclick = () => void analyze();
+$("zzStart").onchange = () => void analyze();
 $("method").onchange = () => {
   document.body.classList.toggle("roux", method() === "roux");
   document.body.classList.toggle("zz", method() === "zz");

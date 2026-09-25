@@ -32,6 +32,7 @@
       td.num { text-align: right; font-variant-numeric: tabular-nums; }
       cube-player { height: 380px; }
       body.roux .cfop-only, body.zz .cfop-only { display: none; }
+      body:not(.zz) .zz-only { display: none; }
     </style>
   </head>
   <body>
@@ -48,7 +49,13 @@
               <select id="method">
                 <option value="cfop">CFOP</option>
                 <option value="roux">Roux</option>
-                <option value="zz">ZZ (EOCross)</option>
+                <option value="zz">ZZ</option>
+              </select>
+            </label>
+            <label class="muted zz-only">ZZ
+              <select id="zzStart">
+                <option value="eocross">EOCross</option>
+                <option value="eoline">EOLine + blocks</option>
               </select>
             </label>
             <label class="muted cfop-only">Start

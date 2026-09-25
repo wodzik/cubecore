@@ -75,7 +75,10 @@ export type AnalysisStep =
     }
   | { step: "oll"; moves: Move[]; case: string; alg?: string; known?: boolean }
   | { step: "pll"; moves: Move[]; case: string; alg?: string; known?: boolean }
-  | { step: "auf"; moves: Move[] };
+  | { step: "auf"; moves: Move[] }
+  /** ZZ: the EOLine (every edge oriented, DF + DB), and a block built with R U L after it. */
+  | { step: "eoline"; moves: Move[] }
+  | { step: "block"; side: "left" | "right"; moves: Move[] };
 
 export interface CrossAnalysis {
   /** Physical face the cross goes on. */

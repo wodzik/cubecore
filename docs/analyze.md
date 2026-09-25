@@ -64,8 +64,14 @@ z.best.eoAxis      // physical faces the edges are oriented against, e.g. ["F", 
 z.byCross          // all six cross colours, shortest first (HTM)
 ```
 
+Classic ZZ: `analyzeZZ(scramble, { start: "eoline" })` — EOLine (edges
+oriented + DF, DB; ~6 moves), then the left and right blocks with R U L in
+the better order (`steps`: eoline, block, block, oll, pll, auf;
+`blockOrder`). The R U L stages build their tables with R U L only — tiny
+and exact, so each block takes milliseconds.
+
 EOCross optimal on the better of the two EO axes; the pairs keep every
 edge oriented (R U L — the stage's `moves`), so the last layer's OLL is a
 corners-only case. Warm: ~0.2 s for all six colours.
 
-Demo: `/analyze` (CFOP / Roux / ZZ).
+Demo: `/analyze` (CFOP / Roux / ZZ with EOCross or EOLine).

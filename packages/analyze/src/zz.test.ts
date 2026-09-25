@@ -22,4 +22,14 @@ describe("ZZ scramble analysis", () => {
       void s;
     }
   }, 300_000);
+
+  it("EOLine: line, left and right blocks with R U L, OCLL + PLL", () => {
+    const z = analyzeZZ(SCRAMBLE, { start: "eoline" });
+    for (const a of z.byCross) {
+      expect(zzFollowsThrough(state, a)).toBe(true);
+      expect(a.steps.slice(0, 3).map((s) => s.step)).toEqual(["eoline", "block", "block"]);
+      for (const st of a.steps.filter((x) => x.step === "block")) expect(st.moves.every((m) => "RUL".includes(m.family))).toBe(true);
+      expect(new Set(a.blockOrder)).toEqual(new Set(["left", "right"]));
+    }
+  }, 300_000);
 });

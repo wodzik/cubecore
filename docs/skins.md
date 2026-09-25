@@ -5,6 +5,19 @@ drives the 3D renderer (`@cubecore/render`) and the SVG/PNG pictures
 (`@cubecore/image`), so one skin looks the same everywhere. Start from a
 preset and change what you need:
 
+| preset | |
+|---|---|
+| `standard` | black plastic, rounded stickers |
+| `stickerless` | tiles filling the faces |
+| `gan` | GAN-style stickerless (rounded corner / edge tongues, near-round centres) |
+| `ganI4` | GAN i4 smart cube (from product photos) |
+| `gan356m` | GAN 356 M: square corner tiles, round edge tongues, near-round centres — measured from "GAN CUBE 356s M air" by Amyyu (Sketchfab, CC BY 4.0) |
+
+Measuring a skin from a 3D model: a model with separate sticker / tile
+meshes gives each tile's size and corner radii (per piece kind, inner corner
+towards the face centre vs the others) and the colours — that's how
+`gan356m` was made; the model file itself isn't needed at runtime.
+
 ```ts
 import { SKINS, type Skin } from "@cubecore/skin";
 

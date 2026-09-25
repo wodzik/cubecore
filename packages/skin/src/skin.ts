@@ -227,6 +227,36 @@ export const SKINS = {
     background: null,
     themes: { light: LIGHT_PAGE },
   },
+  /**
+   * GAN 356 M (stickerless): square corner tiles, edge tiles with a round
+   * "tongue" towards the centre, near-round centres; thin glossy tiles.
+   * Shapes, sizes and colours measured from "GAN CUBE 356s M air" by Amyyu
+   * (https://sketchfab.com/3d-models/gan-cube-356s-m-air-dd4768b8fe2841c78e418230e5d9e192,
+   * CC BY 4.0). No logo — that's up to the app (a decal).
+   */
+  gan356m: {
+    body: "#1e2023",
+    cubieSize: 0.992,
+    cubieRadius: 0.05,
+    bodyInset: 0.015,
+    pieces: { depth: 0.3, taper: 0.06, core: 0.6 },
+    stickers: {
+      colors: ["#fafafa", "#e10b2a", "#008526", "#ffe700", "#f58d1f", "#00319d"],
+      size: 0.99,
+      radius: 0.015,
+      shape: { corner: { inner: 0.016, outer: 0.014 }, edge: { inner: 0.375, outer: 0.015 }, center: 0.285 },
+      thickness: 0.014,
+      bevel: 0.006,
+      edgeRadius: 0.02,
+      material: "plastic",
+      roughness: 0.3,
+      fillOuter: true,
+    },
+    mask: { ignored: "#5a5a5a", oriented: "#39c7d4", dimAmount: 0.55 },
+    hints: { enabled: false, distance: 1.4, opacity: 0.75, ignoredOpacity: 0.35 },
+    background: null,
+    themes: { light: LIGHT_PAGE },
+  },
 } satisfies Record<string, Skin>;
 
 export function stickerColor(skin: Skin, colorClass: number, state: MaskState): string | null {

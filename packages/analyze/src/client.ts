@@ -6,12 +6,13 @@
  */
 
 import type { State } from "@cubecore/core";
-import type { Analysis, AnalyzeOptions, RouxAnalysisResult, RouxAnalyzeOptions } from "./index";
+import type { Analysis, AnalyzeOptions, RouxAnalysisResult, RouxAnalyzeOptions, ZZAnalysisResult, ZZAnalyzeOptions } from "./index";
 
 export interface AnalyzerClient {
   /** CFOP. */
   analyze(scramble: string | State, options?: AnalyzeOptions): Promise<Analysis>;
   analyzeRoux(scramble: string | State, options?: RouxAnalyzeOptions): Promise<RouxAnalysisResult>;
+  analyzeZZ(scramble: string | State, options?: ZZAnalyzeOptions): Promise<ZZAnalysisResult>;
   terminate(): void;
 }
 
@@ -25,7 +26,7 @@ export function analyzerClient(worker: Worker): AnalyzerClient {
     if (e.data.ok) p.resolve(e.data.value!);
     else p.reject(new Error(e.data.error));
   };
-  const call = <T>(method: "cfop" | "roux", scramble: string | State, options: { known?: Iterable<string> } & Record<string, unknown>): Promise<T> =>
+  const call = <T>(method: "cfop" | "roux" | "zz", scramble: string | State, options: { known?: Iterable<string> } & Record<string, unknown>): Promise<T> =>
     new Promise<T>((resolve, reject) => {
       const id = nextId++;
       pending.set(id, { resolve: resolve as (v: never) => void, reject });
@@ -35,6 +36,7 @@ export function analyzerClient(worker: Worker): AnalyzerClient {
   return {
     analyze: (scramble, options = {}) => call<Analysis>("cfop", scramble, options as never),
     analyzeRoux: (scramble, options = {}) => call<RouxAnalysisResult>("roux", scramble, options as never),
+    analyzeZZ: (scramble, options = {}) => call<ZZAnalysisResult>("zz", scramble, options as never),
     terminate: () => {
       worker.terminate();
       for (const p of pending.values()) p.reject(new Error("Analyzer worker terminated"));

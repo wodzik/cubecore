@@ -44,6 +44,7 @@ import { stageSolver } from "@cubecore/solve";
 import { rotationFor } from "./rotations";
 
 export * from "./roux";
+export * from "./zz";
 export { rotationFor } from "./rotations";
 
 export type AnalysisStart = "cross" | "xcross" | "xxcross" | "xxxcross";
@@ -99,17 +100,17 @@ const SLOTS: F2LSlot[] = ["FR", "FL", "BL", "BR"];
 const CROSS: Piece[] = [PIECE.DR, PIECE.DF, PIECE.DL, PIECE.DB];
 const SLOT_PIECES: Record<F2LSlot, [Piece, Piece]> = { FR: [PIECE.FR, PIECE.DFR], FL: [PIECE.FL, PIECE.DLF], BL: [PIECE.BL, PIECE.DBL], BR: [PIECE.BR, PIECE.DRB] };
 
-/** Cross plus the given pairs solved — one stage (tables: cross + each piece). */
-export function f2lStage(slots: readonly F2LSlot[]): StageDef {
+/** Cross plus the given pairs solved — one stage (tables: cross + each piece); `moves` limits the faces turned (ZZ: R U L). */
+export function f2lStage(slots: readonly F2LSlot[], moves?: StageDef["moves"]): StageDef {
   const pieces = [...CROSS, ...slots.flatMap((s) => SLOT_PIECES[s])];
   const groups = slots.flatMap((_, i) => [[0, 1, 2, 3, 4 + 2 * i], [0, 1, 2, 3, 5 + 2 * i]]);
-  return { name: `cross+${[...slots].sort().join("+")}`, pieces, groups: groups.length ? groups : [[0, 1, 2, 3]] };
+  return { name: `cross+${[...slots].sort().join("+")}`, pieces, groups: groups.length ? groups : [[0, 1, 2, 3]], ...(moves ? { moves } : {}) };
 }
 
 const combos = <T>(items: readonly T[], k: number): T[][] =>
   k === 0 ? [[]] : items.flatMap((x, i) => combos(items.slice(i + 1), k - 1).map((c) => [x, ...c]));
 
-interface F2LPlan {
+export interface F2LPlan {
   steps: AnalysisStep[];
   length: number;
   order: F2LSlot[];
@@ -117,22 +118,22 @@ interface F2LPlan {
 }
 
 /** The best way through the remaining pairs (all orders). */
-function planPairs(state: State, done: F2LSlot[], mode: "optimal" | "algorithms", known: Set<string> | null): F2LPlan {
+export function planPairs(state: State, done: F2LSlot[], mode: "optimal" | "algorithms", known: Set<string> | null, moves?: StageDef["moves"]): F2LPlan {
   const left = SLOTS.filter((s) => !done.includes(s));
   if (!left.length) return { steps: [], length: 0, order: [], state };
   let best: F2LPlan | null = null;
   for (const slot of left) {
-    const step = pairStep(state, done, slot, mode, known);
+    const step = pairStep(state, done, slot, mode, known, moves);
     if (!step) continue;
     const after = applyMoves(state, step.moves);
-    const rest = planPairs(after, [...done, slot], mode, known);
+    const rest = planPairs(after, [...done, slot], mode, known, moves);
     const length = step.moves.length + rest.length;
     if (!best || length < best.length) best = { steps: [step, ...rest.steps], length, order: [slot, ...rest.order], state: rest.state };
   }
   return best!;
 }
 
-function pairStep(state: State, done: F2LSlot[], slot: F2LSlot, mode: "optimal" | "algorithms", known: Set<string> | null): AnalysisStep | null {
+function pairStep(state: State, done: F2LSlot[], slot: F2LSlot, mode: "optimal" | "algorithms", known: Set<string> | null, moves?: StageDef["moves"]): AnalysisStep | null {
   if (mode === "algorithms") {
     const r = recognizeF2L(state, slot);
     if (r === "solved") return { step: "pair", slot, moves: [], case: "solved", how: "algorithm" };
@@ -145,13 +146,13 @@ function pairStep(state: State, done: F2LSlot[], slot: F2LSlot, mode: "optimal" 
       }
     }
   }
-  const sol = stageSolver(f2lStage([...done, slot])).solve(state, { maxDepth: 14 })[0];
+  const sol = stageSolver(f2lStage([...done, slot], moves)).solve(state, { maxDepth: 16 })[0];
   if (!sol) return null;
   const r = recognizeF2L(state, slot);
   return { step: "pair", slot, moves: sol, ...(r ? { case: r === "solved" ? "solved" : r.id } : {}), how: "optimal" };
 }
 
-function lastLayer(state: State, known: Set<string> | null): { steps: AnalysisStep[]; state: State } {
+export function lastLayer(state: State, known: Set<string> | null): { steps: AnalysisStep[]; state: State } {
   const steps: AnalysisStep[] = [];
   let s = state;
   const oll = recognizeOll(s);

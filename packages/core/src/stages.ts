@@ -43,6 +43,11 @@ export interface StageDef {
    * for EO stages). Found once offline; the rest of the cube stays random.
    */
   seeds?: Readonly<Record<number, readonly string[]>>;
+  /**
+   * Faces the solution may turn (default all six) — e.g. ["R", "U", "L"]
+   * for ZZ's F2L, which keeps every edge oriented.
+   */
+  moves?: readonly ("U" | "R" | "F" | "D" | "L" | "B")[];
 }
 
 export const edgePiece = (id: number): Piece => ({ kind: "edge", id });

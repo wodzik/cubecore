@@ -55,4 +55,17 @@ by its algorithm (named, speedcubedb); LSE optimal in M and U from an exact
 table (184 320 states, ~1 s to build). Warm: a whole analysis in ~10 ms;
 the first builds the block tables (~12 s, kept in IndexedDB by the worker).
 
-Demo: `/analyze` (CFOP / Roux).
+## ZZ
+
+```ts
+const z = analyzeZZ(scramble);     // or analyzer.analyzeZZ(…)
+z.best.steps       // cross (the EOCross), pair ×4 — R, U, L only — in the best order, oll (OCLL / skip), pll, auf
+z.best.eoAxis      // physical faces the edges are oriented against, e.g. ["F", "B"]
+z.byCross          // all six cross colours, shortest first (HTM)
+```
+
+EOCross optimal on the better of the two EO axes; the pairs keep every
+edge oriented (R U L — the stage's `moves`), so the last layer's OLL is a
+corners-only case. Warm: ~0.2 s for all six colours.
+
+Demo: `/analyze` (CFOP / Roux / ZZ).

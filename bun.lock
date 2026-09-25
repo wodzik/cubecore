@@ -26,6 +26,7 @@
         "@cubecore/core": "workspace:*",
         "@cubecore/roux": "workspace:*",
         "@cubecore/solve": "workspace:*",
+        "@cubecore/zz": "workspace:*",
       },
     },
     "packages/bld": {

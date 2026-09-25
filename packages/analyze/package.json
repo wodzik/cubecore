@@ -11,6 +11,7 @@
     "@cubecore/core": "workspace:*",
     "@cubecore/cfop": "workspace:*",
     "@cubecore/solve": "workspace:*",
-    "@cubecore/roux": "workspace:*"
+    "@cubecore/roux": "workspace:*",
+    "@cubecore/zz": "workspace:*"
   }
 }

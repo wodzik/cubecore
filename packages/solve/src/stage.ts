@@ -205,11 +205,14 @@ export class StageSolver {
 
   /** Goal placements (values of all pieces), when the stage has several (`def.goals`). */
   private readonly goalSet: Set<string> | null;
+  /** Move indices the search may use (`def.moves`; the tables stay the all-moves ones — still a valid lower bound). */
+  private readonly allowed: number[];
 
   constructor(readonly def: StageDef) {
     this.goal = def.pieces.map(home);
     const goals = goalPlacements(def);
     this.goalSet = goals ? new Set(goals.map((g) => g.join(","))) : null;
+    this.allowed = MOVES.map((m, i) => (!def.moves || def.moves.includes(m.family as never) ? i : -1)).filter((i) => i >= 0);
     this.tables = def.groups.map((g) => groupTable(g.map((i) => def.pieces[i]), goals?.map((vals) => g.map((i) => vals[i]))));
     if (def.eo) flipDistances();
   }
@@ -268,7 +271,7 @@ export class StageSolver {
       }
       if (this.h(cur, f) > remaining) return false;
       const nextVals = stack[d + 1];
-      for (let m = 0; m < N_MOVES; m++) {
+      for (const m of this.allowed) {
         const face = Math.floor(m / 3);
         if (last >= 0 && (face === last || face === last - 3)) continue;
         for (let i = 0; i < k; i++) nextVals[i] = next(this.def.pieces[i], cur[i], m);

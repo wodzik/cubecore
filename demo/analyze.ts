@@ -14,10 +14,11 @@ const FACE_COLOUR: Record<string, string> = Object.fromEntries(["U", "R", "F", "
 const COLOUR_NAME: Record<string, string> = { U: "white", R: "red", F: "green", D: "yellow", L: "orange", B: "blue" };
 let current: Analysis | null = null;
 let roux: RouxAnalysisResult | null = null;
-const method = () => $<HTMLSelectElement>("method").value as "cfop" | "roux";
+const method = () => $<HTMLSelectElement>("method").value as "cfop" | "roux" | "zz";
 let firstRun = true;
 
-const label = (s: AnalysisStep) => (s.step === "pair" ? `Pair ${s.slot}` : s.step === "cross" ? (s.slots?.length ? `Cross+${s.slots.length} (${s.slots.join(" ")})` : "Cross") : s.step.toUpperCase());
+const label = (s: AnalysisStep) =>
+  s.step === "pair" ? `Pair ${s.slot}` : s.step === "cross" ? (method() === "zz" ? "EOCross" : s.slots?.length ? `Cross+${s.slots.length} (${s.slots.join(" ")})` : "Cross") : s.step.toUpperCase();
 const caseOf = (s: AnalysisStep) => ("case" in s && s.case ? s.case : "");
 
 async function analyze() {
@@ -30,6 +31,15 @@ async function analyze() {
     $("status").textContent = `${Math.round(performance.now() - t)} ms`;
     renderSides();
     selectRoux(roux.best);
+    return;
+  }
+  if (method() === "zz") {
+    // ZZ results have the CFOP shape (EOCross as the "cross" step, R U L pairs, OCLL + PLL).
+    current = (await analyzer.analyzeZZ(scramble)) as unknown as Analysis;
+    firstRun = false;
+    $("status").textContent = `${Math.round(performance.now() - t)} ms`;
+    renderColours();
+    select(current.best);
     return;
   }
   current = await analyzer.analyze(scramble, {
@@ -77,7 +87,8 @@ function selectRoux(r: RouxAnalysis) {
 
 function renderColours() {
   $("byTitle").textContent = "By cross colour";
-  $("byHead").innerHTML = `<tr><th>Cross</th><th class="num">Cross</th><th>Pair order</th><th>OLL</th><th>PLL</th><th class="num">Total</th></tr>`;
+  const crossName = method() === "zz" ? "EOCross" : "Cross";
+  $("byHead").innerHTML = `<tr><th>${crossName}</th><th class="num">${crossName}</th><th>Pair order</th><th>OLL</th><th>PLL</th><th class="num">Total</th></tr>`;
   $("colours").innerHTML = current!.byCross
     .map((c, i) => {
       const oll = c.steps.find((s) => s.step === "oll");
@@ -96,7 +107,7 @@ function select(c: CrossAnalysis) {
   $("steps").innerHTML = c.steps
     .map((s) => {
       const moves = s.moves.length ? formatAlg(s.moves) : "—";
-      const how = s.step === "pair" && s.how === "optimal" && s.case !== "solved" ? ` <span class="muted">(fewest moves)</span>` : "";
+      const how = method() === "cfop" && s.step === "pair" && s.how === "optimal" && s.case !== "solved" ? ` <span class="muted">(fewest moves)</span>` : "";
       return `<tr><td>${label(s)}</td><td class="moves">${moves}</td><td class="case">${caseOf(s)}${how}</td><td class="num">${s.moves.length}</td></tr>`;
     })
     .join("");
@@ -109,6 +120,7 @@ function select(c: CrossAnalysis) {
 $("go").onclick = () => void analyze();
 $("method").onchange = () => {
   document.body.classList.toggle("roux", method() === "roux");
+  document.body.classList.toggle("zz", method() === "zz");
   void analyze();
 };
 $("random").onclick = async () => {

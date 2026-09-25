@@ -504,3 +504,6 @@ Still open:
   with EO / UL-UR / L4E counts; full LSE table (`features: "lse"`, 184 320
   states, ~1 s; `ROUX_TRAINERS.lse()`). Worker `analyzeRoux`, /analyze
   method switch.
+- 2026-09-25 — **ZZ analysis** (`analyzeZZ`): EOCross on the better EO axis,
+  pairs with R U L only (`StageDef.moves`: faces the search may turn; the
+  tables stay valid lower bounds), OCLL + PLL. Worker / demo.

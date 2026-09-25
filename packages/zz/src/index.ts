@@ -3,7 +3,8 @@
  * then the last layer. Checks, method and masks; colour neutral.
  */
 
-import { type Frame, IDENTITY_FRAME, LAST_LAYER_STAGES, type Mask, type MaskRule, type Method, type State, buildMask, checks as C } from "@cubecore/core";
+import { type Frame, IDENTITY_FRAME, LAST_LAYER_STAGES, type Mask, type MaskRule, type Method, PIECE, type StageDef, type State, buildMask, checks as C } from "@cubecore/core";
+import { EOCROSS_SEEDS } from "./seeds";
 
 const DF = C.cubieAt(0, -1, 1);
 const DB = C.cubieAt(0, -1, -1);
@@ -43,3 +44,20 @@ export const ZZ_MASKS: Record<ZzMask, MaskRule> = {
 };
 
 export const zzMask = (name: ZzMask, frame: Frame = IDENTITY_FRAME): Mask => buildMask(ZZ_MASKS[name], frame);
+
+// ─── trainer stages (run them with @cubecore/solve) ───
+
+export const ZZ_TRAINERS = {
+  /**
+   * EOCross: cross on D and every edge oriented (F/B axis). Level 10 is a
+   * few in a million among random states — its cases come from a list found
+   * offline (seeds.ts).
+   */
+  eocross: (): StageDef => ({
+    name: "eocross",
+    pieces: [PIECE.DR, PIECE.DF, PIECE.DL, PIECE.DB],
+    eo: true,
+    groups: [[0, 1, 2, 3]],
+    seeds: { 10: EOCROSS_SEEDS },
+  }),
+} as const;

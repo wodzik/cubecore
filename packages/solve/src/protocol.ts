@@ -6,7 +6,7 @@
 
 import type { Move, State } from "@cubecore/core";
 import type { ScramblePreset } from "./scramble";
-import type { StageDef } from "./stage";
+import type { AnyStageDef as StageDef } from "@cubecore/core";
 
 export interface Seeded {
   /** Seed for reproducible results; omitted = Math.random. */

@@ -17,7 +17,14 @@
  * tables are ~8 MB each and take a few hundred ms).
  */
 
-import { type Frame, IDENTITY_FRAME, type Move, type State, reframe, toCubies, transformMoves } from "@cubecore/core";
+import { FRAMES, type Frame, IDENTITY_FRAME, type Move, type Piece, type StageDef, type State, applyMoves, parseAlg, reframe, solvedState, toCubies, transformMoves } from "@cubecore/core";
+
+const SOLVED_STATE = solvedState();
+/** Set by scramble.ts (randomState lives there; avoids an import cycle). */
+let randomStateHook: ((random: () => number) => State) | null = null;
+export const setRandomStateHook = (f: (random: () => number) => State) => void (randomStateHook = f);
+
+export type { Piece, StageDef } from "@cubecore/core";
 import { MOVES, MOVE_CC } from "./pieces";
 
 // ─── piece moves ───
@@ -47,12 +54,6 @@ MOVE_CC.forEach((b, m) => {
   }
 });
 
-export interface Piece {
-  kind: "edge" | "corner";
-  /** Kociemba piece id (core cubies.ts): edges UR UF UL UB DR DF DL DB FR FL BL BR, corners URF UFL ULB UBR DFR DLF DBL DRB. */
-  id: number;
-}
-
 const home = (p: Piece) => (p.kind === "edge" ? p.id * 2 : p.id * 3);
 const next = (p: Piece, value: number, m: number) => (p.kind === "edge" ? EDGE_NEXT : CORNER_NEXT)[value * N_MOVES + m];
 
@@ -61,10 +62,15 @@ const next = (p: Piece, value: number, m: number) => (p.kind === "edge" ? EDGE_N
 const tableCache = new Map<string, Int8Array>();
 /** Bump when table contents change, so stored copies are rebuilt. */
 const TABLE_VERSION = 1;
-const groupKey = (pieces: readonly Piece[]) => `v${TABLE_VERSION}:${pieces.map((p) => `${p.kind[0]}${p.id}`).join(",")}`;
+const groupKey = (pieces: readonly Piece[], goals?: readonly (readonly number[])[]) =>
+  `v${TABLE_VERSION}:${pieces.map((p) => `${p.kind[0]}${p.id}`).join(",")}` + (goals ? `|g:${goals.map((g) => g.join(".")).join(";")}` : "");
 
-function groupTable(pieces: readonly Piece[]): Int8Array {
-  const key = groupKey(pieces);
+/**
+ * Exact distances for a group of pieces: breadth-first from the goal —
+ * the pieces at home, or (`goals`) every given placement of the group at once.
+ */
+function groupTable(pieces: readonly Piece[], goals?: readonly (readonly number[])[]): Int8Array {
+  const key = groupKey(pieces, goals);
   const cached = tableCache.get(key);
   if (cached) return cached;
   const k = pieces.length;
@@ -73,10 +79,13 @@ function groupTable(pieces: readonly Piece[]): Int8Array {
   const queue = new Int32Array(size);
   const tables = pieces.map((p) => (p.kind === "edge" ? EDGE_NEXT : CORNER_NEXT));
   const scales = pieces.map((_, i) => 24 ** i);
-  const start = pieces.reduce((acc, p, i) => acc + home(p) * scales[i], 0);
-  dist[start] = 0;
+  const starts = (goals ?? [pieces.map(home)]).map((vals) => vals.reduce((acc, v, i) => acc + v * scales[i], 0));
   let head = 0, tail = 0;
-  queue[tail++] = start;
+  for (const start of starts) {
+    if (dist[start] === 0) continue;
+    dist[start] = 0;
+    queue[tail++] = start;
+  }
   const vals = new Int32Array(k);
   while (head < tail) {
     const s = queue[head++];
@@ -126,15 +135,6 @@ function flipDistances(): Int8Array {
 
 // ─── stages ───
 
-export interface StageDef {
-  name: string;
-  pieces: readonly Piece[];
-  /** Also orient every edge (EOCross). */
-  eo?: boolean;
-  /** Groups (indices into `pieces`) with exact tables; the heuristic is their max. */
-  groups: readonly (readonly number[])[];
-}
-
 const E = (id: number): Piece => ({ kind: "edge", id });
 const C = (id: number): Piece => ({ kind: "corner", id });
 const CROSS = [E(4), E(5), E(6), E(7)]; // DR DF DL DB
@@ -176,6 +176,19 @@ export const STAGES = {
   }),
 } as const;
 
+/** Values of all the stage's pieces in each of its goal states (`def.goals`), or undefined for "at home". */
+function goalPlacements(def: StageDef): number[][] | undefined {
+  return def.goals?.map((alg) => {
+    let vals = def.pieces.map(home);
+    for (const mv of parseAlg(alg)) {
+      const m = MOVES.findIndex((x) => x.family === mv.family && x.amount === mv.amount);
+      if (m < 0) throw new Error(`Stage goals take face turns only: ${alg}`);
+      vals = vals.map((v, i) => next(def.pieces[i], v, m));
+    }
+    return vals;
+  });
+}
+
 export interface StageSolveOptions {
   /** Hold the cube this way (canonical D → frame.face.D). Default: identity. */
   frame?: Frame;
@@ -190,10 +203,19 @@ export class StageSolver {
   private readonly tables: Int8Array[];
   private readonly goal: number[];
 
+  /** Goal placements (values of all pieces), when the stage has several (`def.goals`). */
+  private readonly goalSet: Set<string> | null;
+
   constructor(readonly def: StageDef) {
-    this.tables = def.groups.map((g) => groupTable(g.map((i) => def.pieces[i])));
     this.goal = def.pieces.map(home);
+    const goals = goalPlacements(def);
+    this.goalSet = goals ? new Set(goals.map((g) => g.join(","))) : null;
+    this.tables = def.groups.map((g) => groupTable(g.map((i) => def.pieces[i]), goals?.map((vals) => g.map((i) => vals[i]))));
     if (def.eo) flipDistances();
+  }
+
+  private isGoal(vals: readonly number[]): boolean {
+    return this.goalSet ? this.goalSet.has(vals.join(",")) : vals.every((v, i) => v === this.goal[i]);
   }
 
   /** Values of the tracked pieces (and flip) in `state`, seen through `frame`. */
@@ -238,7 +260,7 @@ export class StageSolver {
     const rec = (d: number, remaining: number, f: number, last: number): boolean => {
       const cur = stack[d];
       if (remaining === 0) {
-        if (cur.every((v, i) => v === this.goal[i]) && (!this.def.eo || f === 0)) {
+        if (this.isGoal(cur) && (!this.def.eo || f === 0)) {
           found.push([...path]);
           return !all || found.length >= limit;
         }
@@ -268,25 +290,89 @@ export class StageSolver {
     return [];
   }
 
-  /** Fewest moves to finish the stage (−1 if not found within maxDepth). */
-  distance(state: State, options: StageSolveOptions = {}): number {
-    const r = this.read(state, options.frame ?? IDENTITY_FRAME);
+  /**
+   * The frames to try: `frame`, or for an x-neutral stage every frame with
+   * the same L and R (the block on the L colour with any bottom colour).
+   */
+  private frames(frame: Frame): readonly Frame[] {
+    return this.def.neutral === "x" ? FRAMES.filter((f) => f.face.L === frame.face.L && f.face.R === frame.face.R) : [frame];
+  }
+
+  private distanceIn(state: State, frame: Frame, maxDepth: number): number {
+    const r = this.read(state, frame);
     if (!r) return -1;
-    const s = this.optimal(r.vals, r.flip, options.maxDepth ?? 20, false, 1);
+    const s = this.optimal(r.vals, r.flip, maxDepth, false, 1);
     return s.length ? s[0].length : -1;
   }
 
-  /** Optimal solutions (face turns, in the cube's own frame). */
+  /** Fewest moves to finish the stage (−1 if not found within maxDepth). An x-neutral stage takes the best block. */
+  distance(state: State, options: StageSolveOptions = {}): number {
+    const ds = this.frames(options.frame ?? IDENTITY_FRAME)
+      .map((f) => this.distanceIn(state, f, options.maxDepth ?? 20))
+      .filter((d) => d >= 0);
+    return ds.length ? Math.min(...ds) : -1;
+  }
+
+  /** Optimal solutions (face turns, in the cube's own frame); for an x-neutral stage, those of the best blocks. */
   solve(state: State, options: StageSolveOptions = {}): Move[][] {
-    const frame = options.frame ?? IDENTITY_FRAME;
-    const r = this.read(state, frame);
-    if (!r) return [];
-    const sols = this.optimal(r.vals, r.flip, options.maxDepth ?? 20, options.all ?? false, options.limit ?? 256);
-    return sols.map((s) => {
-      let moves = s.map((m) => MOVES[m]);
-      if (r.centres !== IDENTITY_FRAME) moves = transformMoves(moves, r.centres);
-      return frame === IDENTITY_FRAME ? moves : transformMoves(moves, frame);
-    });
+    const frames = this.frames(options.frame ?? IDENTITY_FRAME);
+    const best = frames.length > 1 ? this.distance(state, options) : -1;
+    const out: Move[][] = [];
+    const seen = new Set<string>();
+    for (const frame of frames) {
+      if (frames.length > 1 && this.distanceIn(state, frame, options.maxDepth ?? 20) !== best) continue;
+      const r = this.read(state, frame);
+      if (!r) continue;
+      const sols = this.optimal(r.vals, r.flip, options.maxDepth ?? 20, options.all ?? false, options.limit ?? 256);
+      for (const sol of sols) {
+        let moves = sol.map((m) => MOVES[m]);
+        if (r.centres !== IDENTITY_FRAME) moves = transformMoves(moves, r.centres);
+        if (frame !== IDENTITY_FRAME) moves = transformMoves(moves, frame);
+        const key = moves.map((m) => `${m.family}${m.amount}`).join(" ");
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(moves);
+      }
+      if (!options.all && out.length) break;
+    }
+    return out;
+  }
+
+  /**
+   * A whole random state whose stage takes exactly `depth` moves — for
+   * x-neutral stages, where the best block depends on pieces outside the
+   * tracked set. Uniform where levels are common; short levels come from
+   * random walks, the rarest deep ones one move beyond a shallower case.
+   */
+  sampleState(depth: number, random: () => number = Math.random, draw: (random: () => number) => State = () => randomStateHook!(random), attempts = 3000): State | null {
+    for (let a = 0; a < attempts; a++) {
+      const s = draw(random);
+      if (this.distance(s, { maxDepth: depth }) === depth) return s;
+    }
+    const faceMoves = MOVES;
+    for (let a = 0; a < attempts; a++) {
+      let s = SOLVED_STATE;
+      let last = -1;
+      for (let d = 0; d < depth + 2; d++) {
+        let m: number;
+        do m = Math.floor(random() * N_MOVES);
+        while (last >= 0 && Math.floor(m / 3) === last);
+        last = Math.floor(m / 3);
+        s = applyMoves(s, [faceMoves[m]]);
+        if (d + 1 >= depth && this.distance(s, { maxDepth: depth }) === depth) return s;
+      }
+    }
+    if (depth > 1) {
+      for (let a = 0; a < 50; a++) {
+        const shallower = this.sampleState(depth - 1, random, draw, 300);
+        if (!shallower) break;
+        for (const m of [...faceMoves].sort(() => random() - 0.5)) {
+          const s = applyMoves(shallower, [m]);
+          if (this.distance(s, { maxDepth: depth }) === depth) return s;
+        }
+      }
+    }
+    return null;
   }
 
   /** The first moves of every optimal solution — "what's a best next move from here?" */
@@ -313,8 +399,11 @@ export class StageSolver {
     });
     for (let a = 0; a < attempts; a++) {
       // Uniform placement: distinct positions, random orientations.
-      const usedE = new Set<number>(), usedC = new Set<number>();
-      const vals = this.def.pieces.map((p) => {
+      const keep = new Set(this.def.keep ?? []);
+      const usedE = new Set<number>(this.def.pieces.filter((p, i) => keep.has(i) && p.kind === "edge").map((p) => p.id));
+      const usedC = new Set<number>(this.def.pieces.filter((p, i) => keep.has(i) && p.kind === "corner").map((p) => p.id));
+      const vals = this.def.pieces.map((p, i) => {
+        if (keep.has(i)) return home(p); // kept solved (e.g. the first block while practising the second square)
         const n = p.kind === "edge" ? 12 : 8, used = p.kind === "edge" ? usedE : usedC;
         let pos: number;
         do pos = Math.floor(random() * n);
@@ -347,6 +436,30 @@ export class StageSolver {
       }
       if (evaluate(vals, this.def.eo ? flip : 0) === depth) return placement(vals, this.def.eo ? flip : 0);
     }
+    // Known cases for levels too rare to find at run time (see StageDef.seeds).
+    const seeds = this.def.seeds?.[depth];
+    if (seeds?.length) {
+      const [valsText, flipText] = seeds[Math.floor(random() * seeds.length)].split(":");
+      const vals = valsText.split(".").map(Number);
+      const flip = Number(flipText ?? 0);
+      if (evaluate(vals, flip) === depth) return placement(vals, flip);
+    }
+    // The deepest levels can be too rare to hit (EOCross at 10): every such placement is one move beyond a
+    // placement one shallower, so step outwards from those (fine as a trainer case, not exactly uniform).
+    if (depth > 1) {
+      for (let a = 0; a < 200; a++) {
+        const shallower = this.sample(depth - 1, random, 200);
+        if (!shallower) break;
+        const vals0 = this.def.pieces.map((p) => shallower.pieces.get(p)!);
+        const flip0 = shallower.flip ?? 0;
+        const order = Array.from({ length: N_MOVES }, (_, i) => i).sort(() => random() - 0.5);
+        for (const m of order) {
+          const vals = vals0.map((v, i) => next(this.def.pieces[i], v, m));
+          const flip = this.def.eo ? FLIP_NEXT[flip0 * N_MOVES + m] : 0;
+          if (evaluate(vals, flip) === depth) return placement(vals, flip);
+        }
+      }
+    }
     return null;
   }
 }
@@ -376,13 +489,15 @@ export interface TableStore {
 /** Load the tables these stages need from `store`, or build and save them. Afterwards the solvers start instantly. */
 export async function preloadStageTables(stages: readonly StageDef[], store: TableStore): Promise<void> {
   for (const def of stages) {
+    const goals = goalPlacements(def);
     for (const g of def.groups) {
       const pieces = g.map((i) => def.pieces[i]);
-      const key = groupKey(pieces);
+      const groupGoals = goals?.map((vals) => g.map((i) => vals[i]));
+      const key = groupKey(pieces, groupGoals);
       if (tableCache.has(key)) continue;
       const saved = await store.get(key).catch(() => null);
       if (saved && saved.length === 24 ** pieces.length) tableCache.set(key, saved);
-      else await store.set(key, groupTable(pieces)).catch(() => undefined);
+      else await store.set(key, groupTable(pieces, groupGoals)).catch(() => undefined);
     }
   }
 }
@@ -413,7 +528,9 @@ export function indexedDbTableStore(dbName = "cubecore-tables"): TableStore {
 const solvers = new Map<string, StageSolver>();
 /** A shared solver for a stage definition (tables are shared anyway). */
 export function stageSolver(def: StageDef): StageSolver {
-  let s = solvers.get(def.name);
-  if (!s) solvers.set(def.name, (s = new StageSolver(def)));
+  // Keyed by the whole definition: two stages may share a name (a neutral and a fixed first block).
+  const key = JSON.stringify(def);
+  let s = solvers.get(key);
+  if (!s) solvers.set(key, (s = new StageSolver(def)));
   return s;
 }

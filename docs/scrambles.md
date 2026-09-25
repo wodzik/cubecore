@@ -41,6 +41,32 @@ Tables survive reloads: the worker's `warmUp` keeps them in IndexedDB
 (`preloadStageTables(stages, indexedDbTableStore())` does the same on the
 main thread), so the ~1.5 s per table is paid once per device.
 
+### Trainer stages per method
+
+Stages are plain data (`StageDef` in `@cubecore/core`: which pieces, goal
+states, pieces kept solved, x-neutral blocks). Each method package exports
+its trainer stages; `@cubecore/solve` runs any of them — the solver has no
+method knowledge, the methods have no solver code:
+
+| package | stages |
+|---|---|
+| `@cubecore/cfop` `CFOP_TRAINERS` | `cross`, `xcross(slot)`, `xxcross(a, b)` (adjacent or opposite), `pair(slot)` — free pair: cross + the pair formed one insert away (17 goal states) |
+| `@cubecore/zz` `ZZ_TRAINERS` | `eocross` (level 10 from a list of cases found offline — a few in a million random states) |
+| `@cubecore/roux` `ROUX_TRAINERS` | `fb`, `fs(side)` (any bottom colour on L: best of four), `fbdr(keep)`, `ss(side)` (first block kept), `eolr` (M / U only) |
+
+```ts
+import { ROUX_TRAINERS } from "@cubecore/roux";
+stageScramble({ stage: ROUX_TRAINERS.ss("front"), length: 7, from: cube.state });
+stageSolver(ROUX_TRAINERS.fb()).solve(cube.state, { all: true });
+lseSolver(ROUX_TRAINERS.eolr()).nextMoves(cube.state);   // M / U hints
+```
+
+The worker takes them the same way (`solver.stageScramble({ stage, length })`).
+Measured (Apple Silicon, Bun; phones ~3–5× slower): table builds 0.06 s
+(cross, EOCross) to ~6 s (XXCross), once per device with IndexedDB; optimal
+solves ≤ 35 ms; a trainer case at any offered level ≲ 0.2 s once the tables
+exist. EOLR's exact table builds in ~0.1 s.
+
 Dev servers that don't rewrite `new URL("./worker.ts", import.meta.url)` (Bun's
 HTML dev server) can build the worker themselves and pass its URL:
 `createSolverWorker("/solver-worker.js")` — see `demo/serve.ts`.

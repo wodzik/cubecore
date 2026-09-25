@@ -471,3 +471,14 @@ Still open:
 - 2026-09-25 — Skin options: `stickers.kinds` (size / thickness per piece
   kind), `stickers.finish` ("matte" / "uv": clearcoat + room reflections),
   `pieces.colored` (plastic in the tile colours). Demo skins on /render.
+- 2026-09-25 — **Trainer stages for every act trainer, no WASM** (measured:
+  optimal solves ≤ 35 ms, a case at any offered level ≲ 0.2 s once tables
+  exist; builds 0.06–6 s per stage, cached in IndexedDB). `StageDef` moved to
+  core (plain data + `goals`, `keep`, `neutral: "x"`, `seeds`); method
+  packages export their stages — `CFOP_TRAINERS` (cross, xcross, xxcross,
+  free pair with the 17 goal states), `ZZ_TRAINERS` (eocross; level 10 from
+  seeds found offline — 0 in 20 000 random states), `ROUX_TRAINERS` (fb / fs
+  x-neutral via frames, fbdr, ss, eolr); `LseSolver` (M / U, exact feature
+  table from act's 16 EOLR goals, reads smart-cube face turns). Rare deep
+  levels: step outwards from one level shallower. Replaces act's GPL or18
+  WASM and roux-trainers code.

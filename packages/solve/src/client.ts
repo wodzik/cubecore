@@ -12,7 +12,7 @@
 import type { Frame, Move, State } from "@cubecore/core";
 import type { Envelope, Request, Response, ScrambleResult } from "./protocol";
 import type { ScramblePreset } from "./scramble";
-import type { StageDef } from "./stage";
+import type { AnyStageDef as StageDef } from "@cubecore/core";
 
 interface Common {
   frame?: Frame;

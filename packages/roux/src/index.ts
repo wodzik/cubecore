@@ -16,6 +16,10 @@ import {
   type Mask,
   type MaskRule,
   type Method,
+  PIECE,
+  type Piece,
+  type LseStageDef,
+  type StageDef,
   type State,
   buildMask,
   checks as C,
@@ -150,3 +154,48 @@ function lse6(c: Cubie): boolean {
 }
 
 export const rouxMask = (name: RouxMask, frame: Frame = IDENTITY_FRAME): Mask => buildMask(ROUX_MASKS[name], frame);
+
+// ─── trainer stages (run them with @cubecore/solve: stageSolver / stageScramble) ───
+
+export type RouxSide = "front" | "back";
+const FB_PIECES = [PIECE.DL, PIECE.FL, PIECE.BL, PIECE.DLF, PIECE.DBL];
+const FIRST_SQUARE: Record<RouxSide, Piece[]> = { front: [PIECE.DL, PIECE.FL, PIECE.DLF], back: [PIECE.DL, PIECE.BL, PIECE.DBL] };
+const SECOND_SQUARE: Record<RouxSide, Piece[]> = { front: [PIECE.FR, PIECE.DFR], back: [PIECE.BR, PIECE.DRB] };
+
+/**
+ * Roux trainer stages (canonical: first block on L-bottom), as in
+ * roux-trainers / act: first block and first square may be built with any
+ * bottom colour on the L side (`neutral: "x"`, the best of the four);
+ * FBDR keeps one first square solved, second square keeps the first block.
+ * EOLR is a last-six-edges stage — see @cubecore/solve `LSE_STAGES`.
+ */
+export const ROUX_TRAINERS = {
+  fb: (): StageDef => ({ name: "roux-fb", pieces: FB_PIECES, groups: [[0, 1, 2, 3, 4]], neutral: "x" }),
+  /** First square: DL + FL + DLF (front) or DL + BL + DBL (back). */
+  fs: (side: RouxSide = "front"): StageDef => ({ name: `roux-fs-${side}`, pieces: FIRST_SQUARE[side], groups: [[0, 1, 2]], neutral: "x" }),
+  /** The first block and the DR edge, from a solved first square (`keep`: which one). */
+  fbdr: (keep: RouxSide = "front"): StageDef => ({
+    name: `roux-fbdr-${keep}`,
+    pieces: [...FB_PIECES, PIECE.DR],
+    groups: [[0, 1, 2, 3, 4], [0, 1, 3, 5], [0, 2, 4, 5]],
+    keep: keep === "front" ? [0, 1, 3] : [0, 2, 4],
+  }),
+  /** Second square: DR + FR + DFR (front) or DR + BR + DRB (back), first block solved. */
+  /**
+   * EOLR: the six edges oriented and UL / UR brought to where one
+   * `[U] M2 [AUF]` (or `M' [U] M2 [AUF]` with the centres off) finishes
+   * them — the 16 goal states roux-trainers and act use. M / U only.
+   */
+  eolr: (): LseStageDef => ({
+    name: "roux-eolr",
+    kind: "lse",
+    features: "eolr",
+    goals: ["U' M2", "U M2", "M' U M2", "M' U' M2"].flatMap((head) => ["", " U", " U'", " U2"].map((auf) => head + auf)),
+  }),
+  ss: (side: RouxSide = "front"): StageDef => ({
+    name: `roux-ss-${side}`,
+    pieces: [...FB_PIECES, PIECE.DR, ...SECOND_SQUARE[side]],
+    groups: [[0, 1, 2, 3, 4], [5, 6, 7, 0, 3]],
+    keep: [0, 1, 2, 3, 4],
+  }),
+} as const;

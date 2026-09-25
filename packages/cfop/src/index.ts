@@ -6,7 +6,7 @@
  * Later here: OLL / PLL / COLL case recognition and alg sets as data.
  */
 
-import { type Frame, IDENTITY_FRAME, LAST_LAYER_STAGES, type Mask, type MaskRule, type Method, buildMask, checks as C, countedStages } from "@cubecore/core";
+import { type Frame, IDENTITY_FRAME, LAST_LAYER_STAGES, type Mask, type MaskRule, type Method, PIECE, type Piece, type StageDef, buildMask, checks as C, countedStages } from "@cubecore/core";
 
 export const CFOP: Method = {
   id: "cfop",
@@ -60,3 +60,52 @@ function lastLayer(c: { pos: readonly number[]; kind: string }): boolean {
 
 /** A CFOP mask for a cube held in `frame` (e.g. the frame the tracker found the cross in). */
 export const cfopMask = (name: CfopMask, frame: Frame = IDENTITY_FRAME): Mask => buildMask(CFOP_MASKS[name], frame);
+
+// ─── trainer stages (run them with @cubecore/solve: stageSolver / stageScramble) ───
+
+export type F2LSlot = "FR" | "FL" | "BL" | "BR";
+const CROSS_PIECES = [PIECE.DR, PIECE.DF, PIECE.DL, PIECE.DB];
+const SLOT_PIECES: Record<F2LSlot, { edge: Piece; corner: Piece }> = {
+  FR: { edge: PIECE.FR, corner: PIECE.DFR },
+  FL: { edge: PIECE.FL, corner: PIECE.DLF },
+  BL: { edge: PIECE.BL, corner: PIECE.DBL },
+  BR: { edge: PIECE.BR, corner: PIECE.DRB },
+};
+/** The four ways to take a paired slot out (the pair is then one insert away), per slot. */
+const EXTRACTIONS: Record<F2LSlot, readonly string[]> = {
+  FR: ["R U R'", "R U' R'", "F' U F", "F' U' F"],
+  FL: ["L' U L", "L' U' L", "F U F'", "F U' F'"],
+  BL: ["L U L'", "L U' L'", "B' U B", "B' U' B"],
+  BR: ["R' U R", "R' U' R", "B U B'", "B U' B'"],
+};
+
+/**
+ * CFOP trainer stages (canonical: cross on D). Each is a StageDef — plain
+ * data; `stageSolver(def)` answers distance / optimal solutions / next moves
+ * and `stageScramble({ stage: def, length })` draws a case at an exact level.
+ */
+export const CFOP_TRAINERS = {
+  cross: (): StageDef => ({ name: "cross", pieces: CROSS_PIECES, groups: [[0, 1, 2, 3]] }),
+  xcross: (slot: F2LSlot = "FR"): StageDef => ({
+    name: `xcross-${slot}`,
+    pieces: [...CROSS_PIECES, SLOT_PIECES[slot].edge, SLOT_PIECES[slot].corner],
+    groups: [[0, 1, 2, 3, 4], [0, 1, 2, 3, 5]],
+  }),
+  /** Two slots: adjacent (FR + FL…) or opposite (FR + BL…). */
+  xxcross: (a: F2LSlot = "FR", b: F2LSlot = "FL"): StageDef => ({
+    name: `xxcross-${a}-${b}`,
+    pieces: [...CROSS_PIECES, SLOT_PIECES[a].edge, SLOT_PIECES[a].corner, SLOT_PIECES[b].edge, SLOT_PIECES[b].corner],
+    groups: [[0, 1, 2, 3, 4], [0, 1, 2, 3, 5], [0, 1, 2, 3, 6], [0, 1, 2, 3, 7]],
+  }),
+  /**
+   * Free pair: cross solved and the slot's pair FORMED, one standard insert
+   * away — the inserted state or any of the 4 extractions × 4 AUFs (17 goal
+   * states, as in act's pairing trainer).
+   */
+  pair: (slot: F2LSlot = "FR"): StageDef => ({
+    name: `pair-${slot}`,
+    pieces: [...CROSS_PIECES, SLOT_PIECES[slot].edge, SLOT_PIECES[slot].corner],
+    groups: [[0, 1, 2, 3, 4], [0, 1, 2, 3, 5]],
+    goals: ["", ...EXTRACTIONS[slot].flatMap((x) => ["", " U", " U2", " U'"].map((auf) => x + auf))],
+  }),
+} as const;

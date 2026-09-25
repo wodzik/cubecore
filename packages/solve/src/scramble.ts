@@ -15,17 +15,20 @@ import {
   CUBIE_OF_FACELET,
   type Cubie,
   EDGE_FACELETS,
+  type AnyStageDef,
   type Frame,
   IDENTITY_FRAME,
   type Move,
   type State,
   applyMoves,
   fromCubies,
+  isLseStage,
   parity,
   solvedState,
   unreframe,
 } from "@cubecore/core";
-import { type Placement, type StageDef, flipBits, stageSolver } from "./stage";
+import { type Placement, type StageDef, flipBits, setRandomStateHook, stageSolver } from "./stage";
+import { lseSolver } from "./lse";
 import { type SolveOptions, TwoPhase } from "./twophase";
 
 export type PiecePredicate = (cubie: Cubie) => boolean;
@@ -172,8 +175,8 @@ export function scrambleTo(target: State, options: Pick<ScrambleOptions, "from" 
 // ─── trainer scrambles ───
 
 export interface StageScrambleOptions extends Omit<ScrambleOptions, "preset" | "solved" | "oriented" | "place"> {
-  /** The stage and how many moves its optimal solution must take. */
-  stage: StageDef;
+  /** The stage (piece stages, or a last-six-edges stage like EOLR) and how many moves its optimal solution must take. */
+  stage: AnyStageDef;
   length: number;
 }
 
@@ -183,11 +186,39 @@ export interface StageScrambleOptions extends Omit<ScrambleOptions, "preset" | "
  * from wherever the cube is (`from`). Null if no such case was found.
  */
 export function stageScramble(options: StageScrambleOptions): { moves: Move[]; state: State } | null {
-  const solver = stageSolver(options.stage);
+  const def = options.stage;
+  if (isLseStage(def)) {
+    // Last six edges: a case from the exact table (blocks and CMLL solved), put on the requested face.
+    const lse = lseSolver(def);
+    for (let attempt = 0; attempt < 20; attempt++) {
+      const target = lse.sampleState(options.length, options.random, options.frame);
+      if (!target) return null;
+      const result = scrambleTo(target, options);
+      if (result && lse.distance(result.state, { frame: options.frame }) === options.length) return result;
+    }
+    return null;
+  }
+  const solver = stageSolver(def);
+  // A rare level can miss once; a level that doesn't exist misses every time — give up after three.
+  let misses = 0;
   for (let attempt = 0; attempt < 20; attempt++) {
-    const place = solver.sample(options.length, options.random);
-    if (!place) return null;
-    let target = randomState({ place, random: options.random });
+    let target: State;
+    if (def.neutral) {
+      // The best block depends on pieces outside the tracked set: draw whole states.
+      const s = solver.sampleState(options.length, options.random);
+      if (!s) {
+        if (++misses >= 3) return null;
+        continue;
+      }
+      target = s;
+    } else {
+      const place = solver.sample(options.length, options.random);
+      if (!place) {
+        if (++misses >= 3) return null;
+        continue;
+      }
+      target = randomState({ place, random: options.random });
+    }
     if (options.frame && options.frame !== IDENTITY_FRAME) target = unreframe(target, options.frame);
     const result = scrambleTo(target, options);
     // Defence in depth: the scrambled cube must really be `length` away.
@@ -195,3 +226,5 @@ export function stageScramble(options: StageScrambleOptions): { moves: Move[]; s
   }
   return null;
 }
+
+setRandomStateHook((random) => randomState({ random }));

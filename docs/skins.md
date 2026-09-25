@@ -29,6 +29,19 @@ each tile in the tile's colour — a corner is three coloured parts, an edge
 two, a centre one (cubes moulded in colour); the core keeps `body` (e.g.
 white stems: `body: "#e8e8e8"`). Needs `pieces` (shaped piece bodies).
 
+**Domed tiles:** `kinds: { center: { dome: { flat: 0.68, drop: 0.06 } } }` —
+the top is flat inside a circle (0.68 × the tile's reach) and falls 0.06
+lower at the corners (QiYi's centre caps).
+
+**Solid coloured pieces:** `pieces: { …, colored: true, fill: "solid" }` —
+under each tile a pyramid down to the cubie's centre, so the pieces are
+whole coloured blocks split along their diagonals (a corner in three, an
+edge in two), not tiles on a light core.
+
+**2D pictures:** `pictureBody` — the plastic between tiles in
+`@cubecore/image` pictures; `null` makes the gaps see-through (light plastic
+with white tiles would blur together). Default: `body`.
+
 **Logo:** a decal on the centre sticker (`select: { stickers: [4] }` = the
 U centre), e.g. `{ image: "/assets/gan-logo.png", size: 0.75, blend: "multiply" }`.
 Brand logos are trademarks — the library ships none; bring your own file.

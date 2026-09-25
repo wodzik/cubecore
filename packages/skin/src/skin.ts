@@ -10,6 +10,12 @@ import type { PieceKind, StickerPaths, StickerShape } from "./shapes";
 export interface Skin {
   /** Plastic colour. */
   body: string;
+  /**
+   * Plastic between the tiles in 2D pictures (@cubecore/image); null =
+   * see-through (the page shows in the gaps). Default: `body`. Light
+   * plastic with light tiles (white on ivory) blurs together in 2D.
+   */
+  pictureBody?: string | null;
   /** Cubie size relative to the 1-unit grid (1 = no gap between cubies). */
   cubieSize: number;
   /** Rounding of the cubie edges, 0..0.5. */
@@ -37,6 +43,12 @@ export interface Skin {
      * stickerless cubes moulded in colour); the core stays `body`.
      */
     colored?: boolean;
+    /**
+     * "skirt" (default): plastic `depth` deep under each tile; "solid": a
+     * pyramid from the tile to the cubie's centre — whole coloured blocks,
+     * split along the piece's diagonals.
+     */
+    fill?: "skirt" | "solid";
   };
   stickers: {
     /** Colour of each colour class, U R F D L B home-face order. */
@@ -54,9 +66,10 @@ export interface Skin {
     /**
      * Per piece kind: a different tile size / thickness — e.g. a centre cap
      * that is smaller and stands out more than the other tiles. Unset values
-     * fall back to `size` / `thickness`.
+     * fall back to `size` / `thickness`. `dome`: a top that is flat inside a
+     * circle (`flat` × the tile's reach) and falls `drop` lower at the corners.
      */
-    kinds?: Partial<Record<PieceKind, { size?: number; thickness?: number }>>;
+    kinds?: Partial<Record<PieceKind, { size?: number; thickness?: number; dome?: { flat: number; drop: number } }>>;
     /** Radius of the rounded top edge of a tile (cubie units, ≤ thickness). Default 0 (sharp). */
     bevel?: number;
     /**
@@ -290,11 +303,12 @@ export const SKINS = {
    */
   qiyiSC: {
     body: "#ebe7da",
+    pictureBody: null, // ivory plastic would blur with the white tiles in 2D
     cubieSize: 0.992,
     cubieRadius: 0.07,
     bodyInset: 0.02,
     // A fuller inside than other skins (the core nearly fills each piece): no see-through channels.
-    pieces: { depth: 0.32, taper: 0.06, core: 0.9, colored: true },
+    pieces: { depth: 0.32, taper: 0.06, core: 0.9, colored: true, fill: "solid" },
     stickers: {
       colors: ["#ebe8df", "#d8061a", "#0bc21a", "#ffe51c", "#fd7501", "#1a72f5"],
       size: 0.985,
@@ -302,7 +316,8 @@ export const SKINS = {
       shape: { corner: { inner: 0.06, outer: 0.03 }, edge: { inner: 0.25, outer: 0.03 }, center: 0.2 },
       thickness: 0.035,
       bevel: 0.022,
-      kinds: { center: { size: 0.965, thickness: 0.06 } }, // the centre cap: a little smaller, standing out
+      // The centre cap: a little smaller, standing out, a round plateau with its corners ~1.5 mm lower.
+      kinds: { center: { size: 0.965, thickness: 0.1, dome: { flat: 0.68, drop: 0.06 } } },
       edgeRadius: 0.05,
       material: "plastic",
       roughness: 0.35,

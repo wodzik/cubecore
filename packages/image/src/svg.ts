@@ -210,11 +210,12 @@ export function renderSvg(state: State, options: SvgOptions = {}): string {
   let out = "";
   if (skin.background) out += `<rect x="${r3(v.box[0])}" y="${r3(v.box[1])}" width="${r3(v.box[2])}" height="${r3(v.box[3])}" fill="${skin.background}"/>`;
 
-  // Plastic: one rounded square per drawn face.
-  for (const face of v.bodies) {
+  // Plastic: one rounded square per drawn face — unless the skin wants the gaps see-through in pictures.
+  const plastic = skin.pictureBody === undefined ? skin.body : skin.pictureBody;
+  for (const face of plastic === null ? [] : v.bodies) {
     const f = FACELETS.find((x) => x.face === face && x.index % 9 === 4)!;
     const corners = ([[-1, -1], [1, -1], [1, 1], [-1, 1]] as const).map(([u, w]) => v.project(face, onFace(f, u * 1.5, w * 1.5)));
-    out += `<path d="${roundedPolygon(corners, skin.cubieRadius * 1.2)}" fill="${skin.body}"/>`;
+    out += `<path d="${roundedPolygon(corners, skin.cubieRadius * 1.2)}" fill="${plastic}"/>`;
   }
 
   for (const f of FACELETS) {

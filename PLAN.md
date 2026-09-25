@@ -516,3 +516,7 @@ Still open:
   moulded in colour around a fuller ivory core; picked automatically for
   QY-QYSC cubes. The logo (cut from a close-up) stays in git-ignored
   demo/assets; /render "qiyi sc + logo".
+- 2026-09-25 — Skin options: `kinds.*.dome` (flat circle + lower corners,
+  QiYi centre caps), `pieces.fill: "solid"` (pyramids to the cubie centre:
+  whole coloured blocks), `pictureBody` (2D plastic colour / see-through);
+  qiyiSC uses all three.

@@ -234,3 +234,75 @@ export function skirtSolid(outline: readonly Pt[], shape: { top: number; depth: 
   ];
   return sweep(outline, rings, mitre, false);
 }
+
+/**
+ * A domed top (e.g. QiYi's centre caps): flat inside a circle of `flat` ×
+ * the tile's reach, then falling straight to `drop` lower at the outline's
+ * farthest points — a visible round plateau with the corners lower. The
+ * tile's upper rings are lowered to match and the flat cap is replaced by
+ * concentric rings following the surface.
+ */
+export function applyDome(solid: TileSolid, dome: { flat: number; drop: number }, rings = 24): TileSolid {
+  const ring = solid.topRing;
+  if (!ring.length) return solid;
+  const reach = Math.max(...ring.map(([x, y]) => Math.hypot(x, y)));
+  const r0 = dome.flat * reach;
+  const slope = dome.drop / Math.max(1e-6, reach - r0);
+  const lowerBy = (x: number, y: number) => Math.max(0, Math.hypot(x, y) - r0) * slope;
+  // Sides: everything above the cubie face follows the dome.
+  const positions = Array.from(solid.positions.subarray(0, solid.topStart * 3));
+  const normals = Array.from(solid.normals.subarray(0, solid.topStart * 3));
+  for (let i = 0; i < positions.length; i += 3) if (positions[i + 2] > 0) positions[i + 2] -= lowerBy(positions[i], positions[i + 1]);
+  const zTop = solid.positions[solid.topStart * 3 + 2];
+  // Cap: rings from the outline in to the middle, each point at the dome's height, normals from its slope.
+  const sides = Array.from(solid.sides);
+  const start = positions.length / 3;
+  const n = ring.length;
+  for (let k = 0; k <= rings; k++) {
+    const s = 1 - k / rings;
+    for (const [x0, y0] of ring) {
+      const x = x0 * s, y = y0 * s, r = Math.hypot(x, y);
+      positions.push(x, y, zTop - lowerBy(x, y));
+      if (r > r0 && r > 1e-9) {
+        const g = slope; // |dz/dr|
+        const nx = (x / r) * g, ny = (y / r) * g, l = Math.hypot(nx, ny, 1);
+        normals.push(nx / l, ny / l, 1 / l);
+      } else normals.push(0, 0, 1);
+    }
+  }
+  for (let k = 0; k < rings; k++) {
+    for (let i = 0; i < n; i++) {
+      const a = start + k * n + i, b = start + k * n + ((i + 1) % n), c = start + (k + 1) * n + ((i + 1) % n), d = start + (k + 1) * n + i;
+      sides.push(a, b, c, a, c, d);
+    }
+  }
+  return { positions: new Float32Array(positions), normals: new Float32Array(normals), sides: new Uint32Array(sides), topStart: positions.length / 3, topRing: [] };
+}
+
+/**
+ * Solid coloured plastic under a tile: a pyramid from the tile outline (just
+ * below the face, `top`) to the cubie's centre (`apex` below the face). A
+ * piece's pyramids split it along its diagonals — a corner into three
+ * coloured parts, an edge into two — like cubes moulded in colour.
+ */
+export function pyramidSolid(outlineIn: readonly Pt[], top: number, apex: number): TileSolid {
+  const outline = dedupe(outlineIn);
+  const positions: number[] = [];
+  const normals: number[] = [];
+  const sides: number[] = [];
+  const n = outline.length;
+  for (let i = 0; i < n; i++) {
+    const [ax, ay] = outline[i], [bx, by] = outline[(i + 1) % n];
+    const A = [ax, ay, -top], B = [bx, by, -top], C = [0, 0, -apex];
+    // Flat face normal (outward: the outline is counter-clockwise seen from above).
+    const u = [B[0] - A[0], B[1] - A[1], B[2] - A[2]], v = [C[0] - A[0], C[1] - A[1], C[2] - A[2]];
+    let nx = u[1] * v[2] - u[2] * v[1], ny = u[2] * v[0] - u[0] * v[2], nz = u[0] * v[1] - u[1] * v[0];
+    const l = Math.hypot(nx, ny, nz) || 1;
+    nx /= l; ny /= l; nz /= l;
+    const k = positions.length / 3;
+    positions.push(...A, ...B, ...C);
+    for (let j = 0; j < 3; j++) normals.push(nx, ny, nz);
+    sides.push(k, k + 1, k + 2);
+  }
+  return { positions: new Float32Array(positions), normals: new Float32Array(normals), sides: new Uint32Array(sides), topStart: positions.length / 3, topRing: [] };
+}

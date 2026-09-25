@@ -14,7 +14,7 @@ import { BufferGeometry, Float32BufferAttribute, Shape, ShapeGeometry, ShapeUtil
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
 import { type PieceKind, type Skin, type StickerShape, roundedOutline, stickerLayout, stickerlessOutline, tileSize, tileThickness } from "@cubecore/skin";
-import { type Mitre, type TileSolid, skirtSolid, tileSolid } from "../tile";
+import { type Mitre, type TileSolid, applyDome, pyramidSolid, skirtSolid, tileSolid } from "../tile";
 
 export interface TileKit {
   /** Tile side (cubie units) — the usual one; `sideOf` per piece kind. */
@@ -81,11 +81,16 @@ export function tileKit(skin: Skin): TileKit {
     faceOffset,
     body,
     tile(fi) {
-      const { outline, mitre, key, thickness: t } = outlineFor(fi);
+      const { outline, mitre, key, thickness: t, layout } = outlineFor(fi);
       const bevel = Math.min(skin.stickers.bevel ?? 0, t);
-      return cached(`tile|${key}`, () =>
+      const dome = skin.stickers.kinds?.[layout.kind]?.dome;
+      return cached(`tile|${key}|${dome ? `${dome.flat},${dome.drop}` : ""}`, () =>
         t > 0
-          ? solidToGeometry(tileSolid(outline, { thickness: t, bevel, segments: 4, sink: inset + 0.002, edgeRadius: skin.stickers.edgeRadius ?? 0 }, mitre))
+          ? solidToGeometry(
+              ((solid) => (dome ? applyDome(solid, dome) : solid))(
+                tileSolid(outline, { thickness: t, bevel, segments: 4, sink: inset + 0.002, edgeRadius: skin.stickers.edgeRadius ?? 0 }, mitre),
+              ),
+            )
           : new ShapeGeometry(new Shape(outline.map(([x, y]) => new Vector2(x, y)))),
       );
     },
@@ -93,6 +98,8 @@ export function tileKit(skin: Skin): TileKit {
       const pieces = skin.pieces;
       if (!pieces) return null;
       const { outline, mitre, key } = outlineFor(fi);
+      // "solid": a pyramid to the cubie's centre — whole coloured blocks; "skirt": plastic `depth` deep.
+      if (pieces.fill === "solid") return cached(`pyramid|${key}`, () => solidToGeometry(pyramidSolid(outline, inset + 0.002, faceOffset)));
       return cached(`skirt|${key}`, () => solidToGeometry(skirtSolid(outline, { top: inset + 0.002, depth: pieces.depth, taper: pieces.taper }, mitre)));
     },
     hint(fi) {

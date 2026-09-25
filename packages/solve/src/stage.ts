@@ -397,6 +397,14 @@ export class StageSolver {
       pieces: new Map(this.def.pieces.map((p, i) => [p, vals[i]])),
       ...(this.def.eo ? { flip } : {}),
     });
+    // Known cases for levels too rare to draw at run time (see StageDef.seeds) — straight away.
+    const seeds = this.def.seeds?.[depth];
+    if (seeds?.length) {
+      const [valsText, flipText] = seeds[Math.floor(random() * seeds.length)].split(":");
+      const vals = valsText.split(".").map(Number);
+      const flip = Number(flipText ?? 0);
+      if (evaluate(vals, flip) === depth) return placement(vals, flip);
+    }
     for (let a = 0; a < attempts; a++) {
       // Uniform placement: distinct positions, random orientations.
       const keep = new Set(this.def.keep ?? []);
@@ -435,14 +443,6 @@ export class StageSolver {
         flip = FLIP_NEXT[flip * N_MOVES + m];
       }
       if (evaluate(vals, this.def.eo ? flip : 0) === depth) return placement(vals, this.def.eo ? flip : 0);
-    }
-    // Known cases for levels too rare to find at run time (see StageDef.seeds).
-    const seeds = this.def.seeds?.[depth];
-    if (seeds?.length) {
-      const [valsText, flipText] = seeds[Math.floor(random() * seeds.length)].split(":");
-      const vals = valsText.split(".").map(Number);
-      const flip = Number(flipText ?? 0);
-      if (evaluate(vals, flip) === depth) return placement(vals, flip);
     }
     // The deepest levels can be too rare to hit (EOCross at 10): every such placement is one move beyond a
     // placement one shallower, so step outwards from those (fine as a trainer case, not exactly uniform).

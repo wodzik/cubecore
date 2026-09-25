@@ -45,8 +45,12 @@ export interface SequenceProgress {
 
 /** What to turn now — for arrows on a 3D cube (see arrows.ts). */
 export interface NextTurn {
-  /** "next": the next move of the sequence; "undo": the first move back after a slip. */
-  kind: "next" | "undo";
+  /**
+   * "next": the next move of the sequence; "undo": the first move back after
+   * a slip; "wrong-way": the same, when the slip was the right face turned
+   * the wrong way (or too far) — worth a colour of its own.
+   */
+  kind: "next" | "undo" | "wrong-way";
   /** In the cube's own coordinates. Usually one; the rest of an M done half-way can be two. */
   arrows: TurnArrow[];
   /** The written move it belongs to (null for undo). */
@@ -128,7 +132,11 @@ export class SequenceTracker {
   get nextTurn(): NextTurn | null {
     const p = this.progress;
     if (p.complete) return null;
-    if (p.undo.length) return { kind: "undo", arrows: [turnArrow(p.undo[0])], token: null };
+    if (p.undo.length) {
+      const expected = this.steps[p.done]?.move;
+      const wrongWay = p.undo.length === 1 && expected !== undefined && p.undo[0].family === expected.family;
+      return { kind: wrongWay ? "wrong-way" : "undo", arrows: [turnArrow(p.undo[0])], token: null };
+    }
     const k = p.done;
     const step = this.steps[k];
     if (!step) return null;

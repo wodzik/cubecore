@@ -47,6 +47,13 @@ describe("nextTurn", () => {
     expect(t.nextTurn).toEqual({ kind: "undo", arrows: [{ axis: 2, layers: [1], quarters: 1 }], token: null });
   });
 
+  it("the right face the wrong way is its own kind", () => {
+    const t = new SequenceTracker("R U", solvedState());
+    t.push(mv("R'"));
+    expect(t.nextTurn!.kind).toBe("wrong-way");
+    expect(t.nextTurn!.arrows[0].quarters).toBe(-1); // back: R
+  });
+
   it("practice hides the arrow of a hidden move until a hint", () => {
     const t = new PracticeTracker("R U", solvedState(), { reveal: "none" });
     expect(t.nextTurn).toBeNull();

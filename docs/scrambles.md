@@ -103,11 +103,13 @@ The core behind them: `SequenceTracker` and `PracticeTracker`.
 ### Arrows on the 3D cube
 
 With `arrows` and a player, the cube shows the next turn: a ribbon with an
-arrowhead hovering just above each turning layer, centred on its row (two
-for a wide `r`, the middle row for `M`). A single turn lies over the face you
-see best; a double or triple over the two you see best, with two / three
-heads. The direction is the one written — `R2'` the other way than `R2`,
-`R3` three quarters clockwise (the parser keeps it in `move.written`). After a slip it shows the undo move
+arrowhead just above each turning layer, centred on its row (two for a wide
+`r`, the middle row for `M`), over the face you see best and a little onto
+the next. Every arrow has the same length; the heads say how far — one per
+quarter turn (R, R2, R3). The direction is the one written — `R2'` the other
+way than `R2` (the parser keeps it in `move.written`).
+`arrow-shape="circle"` draws an arc of a circle over the faces instead of a
+ribbon following them. After a slip it shows the undo move
 instead; in practice it stays hidden with the move (Hint or a slip shows it).
 It follows the gyro and camera drags.
 
@@ -116,7 +118,10 @@ It follows the gyro and camera drags.
 <cube-alg-practice arrows player="p"></cube-alg-practice>   <!-- or el.player = playerElement -->
 ```
 
-Colours: `--cc-arrow`, `--cc-arrow-undo`. Underneath: core `turnArrow(move, frame)`
+Colours: `--cc-arrow` (next move), `--cc-arrow-undo` (back after a slip),
+`--cc-arrow-wrong-way` (back after the right face went the wrong way or too
+far — `nextTurn().kind`); after changing them from script call
+`el.refreshArrows()`. Underneath: core `turnArrow(move, frame)`
 and the trackers' `nextTurn` (which layers, which way, in the cube's own
 coordinates — after a rotation or an `r` the next move lands on the right
 physical face), `renderer.setTurnArrows(arrows, { color, opacity, scale })`,

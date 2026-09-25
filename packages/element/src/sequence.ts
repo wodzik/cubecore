@@ -21,8 +21,10 @@
  *
  * Arrows: with `arrows` set and a player (`player="id"` of a <cube-player>,
  * or the `player` property), the 3D cube shows the next turn — one arrow per
- * turning layer (two for a wide r), a longer one with two heads for a
- * double, in --cc-arrow (after a slip: the undo move, in --cc-arrow-undo).
+ * turning layer (two for a wide r), as many heads as quarter turns, in
+ * --cc-arrow; after a slip the undo move in --cc-arrow-undo, or in
+ * --cc-arrow-wrong-way when the right face went the wrong way.
+ * `arrow-shape="circle"` for arcs instead of ribbons along the faces.
  *
  * Events: progress (detail: the progress), complete.
  */
@@ -68,7 +70,8 @@ export const SEQUENCE_STYLES = /* css */ `
   --cc-seq-hidden: color-mix(in srgb, currentColor 45%, transparent);
   --cc-seq-undo: #ff8a4c;
   --cc-arrow: #2f8bff;
-  --cc-arrow-undo: var(--cc-seq-undo);
+  --cc-arrow-undo: #ff4545;
+  --cc-arrow-wrong-way: #ff9a1f;
   --cc-accent: #4f8cff;
   --cc-control-bg: color-mix(in srgb, currentColor 8%, transparent);
   --cc-control-bg-hover: color-mix(in srgb, currentColor 15%, transparent);
@@ -110,7 +113,7 @@ export abstract class CubeSequenceElement extends ElementBase {
   private completed = false;
   private _player: ArrowTarget | null = null;
 
-  static observedAttributes = ["arrows", "player"];
+  static observedAttributes = ["arrows", "player", "arrow-shape"];
 
   attributeChangedCallback(): void {
     this.update();
@@ -204,14 +207,20 @@ export abstract class CubeSequenceElement extends ElementBase {
     return el && "showTurnArrows" in el ? (el as unknown as ArrowTarget) : null;
   }
 
+  /** Draw the arrows again — e.g. after changing --cc-arrow* (CSS changes don't notify the element). */
+  refreshArrows(): void {
+    this.syncArrows();
+  }
+
   private syncArrows(): void {
     const target = this.arrowTarget();
     if (!target) return;
     const turn = this.hasAttribute("arrows") && this.source ? this.nextTurn() : null;
     if (!turn) return target.showTurnArrows(null, {}, this);
     const css = getComputedStyle(this);
-    const color = css.getPropertyValue(turn.kind === "undo" ? "--cc-arrow-undo" : "--cc-arrow").trim();
-    target.showTurnArrows(turn.arrows, { color: color || undefined }, this);
+    const color = css.getPropertyValue(turn.kind === "next" ? "--cc-arrow" : `--cc-arrow-${turn.kind}`).trim();
+    const shape = this.getAttribute("arrow-shape") === "circle" ? "circle" : "box";
+    target.showTurnArrows(turn.arrows, { color: color || undefined, shape }, this);
   }
 
   get messages(): SequenceMessages {

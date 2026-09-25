@@ -14,17 +14,21 @@ describe("turn arrows", () => {
     expect(bv).toBeCloseTo(1.8);
   });
 
-  it("single: over the face seen best; double: over the two seen best", () => {
+  it("over the face seen best, leaning towards the next one seen best", () => {
     const eye = new Vector3(3, 4, 5); // mostly F, then R (U layer: e1 = z, e2 = x)
-    expect(arrowCentre({ axis: 1, layers: [1], quarters: -1 }, eye)).toBe(0); // over F
-    expect(arrowCentre({ axis: 1, layers: [1], quarters: 2 }, eye)).toBe(0.5); // over F and R
+    expect(arrowCentre({ axis: 1, layers: [1], quarters: -1 }, eye)).toBe(0.25);
+    expect(arrowCentre({ axis: 1, layers: [1], quarters: 2 }, eye)).toBe(0.25);
   });
 
-  it("stays on the faces in view, direction from the sign", () => {
-    expect(arrowSpan(-1, 0)).toEqual({ from: 0.4, to: -0.4 });
-    const d = arrowSpan(2, 0.5);
-    expect(d.from).toBeCloseTo(-0.4);
-    expect(d.to).toBeCloseTo(1.4);
+  it("one length for every turn; direction from the sign", () => {
+    const [a, b] = [arrowSpan(-1, 0), arrowSpan(3, 0)];
+    expect(a.from - a.to).toBeCloseTo(b.to - b.from);
+    expect(a.from).toBeGreaterThan(a.to);
+  });
+
+  it("circle: an arc clear of the corners", () => {
+    const [u, v] = pathPoint(0.5, "circle");
+    expect(Math.hypot(u, v)).toBeGreaterThan(1.5 * Math.SQRT2);
   });
 
   it("as many heads as quarter turns; one mesh per layer", () => {

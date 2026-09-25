@@ -27,6 +27,8 @@
       #setup { --cc-seq-size: 18px; }
       #setupBox { border-left: 3px solid var(--accent); padding-left: 10px; }
       cube-player { height: min(56vh, 520px); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+      .swatch { display: inline-flex; align-items: center; gap: 4px; }
+      .swatch input { width: 26px; height: 22px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: none; cursor: pointer; }
       .keys { font: 12px ui-monospace, monospace; color: var(--muted); }
     </style>
   </head>
@@ -45,7 +47,14 @@
           <button role="tab" id="tabAlg" aria-selected="false">Algorithm</button>
         </div>
         <span class="spacer"></span>
-        <label class="muted"><input type="checkbox" id="arrows" checked /> Arrows on the cube</label>
+        <label class="muted"><input type="checkbox" id="arrows" checked /> Arrows</label>
+        <select id="arrowShape" aria-label="Arrow shape">
+          <option value="box">Along the faces</option>
+          <option value="circle">Arc</option>
+        </select>
+        <label class="muted swatch" title="Next move"><input type="color" id="colNext" value="#2f8bff" /> next</label>
+        <label class="muted swatch" title="Undo a slip"><input type="color" id="colUndo" value="#ff4545" /> undo</label>
+        <label class="muted swatch" title="Right face, wrong way"><input type="color" id="colWrong" value="#ff9a1f" /> wrong way</label>
       </div>
 
       <section class="panel" id="scramblePanel">

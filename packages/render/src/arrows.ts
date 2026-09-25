@@ -3,8 +3,10 @@
  * layer that is about to turn — centred on its row, flat side to the cube,
  * rounding the cube's edges — the way the layer moves.
  *
- *   single turn         over the face you see best, one head
- *   double / triple     over the two faces you see best, two / three heads
+ * One length for every arrow, over the face you see best and a little onto
+ * the next one seen best; as many heads as quarter turns (1–3).
+ * Shapes: "box" follows the faces at an even height, "circle" is an arc of
+ * a circle over them (clear of the corners).
  *
  * The direction is the one written (R2' the other way than R2).
  *
@@ -25,7 +27,11 @@ export interface ArrowStyle {
   opacity?: number;
   /** Size factor (ribbon width, heads). Default 1. */
   scale?: number;
+  /** "box": even height over the faces, round over the edges (default); "circle": an arc over them. */
+  shape?: ArrowShape;
 }
+
+export type ArrowShape = "box" | "circle";
 
 const HALF = 1.5; // half the cube
 /** Height of the ribbon above the faces. */
@@ -37,11 +43,16 @@ const HEAD_WIDTH = 0.7;
 const HEAD_LENGTH = 0.5;
 /** Each further head this many head lengths behind the one before. */
 const HEAD_GAP = 0.9;
-/** How far over a face an arrow reaches from its middle (quarters; 0.5 would be the edge). */
-const OVER_FACE = 0.4;
+/** Length of every arrow, in quarters of the way round. */
+const SPAN = 1.3;
+/** Arrows sit this far (quarters) from the best-seen face's middle towards the next face seen best. */
+const LEAN = 0.25;
+/** The circle clears the corners (1.5·√2 ≈ 2.12) by a little. */
+const CIRCLE = HALF * Math.SQRT2 + 0.2;
+const CIRCLE_QUARTER = (Math.PI / 2) * CIRCLE;
 
 /** How far arrows reach from the centre (for fitting the camera). */
-export const ARROW_REACH = Math.hypot(HALF * Math.SQRT2 + HOVER, 1 + HEAD_WIDTH / 2);
+export const ARROW_REACH = Math.hypot(HALF * Math.SQRT2 + 0.3, 1 + HEAD_WIDTH / 2);
 
 /** In-plane basis (e1, e2) with e1 × e2 = +axis. */
 export const PLANE: Record<Axis, [Vector3, Vector3, Vector3]> = {
@@ -51,7 +62,8 @@ export const PLANE: Record<Axis, [Vector3, Vector3, Vector3]> = {
 };
 
 /** Point of the path at `t` quarters, in plane coordinates (u along e1, v along e2). */
-export function pathPoint(t: number): [number, number] {
+export function pathPoint(t: number, shape: ArrowShape = "box"): [number, number] {
+  if (shape === "circle") return [CIRCLE * Math.cos((t * Math.PI) / 2), CIRCLE * Math.sin((t * Math.PI) / 2)];
   const k = Math.floor(t);
   const s = (t - k) * QUARTER;
   let u: number, v: number;
@@ -72,21 +84,18 @@ function sideNormal(axis: Axis, k: number): Vector3 {
 }
 
 /**
- * Where an arrow goes for a viewer at `eye` (cube coordinates): the middle
- * of the best-seen side for a single turn, the edge between the two
- * best-seen neighbouring sides for a double or triple.
+ * Where an arrow goes for a viewer at `eye` (cube coordinates): over the
+ * best-seen side, leaning towards its better-seen neighbour.
  */
 export function arrowCentre(arrow: TurnArrow, eye: Vector3): number {
   const seen = [0, 1, 2, 3].map((k) => sideNormal(arrow.axis, k).dot(eye));
   const best = seen.indexOf(Math.max(...seen));
-  if (Math.abs(arrow.quarters) === 1) return best;
-  const next = seen[(best + 1) % 4] >= seen[(best + 3) % 4] ? best + 1 : best - 1;
-  return (best + next) / 2;
+  return best + (seen[(best + 1) % 4] >= seen[(best + 3) % 4] ? LEAN : -LEAN);
 }
 
-/** Tail → tip in quarters along the path. */
+/** Tail → tip in quarters along the path (the same length for every turn). */
 export function arrowSpan(quarters: number, centre: number): { from: number; to: number } {
-  const half = Math.abs(quarters) === 1 ? OVER_FACE : 0.5 + OVER_FACE;
+  const half = SPAN / 2;
   return quarters > 0 ? { from: centre - half, to: centre + half } : { from: centre + half, to: centre - half };
 }
 
@@ -94,11 +103,11 @@ export function arrowSpan(quarters: number, centre: number): { from: number; to:
 export type Strip = [number, number][];
 
 /** One arrow as strips: the ribbon, then one per head (as many heads as quarter turns, up to 3). */
-export function arrowStrips(quarters: number, centre: number, scale = 1): Strip[] {
+export function arrowStrips(quarters: number, centre: number, scale = 1, shape: ArrowShape = "box"): Strip[] {
   const { from, to } = arrowSpan(quarters, centre);
   const dir = Math.sign(to - from);
   const heads = Math.min(3, Math.max(1, Math.abs(quarters)));
-  const hl = (HEAD_LENGTH * scale) / QUARTER;
+  const hl = (HEAD_LENGTH * scale) / (shape === "circle" ? CIRCLE_QUARTER : QUARTER);
   const strip = (t0: number, t1: number, w0: number, w1: number, n: number): Strip =>
     Array.from({ length: n + 1 }, (_, i) => [t0 + ((t1 - t0) * i) / n, w0 + ((w1 - w0) * i) / n]);
   const end = to - dir * hl * (1 + HEAD_GAP * (heads - 1));
@@ -111,13 +120,13 @@ export function arrowStrips(quarters: number, centre: number, scale = 1): Strip[
 }
 
 /** Strips as a mesh around the layer (layer frame: axis = z, the row's middle at z = 0); width along the axis. */
-function wrap(strips: readonly Strip[]): BufferGeometry {
+function wrap(strips: readonly Strip[], shape: ArrowShape): BufferGeometry {
   const pos: number[] = [];
   const index: number[] = [];
   for (const strip of strips) {
     const first = pos.length / 3;
     for (const [t, half] of strip) {
-      const [u, v] = pathPoint(t);
+      const [u, v] = pathPoint(t, shape);
       pos.push(u, v, half, u, v, -half);
     }
     for (let i = 0; i < strip.length - 1; i++) {
@@ -144,7 +153,8 @@ export function buildArrows(arrows: readonly TurnArrow[], centres: readonly numb
   });
   arrows.forEach((arrow, i) => {
     const [e1, e2, n] = PLANE[arrow.axis];
-    const geometry = wrap(arrowStrips(arrow.quarters, centres[i], style.scale ?? 1));
+    const shape = style.shape ?? "box";
+    const geometry = wrap(arrowStrips(arrow.quarters, centres[i], style.scale ?? 1, shape), shape);
     for (const layer of arrow.layers) {
       const mesh = new Mesh(geometry, material);
       mesh.matrixAutoUpdate = false;

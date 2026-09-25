@@ -75,11 +75,21 @@ function setMode(m: typeof mode) {
 $("tabScramble").onclick = () => setMode("scramble");
 $("tabAlg").onclick = () => setMode("alg");
 
-$("arrows").onchange = () => {
+// Arrows: on / off, shape, and a colour for each kind (CSS variables on the elements).
+const arrowOptions = () => {
   const on = $<HTMLInputElement>("arrows").checked;
-  for (const el of [scrambleEl, setupEl, practiceEl]) el.toggleAttribute("arrows", on);
+  const shape = $<HTMLSelectElement>("arrowShape").value;
+  for (const el of [scrambleEl, setupEl, practiceEl]) {
+    el.style.setProperty("--cc-arrow", $<HTMLInputElement>("colNext").value);
+    el.style.setProperty("--cc-arrow-undo", $<HTMLInputElement>("colUndo").value);
+    el.style.setProperty("--cc-arrow-wrong-way", $<HTMLInputElement>("colWrong").value);
+    el.setAttribute("arrow-shape", shape);
+    el.toggleAttribute("arrows", on);
+    el.refreshArrows(); // new colours (CSS changes don't notify the element)
+  }
 };
-$("arrows").dispatchEvent(new Event("change"));
+for (const id of ["arrows", "arrowShape", "colNext", "colUndo", "colWrong"]) $(id).addEventListener("input", arrowOptions);
+arrowOptions();
 
 // ─── scramble ───
 

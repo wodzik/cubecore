@@ -165,6 +165,8 @@ export interface CubeScrambleProps {
   arrows?: boolean;
   /** The <CubePlayer> ref the arrows go to. */
   player?: { current: ArrowTarget | null };
+  /** "box" (ribbon along the faces, default) or "circle" (an arc). Colours: --cc-arrow, --cc-arrow-undo, --cc-arrow-wrong-way. */
+  arrowShape?: "box" | "circle";
   /** Show an input to paste or type your own scramble (fires onChange). */
   editable?: boolean;
   messages?: Partial<ScrambleMessages>;
@@ -193,7 +195,7 @@ export const CubeScramble = forwardRef<CubeScrambleElement | null, CubeScrambleP
     if (el.current) el.current.player = p.player?.current ?? null;
   });
   useEvents(el, { progress: p.onProgress, complete: p.onComplete, change: p.onChange } as Record<string, Handler<never> | undefined>);
-  return createElement("cube-scramble", { ref: el, editable: p.editable ? "" : undefined, arrows: p.arrows ? "" : undefined, id: p.id, className: p.className, style: p.style });
+  return createElement("cube-scramble", { ref: el, editable: p.editable ? "" : undefined, arrows: p.arrows ? "" : undefined, "arrow-shape": p.arrowShape, id: p.id, className: p.className, style: p.style });
 });
 
 // ─── <CubeAlgPractice> ───
@@ -206,6 +208,8 @@ export interface CubeAlgPracticeProps {
   arrows?: boolean;
   /** The <CubePlayer> ref the arrows go to. */
   player?: { current: ArrowTarget | null };
+  /** "box" (ribbon along the faces, default) or "circle" (an arc). Colours: --cc-arrow, --cc-arrow-undo, --cc-arrow-wrong-way. */
+  arrowShape?: "box" | "circle";
   /** "all" every move shown, "done" dots until done (default), "none" dots only. */
   reveal?: "all" | "done" | "none";
   /** Show the next move after a slip (default true). */
@@ -247,6 +251,7 @@ export const CubeAlgPractice = forwardRef<CubeAlgPracticeElement | null, CubeAlg
       ref: el,
       reveal: p.reveal,
       arrows: p.arrows ? "" : undefined,
+      "arrow-shape": p.arrowShape,
       "hint-on-mistake": p.hintOnMistake === false ? "off" : undefined,
       controls: p.controls,
       headless: p.headless ? "" : undefined,

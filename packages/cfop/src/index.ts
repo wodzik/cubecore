@@ -64,7 +64,8 @@ export const cfopMask = (name: CfopMask, frame: Frame = IDENTITY_FRAME): Mask =>
 
 // ─── trainer stages (run them with @cubecore/solve: stageSolver / stageScramble) ───
 
-export type F2LSlot = "FR" | "FL" | "BL" | "BR";
+import type { F2LSlot } from "./slots";
+export type { F2LSlot } from "./slots";
 const CROSS_PIECES = [PIECE.DR, PIECE.DF, PIECE.DL, PIECE.DB];
 const SLOT_PIECES: Record<F2LSlot, { edge: Piece; corner: Piece }> = {
   FR: { edge: PIECE.FR, corner: PIECE.DFR },
@@ -112,6 +113,7 @@ export const CFOP_TRAINERS = {
 } as const;
 
 export * from "./cases";
+export * from "./f2l";
 
 /**
  * Last-layer stages that also say which case came up: OLL gets the OLL case

@@ -4,3 +4,4 @@ export * from "./replay";
 export * from "./timings";
 export * from "./share";
 export * from "./segments";
+export * from "./stats";

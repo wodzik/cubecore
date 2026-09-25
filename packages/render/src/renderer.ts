@@ -16,6 +16,7 @@ import {
   FrontSide,
   Group,
   HemisphereLight,
+  NeutralToneMapping,
   DirectionalLight,
   Mesh,
   MeshBasicMaterial,
@@ -148,6 +149,9 @@ export class CubeRenderer {
 
     this.renderer = new WebGLRenderer({ antialias: true, alpha: true });
     this.renderer.outputColorSpace = SRGBColorSpace;
+    // Lit light colours (white, yellow) would clip to flat white under the lights; this rolls off
+    // the highlights instead, so their shading (bevels, domes) still shows. Flat materials opt out.
+    this.renderer.toneMapping = NeutralToneMapping;
     this.renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio ?? 1, 2));
     this.canvas = this.renderer.domElement;
     this.canvas.style.display = "block";
@@ -331,7 +335,8 @@ export class CubeRenderer {
         m = new MeshStandardMaterial({
           color: new Color(color),
           emissive: new Color(color),
-          emissiveIntensity: finish === "matte" ? 0.45 : 0.32,
+          // …less on light colours (they don't go muddy), so their shading stays visible.
+          emissiveIntensity: (finish === "matte" ? 0.45 : 0.32) * (1 - 0.6 * lightness(color)),
           roughness,
           metalness: 0,
         });
@@ -342,6 +347,7 @@ export class CubeRenderer {
           transparent: hint,
           opacity: hint ? opacity : 1,
           depthWrite: !hint,
+          toneMapped: false,
         });
       }
       this.materials.set(key, m);
@@ -690,4 +696,10 @@ export function showPosition(
   }
   const active = position.active ? moves[position.active.index] : null;
   renderer.showPartial(s, active, position.active?.progress ?? 0, spins);
+}
+
+/** Relative luminance of a CSS colour, 0 (black) … 1 (white). */
+function lightness(color: string): number {
+  const c = new Color(color);
+  return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
 }

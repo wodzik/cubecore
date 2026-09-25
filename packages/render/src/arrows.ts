@@ -177,6 +177,7 @@ export function buildArrows(arrows: readonly TurnArrow[], centres: readonly numb
     opacity: style.opacity ?? 0.95,
     side: DoubleSide,
     depthWrite: false,
+    toneMapped: false, // exactly the colour asked for
   });
   const shape = style.shape ?? "box";
   const scale = style.scale ?? 1;

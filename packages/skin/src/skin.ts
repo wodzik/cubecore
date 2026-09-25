@@ -319,7 +319,7 @@ export const SKINS = {
       thickness: 0.035,
       bevel: 0.022,
       // The centre cap: a little smaller, a round plateau level with the other tiles, its corners ~1.5 mm lower.
-      kinds: { center: { size: 0.965, dome: { flat: 0.68, drop: 0.06 } } }, // plateau level with the other tiles
+      kinds: { center: { size: 0.965, dome: { flat: 0.76, drop: 0.09 } } }, // plateau level with the other tiles
       edgeRadius: 0.05,
       material: "plastic",
       roughness: 0.35,

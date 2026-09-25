@@ -29,9 +29,9 @@ each tile in the tile's colour — a corner is three coloured parts, an edge
 two, a centre one (cubes moulded in colour); the core keeps `body` (e.g.
 white stems: `body: "#e8e8e8"`). Needs `pieces` (shaped piece bodies).
 
-**Domed tiles:** `kinds: { center: { dome: { flat: 0.68, drop: 0.06 } } }` —
-the top is flat inside a circle (0.68 × the tile's reach), level with the
-other tiles, and slopes 0.06 lower towards the corners (QiYi's centre caps).
+**Domed tiles:** `kinds: { center: { dome: { flat: 0.76, drop: 0.09 } } }` —
+the top is flat inside a circle (0.76 × the tile's reach), level with the
+other tiles, and slopes 0.09 lower towards the corners (QiYi's centre caps).
 
 **Solid coloured pieces:** `pieces: { …, colored: true, fill: "solid" }` —
 the plastic under each tile keeps its rounded, tapered shape but runs down to

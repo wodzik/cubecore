@@ -58,6 +58,7 @@ export function buildAttachments(skin: Skin, kit: { sideOf(kind: PieceKind): num
       depthWrite: false,
       blending: multiply ? THREE.MultiplyBlending : THREE.NormalBlending,
       premultipliedAlpha: multiply,
+      toneMapped: false,
     });
     disposables.push(material);
     const [ox, oy] = decal.offset ?? [0, 0];

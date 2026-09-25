@@ -14,7 +14,7 @@ import { BufferGeometry, Float32BufferAttribute, Shape, ShapeGeometry, ShapeUtil
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
 import { type PieceKind, type Skin, type StickerShape, reachEdge, roundedOutline, stickerLayout, stickerlessOutline, tileSize, tileThickness } from "@cubecore/skin";
-import { type Mitre, type TileSolid, applyDome, ballCut, densify, skirtSolid, tileSolid } from "../tile";
+import { type Mitre, type TileSolid, applyDome, densify, planeCut, skirtSolid, tileSolid } from "../tile";
 
 export interface TileKit {
   /** Tile side (cubie units) — the usual one; `sideOf` per piece kind. */
@@ -148,15 +148,19 @@ export function tileKit(skin: Skin): TileKit {
       const depth = pieces.fill === "solid" ? size : pieces.depth;
       const at = reliefAt(layout, s);
       const relief = pieces.relief && at.length ? { at, ...pieces.relief } : undefined;
-      // Wrapped round the mechanism: whatever reaches into its ball is cut away along its surface.
-      // (The cube's centre, in this tile's frame: its cubie is one step out along the face normal, u / v along it.)
+      // The inside is cut flat, square to the piece's direction from the cube's centre and touching the mechanism
+      // ball: a corner's inner point becomes a small triangle, an edge's inner edge a flat strip, a centre's back flat.
+      // (In this tile's frame the cube's centre is one step in along the face normal and −u / −v across.)
       const ball = pieces.mechanism ?? MECHANISM;
       const centre: [number, number, number] = [-layout.u, -layout.v, -1 - faceOffset];
+      const len = Math.hypot(layout.u, layout.v, 1);
+      const dir: [number, number, number] = [layout.u / len, layout.v / len, 1 / len];
       return cached(`skirt|${key}|${depth}`, () =>
         solidToGeometry(
-          ballCut(
+          planeCut(
             skirtSolid(densify(outline, 192), { top: inset + 0.002, depth, taper: pieces.taper, wall: pieces.wall, relief, steps: 32 }, mitre),
             centre,
+            dir,
             ball,
           ),
         ),

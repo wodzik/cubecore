@@ -411,21 +411,20 @@ export function densify(outlineIn: readonly Pt[], count = 128): Pt[] {
 }
 
 /**
- * Cut a solid by a ball (centre `c`, radius `r`, in the solid's frame): points
- * inside it are moved out onto its surface and face its centre — the pieces
- * wrapped round the cube's mechanism. Needs rings dense enough where the ball
- * crosses them.
+ * Cut a solid flat: points behind the plane through `c + d·n` square to `n`
+ * (unit, pointing away from `c`) are moved onto it and face back along `−n` —
+ * a piece's inside cut square to its direction from the cube's centre, clear
+ * of the mechanism ball of radius `d`. Needs rings dense enough where the plane crosses them.
  */
-export function ballCut(solid: TileSolid, c: readonly [number, number, number], r: number): TileSolid {
+export function planeCut(solid: TileSolid, c: readonly [number, number, number], n: readonly [number, number, number], d: number): TileSolid {
   const positions = solid.positions.slice();
   const normals = solid.normals.slice();
   for (let i = 0; i < positions.length; i += 3) {
-    const d = [positions[i] - c[0], positions[i + 1] - c[1], positions[i + 2] - c[2]];
-    const l = Math.hypot(d[0], d[1], d[2]);
-    if (l >= r || l < 1e-9) continue;
+    const s = (positions[i] - c[0]) * n[0] + (positions[i + 1] - c[1]) * n[1] + (positions[i + 2] - c[2]) * n[2] - d;
+    if (s >= 0) continue;
     for (let k = 0; k < 3; k++) {
-      positions[i + k] = c[k] + (d[k] / l) * r;
-      normals[i + k] = -d[k] / l;
+      positions[i + k] -= s * n[k];
+      normals[i + k] = -n[k];
     }
   }
   return { ...solid, positions, normals };

@@ -49,8 +49,10 @@ to that height above the face, leaving a thin overhanging corner — so the tile
 overhangs and the piece clears the centre when a corner is cut (`qiyiSC`:
 clear up to ~12° with the layers off by the same angle). Shaped pieces get a
 dark mechanism ball in the middle (`mechanism`, radius, default 1.15), so the
-gaps never show through the cube; the pieces are cut along its surface — a
-corner's inner point, an edge's inner edge and a centre's back wrap round it.
+gaps never show through the cube; each piece's inside is cut flat where it
+would reach the ball, square to the piece's direction from the cube's centre —
+a small triangle on a corner's inner point, a strip along an edge's inner edge,
+a flat back on a centre (`qiyiSC`: `mechanism: 1`).
 
 **2D pictures:** `pictureBody` — the plastic between tiles in
 `@cubecore/image` pictures; `null` makes the gaps see-through (light plastic

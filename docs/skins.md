@@ -12,6 +12,7 @@ preset and change what you need:
 | `gan` | GAN-style stickerless (rounded corner / edge tongues, near-round centres) |
 | `ganI4` | GAN i4 smart cube (from product photos) |
 | `qiyiSC` | QiYi QY-SC smart cube: moulded in colour, tile outlines traced from QiYi's app model, pillowy tiles, well-rounded cube edges, dark gaps, domed centre — picked for QiYi cubes named QY-QYSC… |
+| `moyu` | MoYu smart cubes (WCU, MY32…): moulded in colour, thick tiles, shapes and colours from the cube model in MoYu's app — picked for MoYu cubes named WCU_MY… |
 | `gan356m` | GAN 356 M: square corner tiles, round edge tongues, near-round centres — measured from "GAN CUBE 356s M air" by Amyyu (Sketchfab, CC BY 4.0) |
 
 **Per piece kind:** `stickers.kinds` gives corner / edge / centre tiles their
@@ -81,6 +82,21 @@ renderSvg(state, { skin: mine });
 
 Colours are per **colour class** (the sticker's home face, U R F D L B), so a
 different colour scheme is just another `colors` array (`withColors`).
+
+## Stickered versions
+
+Every brand also comes as a stickered cube — a black, rounded body with the
+brand's stickers on it: `withStickers(skin, style)`, `style` one of
+`"raised"` (thick, rounded stickers), `"thin"` (a real sticker, the default)
+or `"flat"` (a flat print). The sticker shapes come from `skin.stickerSet`
+(`gan356m`: GAN's sticker atlas — rounded squares, edges with a round tongue,
+round centres; `moyu` and `qiyiSC`: the stickered cubes in their apps); a skin
+without one gets its own tile shapes, at most 0.88 of a face. Colours, logos and
+the rest carry over.
+
+```ts
+renderer.setSkin(withStickers(SKINS.moyu, "flat"));
+```
 
 ## The layers of a skin
 

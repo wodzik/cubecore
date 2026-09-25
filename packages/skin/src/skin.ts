@@ -125,6 +125,11 @@ export interface Skin {
     fillOuter?: boolean;
   };
   /**
+   * The brand's sticker shapes for its stickered version (`withStickers`):
+   * tile size, outlines, and optionally a different centre size.
+   */
+  stickerSet?: StickerSet;
+  /**
    * Images on stickers — logos, symbols, printed patterns (see
    * attachments.ts). They follow their sticker. Brand logos are trademarks:
    * apps supply their own, the library ships none.
@@ -165,6 +170,16 @@ export interface Skin {
    */
   themes?: { light?: SkinTheme; dark?: SkinTheme };
 }
+
+export interface StickerSet {
+  size: number;
+  centerSize?: number;
+  shape: StickerShape;
+  paths?: StickerPaths;
+}
+
+/** How a stickered version's stickers stand: thick and rounded, thin (a real sticker) or a flat print. */
+export type StickerStyle = "raised" | "thin" | "flat";
 
 export interface SkinTheme {
   body?: string;
@@ -305,26 +320,36 @@ export const SKINS = {
    * "tongue" towards the centre, near-round centres; thin glossy tiles.
    * Shapes, sizes and colours measured from "GAN CUBE 356s M air" by Amyyu
    * (https://sketchfab.com/3d-models/gan-cube-356s-m-air-dd4768b8fe2841c78e418230e5d9e192,
-   * CC BY 4.0). No logo — that's up to the app (a decal).
+   * CC BY 4.0); smoothed after the cube in GAN's app. No logo — that's up to the app (a decal).
    */
   gan356m: {
     body: "#1e2023",
-    cubieSize: 0.992,
-    cubieRadius: 0.05,
+    // The pieces nearly touch; the core is hidden (sharp is fine), a mechanism ball fills the middle.
+    cubieSize: 0.998,
+    cubieRadius: 0.01,
     bodyInset: 0.015,
-    pieces: { depth: 0.3, taper: 0.06, core: 0.6 },
+    // Black plastic under the tiles, following them (straight walls, then narrowing), corner-cutting reliefs.
+    pieces: { depth: 0.3, taper: 0.3, wall: 0.35, relief: { radius: 0.3, depth: 0.12, start: 0.16, tile: 0.01 }, mechanism: 1, core: 0.5, fill: "solid" },
     stickers: {
       colors: ["#fafafa", "#e10b2a", "#008526", "#ffe700", "#f58d1f", "#00319d"],
-      size: 0.99,
+      size: 0.985,
       radius: 0.015,
       shape: { corner: { inner: 0.016, outer: 0.014 }, edge: { inner: 0.375, outer: 0.015 }, center: 0.285 },
-      thickness: 0.014,
-      kinds: { center: { size: 0.979, thickness: 0.04 } }, // the centre cap: a little smaller, standing out more
-      bevel: 0.006,
-      edgeRadius: 0.02,
+      // Thick tiles with soft rounded edges and a well-rounded cube edge (smooth, as GAN's app draws it).
+      thickness: 0.04,
+      bevel: 0.034,
+      kinds: { center: { size: 0.979, thickness: 0.05, bevel: 0.04 } }, // the centre cap: a little smaller, standing out more
+      edgeRadius: 0.14,
       material: "plastic",
       roughness: 0.3,
       fillOuter: true,
+    },
+    // GAN's stickers (from the sticker atlas in GAN's app): rounded squares, edges with a round tongue, round centres.
+    stickerSet: {
+      size: 0.82,
+      centerSize: 0.867,
+      shape: { corner: { inner: 0.07, outer: 0.07 }, edge: { inner: 0.07, outer: 0.07 }, center: 0.5 },
+      paths: { edge: "M0.06 0 H0.94 Q1 0 1 0.06 V0.78 C1 0.86 0.75 1 0.5 1 C0.25 1 0 0.86 0 0.78 V0.06 Q0 0 0.06 0 Z" },
     },
     mask: { ignored: "#5a5a5a", oriented: "#39c7d4", dimAmount: 0.55 },
     hints: { enabled: false, distance: 1.4, opacity: 0.75, ignoredOpacity: 0.35 },
@@ -368,6 +393,46 @@ export const SKINS = {
       roughness: 0.35,
       fillOuter: true,
     },
+    // QiYi's stickers (the stickered cube in QiYi's app): a big round at the cube corner, edges rounded towards the centre.
+    stickerSet: {
+      size: 0.87,
+      centerSize: 0.86,
+      shape: { corner: { inner: 0.06, outer: 0.06 }, edge: { inner: 0.2, outer: 0.06 }, center: 0.45 },
+      paths: { corner: "M0.4 0 H0.94 Q1 0 1 0.06 V0.94 Q1 1 0.94 1 H0.06 Q0 1 0 0.94 V0.4 Q0 0 0.4 0 Z" },
+    },
+    mask: { ignored: "#5a5a5a", oriented: "#39c7d4", dimAmount: 0.55 },
+    hints: { enabled: false, distance: 1.4, opacity: 0.75, ignoredOpacity: 0.35 },
+    background: null,
+    themes: { light: LIGHT_PAGE },
+  },
+  /**
+   * MoYu smart cubes (WCU — MY32 and friends): stickerless, moulded in colour;
+   * thick tiles, corner tiles nearly square with a rounder corner towards the
+   * centre, edge tiles well rounded towards the centre, rounded-square
+   * centres. Shapes and colours from the cube model in MoYu's app (WCU CUBE).
+   * No logo — that's up to the app (a decal).
+   */
+  moyu: {
+    body: "#2b2a28",
+    pictureBody: null,
+    cubieSize: 0.998,
+    cubieRadius: 0.01,
+    bodyInset: 0.02,
+    pieces: { depth: 0.32, taper: 0.3, wall: 0.35, relief: { radius: 0.3, depth: 0.12, start: 0.16, tile: 0.01 }, mechanism: 1, core: 0.5, colored: true, fill: "solid" },
+    stickers: {
+      colors: ["#f7f7f5", "#d50000", "#63dd16", "#ffd600", "#ff6d00", "#2861ff"],
+      size: 0.97,
+      radius: 0.05,
+      shape: { corner: { inner: 0.12, outer: 0.05 }, edge: { inner: 0.3, outer: 0.05 }, center: 0.3 },
+      thickness: 0.06,
+      bevel: 0.05,
+      edgeRadius: 0.15,
+      material: "plastic",
+      roughness: 0.4,
+      fillOuter: true,
+    },
+    // MoYu's stickers (the stickered cube in MoYu's app): rounded squares, the corners towards the centre rounder.
+    stickerSet: { size: 0.875, shape: { corner: { inner: 0.25, outer: 0.04 }, edge: { inner: 0.25, outer: 0.04 }, center: 0.25 } },
     mask: { ignored: "#5a5a5a", oriented: "#39c7d4", dimAmount: 0.55 },
     hints: { enabled: false, distance: 1.4, opacity: 0.75, ignoredOpacity: 0.35 },
     background: null,
@@ -405,4 +470,42 @@ export function mix(hex: string, towards: string, amount: number): string {
 /** The same skin with other sticker colours (U R F D L B home-face order) — e.g. a Japanese scheme or a custom one. */
 export function withColors(skin: Skin, colors: readonly [string, string, string, string, string, string]): Skin {
   return { ...skin, stickers: { ...skin.stickers, colors } };
+}
+
+const STICKER_STYLES: Record<StickerStyle, { thickness: number; bevel: number }> = {
+  raised: { thickness: 0.03, bevel: 0.022 },
+  thin: { thickness: 0.012, bevel: 0.006 },
+  flat: { thickness: 0.002, bevel: 0 },
+};
+
+/**
+ * The stickered version of a skin: a black, rounded body with the brand's
+ * stickers (`skin.stickerSet`, else the skin's own shapes, at most 0.88 of a face)
+ * on top — `raised` (thick, rounded), `thin` (like a real sticker) or `flat`
+ * (a print). Colours, logos and the rest stay.
+ */
+export function withStickers(skin: Skin, style: StickerStyle = "thin"): Skin {
+  const set = skin.stickerSet ?? { size: Math.min(skin.stickers.size, 0.88), shape: skin.stickers.shape ?? { corner: { inner: skin.stickers.radius, outer: skin.stickers.radius }, edge: { inner: skin.stickers.radius, outer: skin.stickers.radius }, center: skin.stickers.radius } };
+  const { thickness, bevel } = STICKER_STYLES[style];
+  return {
+    ...skin,
+    body: "#161616",
+    pictureBody: undefined,
+    cubieSize: 0.985,
+    cubieRadius: 0.08,
+    bodyInset: 0.004,
+    pieces: undefined,
+    stickers: {
+      ...skin.stickers,
+      size: set.size,
+      shape: set.shape,
+      paths: set.paths,
+      kinds: set.centerSize ? { center: { size: set.centerSize } } : undefined,
+      thickness,
+      bevel,
+      edgeRadius: 0,
+      fillOuter: false,
+      material: style === "flat" ? skin.stickers.material : "plastic",
+    },
+  };
 }

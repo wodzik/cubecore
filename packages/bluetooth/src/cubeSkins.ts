@@ -7,6 +7,7 @@
  *   GAN i4 (name contains "i4")  → ganI4
  *   any other GAN                → gan
  *   QiYi QY-SC (name QY-QYSC…)   → qiyiSC
+ *   MoYu (name WCU_MY…)          → moyu
  *   anything else                → stickerless (most smart cubes are)
  *
  * Only looks are chosen here — nothing depends on it.
@@ -28,6 +29,7 @@ const BUILT_IN: CubeSkinRule[] = [
   { protocol: "gan", name: /i4\b|i4[^\d]|gan\s*i4/i, skin: "ganI4" },
   { protocol: "gan", skin: "gan" },
   { protocol: "qiyi", name: /^QY-QYSC/i, skin: "qiyiSC" },
+  { protocol: "moyu", name: /^WCU_MY/i, skin: "moyu" },
   { skin: "stickerless" },
 ];
 const registered: CubeSkinRule[] = [];

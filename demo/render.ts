@@ -4,6 +4,7 @@ import { CFOP } from "../packages/cfop/src/index";
 import { MASK_NAMES, maskByName } from "../packages/methods/src/index";
 import { SvgCache, svgKey } from "../packages/image/src/index";
 import { type BackView, CubeRenderer, SKINS, type Skin, showPosition } from "../packages/render/src/index";
+import { type StickerStyle, withStickers } from "../packages/skin/src/index";
 import { ReplayClock, recording } from "../packages/timeline/src/index";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -71,6 +72,7 @@ const DEMO_SKINS: Record<string, Skin> = {
   // The logo is yours to supply (demo/assets is git-ignored: brand logos stay out of the repo).
   "gan 356 m + logo": { ...SKINS.gan356m, decals: [{ select: { stickers: [4] }, image: "/assets/gan-logo.png", size: 0.75, blend: "multiply" }] },
   "qiyi sc + logo": { ...SKINS.qiyiSC, decals: [{ select: { stickers: [4] }, image: "/assets/qiyi-logo.png", size: 0.56, rotate: 2 }] },
+  "moyu + logo": { ...SKINS.moyu, decals: [{ select: { stickers: [4] }, image: "/assets/moyu-logo.png", size: 0.62 }] },
   "gan i4 + logo": { ...SKINS.ganI4, decals: [{ select: { stickers: [4] }, image: "/assets/gan-logo.png", size: 0.62, blend: "multiply" }] },
   // Pieces from glTF files: the standard skin's settings, but every piece is a model (here: i4-style templates
   // exported by scripts/export-models.ts) — if you see i4 pieces, the models are what's drawn.
@@ -117,12 +119,16 @@ for (const p of MASK_NAMES) $<HTMLSelectElement>("mask").add(new Option(p, p));
 let skin: Skin = SKINS.standard;
 let mask: Mask | null = null;
 function applySkin() {
-  const base = DEMO_SKINS[$<HTMLSelectElement>("skin").value];
+  // "Stickers": the same brand as a stickered cube (black body; raised, thin or flat stickers).
+  const chosen = DEMO_SKINS[$<HTMLSelectElement>("skin").value];
+  const style = $<HTMLSelectElement>("stickers").value as StickerStyle | "";
+  const base = style ? withStickers(chosen, style) : chosen;
   skin = base;
   renderer.setSkin({ ...base, hints: { ...base.hints, enabled: $<HTMLInputElement>("hints").checked } });
 }
 $("backview").onchange = () => renderer.setBackView($<HTMLSelectElement>("backview").value as BackView);
 $("skin").onchange = applySkin;
+$("stickers").onchange = applySkin;
 $("hints").onchange = applySkin;
 $("mask").onchange = () => {
   const v = $<HTMLSelectElement>("mask").value;

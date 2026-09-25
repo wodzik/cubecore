@@ -38,3 +38,22 @@ t.boundaries;       // [… { stage: "oll", case: "OLL 27", … }, { stage: "pll
 "OLL skip" / "PLL skip" when a stage was skipped. Any method can do the same
 with a stage's `recognize(state)`; `withLastLayerCases(stages)` adds OLL /
 PLL recognition to other methods' last-layer stages (ZZ, Petrus).
+
+## CMLL (`@cubecore/roux`)
+
+42 cases, names and groups as on speedcubedb.com (O, H, Pi, U, T, Sune, Anti
+Sune, L — "Sune Left Bar", "H Columns"…), one standard algorithm each
+(`CMLL_CASES`).
+
+```ts
+import { recognizeCmll, recognizeCmllAnywhere, cmllCaseState, secondBlock } from "@cubecore/roux";
+
+recognizeCmll(state);                          // blocks on L / R, bottom D: { id, group, preAuf, alg } | null (skip)
+recognizeCmllAnywhere(state, secondBlock);     // any orientation: { match, frame }
+scrambleTo(cmllCaseState("Sune Left Bar"), { from: cube.state });   // practise one case (@cubecore/solve)
+```
+
+Read relative to the blocks, not the centres — the M slice may be off —
+and corners only (the edges are LSE). All 648 corner arrangements map to
+exactly one case (tested). In a Roux solve, the CMLL stage reports the case
+it started from (`StageBoundary.case`, `MethodTracker.current.case`).

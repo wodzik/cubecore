@@ -26,6 +26,10 @@ import {
   colorAt,
 } from "@cubecore/core";
 
+import { recognizeCmll } from "./cmll";
+
+export * from "./cmll";
+
 const { cubieAt, faceletOn, centerIdx, opposite, upToAuf } = C;
 
 const FB = { dl: cubieAt(-1, -1, 0), fl: cubieAt(-1, 0, 1), bl: cubieAt(-1, 0, -1), dfl: cubieAt(-1, -1, 1), dbl: cubieAt(-1, -1, -1) };
@@ -125,7 +129,8 @@ export const ROUX: Method = {
   stages: [
     { id: "fb", label: "First block", done: firstBlock },
     { id: "sb", label: "Second block", done: secondBlock },
-    { id: "cmll", label: "CMLL", done: cmll },
+    // CMLL recognises the case it starts from ("Sune Left Bar", "CMLL skip") — StageBoundary.case.
+    { id: "cmll", label: "CMLL", done: cmll, recognize: (s) => (secondBlock(s) ? (recognizeCmll(s)?.id ?? "CMLL skip") : undefined) },
     { id: "eo", label: "EO", done: lseEo },
     { id: "ulur", label: "UL/UR", done: ulUr },
     { id: "l4e", label: "L4E", done: C.isSolved },

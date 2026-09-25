@@ -488,3 +488,7 @@ Still open:
   states map to exactly one case. `Stage.recognize` → `StageBoundary.case`
   and `MethodTracker.current.case` ("which OLL came up after F2L").
   Guide `docs/cases.md`; case shown in the /bluetooth stages table.
+- 2026-09-25 — **CMLL recognition** (`@cubecore/roux`): 42 cases with
+  speedcubedb names / groups, read relative to the blocks (M slice may be
+  off), corners only, pre-AUF; 648 corner arrangements → exactly one case;
+  Roux's CMLL stage reports its case; `cmllCaseState(id)` for case practice.

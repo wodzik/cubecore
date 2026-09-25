@@ -62,8 +62,11 @@ export interface Skin {
      * corner(s) next to the face centre is cut away in a cone — `start` wide
      * right under the tile (default 0), `radius` at `depth` below it. The tile's corner
      * overhangs and passes in front of the centre when you cut a corner.
+     * `tile`: the cut reaches up into the tile to this height above the face
+     * (a thinner overhanging corner; at most where the tile's bevel starts).
+     * Corner pieces only, unless `edges`.
      */
-    relief?: { radius: number; depth: number; start?: number };
+    relief?: { radius: number; depth: number; start?: number; tile?: number; edges?: boolean };
     /** Radius of the dark mechanism ball in the middle (cubie units). Default 1.15. */
     mechanism?: number;
   };
@@ -341,9 +344,9 @@ export const SKINS = {
     bodyInset: 0.02,
     // Pieces solid in colour, following the tile outline: straight walls 0.35 deep, then narrowing towards the
     // middle (as the real pieces); the small core stays hidden, the mechanism ball fills the middle.
-    // Behind each tile corner next to the centre, a corner-cutting relief (keeps a corner clear of the
-    // centre when U and R are ~12° off — checked by turning the geometry).
-    pieces: { depth: 0.32, taper: 0.35, wall: 0.35, relief: { radius: 0.3, depth: 0.15, start: 0.1 }, core: 0.5, colored: true, fill: "solid" },
+    // Corner pieces: behind the tile corner next to the centre a corner-cutting relief, reaching up into the tile
+    // (a thin overhanging corner, then the cut) — where real QiYi corners are cut away.
+    pieces: { depth: 0.32, taper: 0.35, wall: 0.35, relief: { radius: 0.3, depth: 0.12, start: 0.16, tile: 0.01 }, core: 0.5, colored: true, fill: "solid" },
     stickers: {
       colors: ["#ebe8df", "#d8061a", "#0bc21a", "#ffe51c", "#fd7501", "#1a72f5"],
       // Tiles touch; soft, pillowy edges and a well-rounded cube edge (as the real cube).

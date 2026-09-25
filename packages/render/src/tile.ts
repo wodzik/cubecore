@@ -29,6 +29,12 @@ export interface TileProfile {
   sink: number;
   /** Rounding of the cube's outer edges (stickerless, cubie units): each tile takes half of a quarter round. */
   edgeRadius?: number;
+  /**
+   * Corner relief reaching into the tile: below `z` (height above the face,
+   * ≤ where the bevel starts) the tile is cut back by `r` round each of `at`,
+   * leaving a thinner overhanging corner above.
+   */
+  undercut?: { at: readonly Pt[]; r: number; z: number };
 }
 
 export interface Mitre {
@@ -257,7 +263,16 @@ export function tileSolid(outline: readonly Pt[], profile: TileProfile, mitre: M
   const segs = b > 0 || R > 0 ? Math.max(1, profile.segments) : 0;
 
   const arcStart = t - R * (1 - Math.SQRT1_2); // where the edge round meets the mitre plane
-  const rings: Ring[] = [{ z: -profile.sink, d: 0, phi: 0, oz: -profile.sink, off: -profile.sink, ophi: 0 }];
+  const flat = (z: number): Ring => ({ z, d: 0, phi: 0, oz: z, off: z, ophi: 0 });
+  const rings: Ring[] = [flat(-profile.sink)];
+  const uc = profile.undercut;
+  if (uc && uc.r > 0 && uc.at.length) {
+    // Cut back from the bottom up to z, then a ledge (the underside of the overhang) back out to the outline.
+    const z = Math.max(-profile.sink, Math.min(uc.z, t - b));
+    const cut = { at: uc.at, r: uc.r, slope: 0 };
+    rings[0] = { ...rings[0], cut };
+    rings.push({ ...flat(z), cut }, flat(z));
+  }
   if (segs > 0) {
     rings.push({ z: t - b, d: 0, phi: 0, oz: arcStart, off: arcStart, ophi: 0 });
     for (let k = 1; k <= segs; k++) {

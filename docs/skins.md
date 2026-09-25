@@ -42,8 +42,10 @@ nearer tile's is outermost (the colours split along the diagonals: a corner
 in three, an edge in two) — a turned layer shows colour inside. `wall: 0.35`
 keeps the sides straight that deep before they narrow by `taper` (real pieces:
 a flat bit of wall behind the tile, then the narrowing). `relief: { radius,
-depth, start }` cuts a cone behind the tile corner(s) next to the face centre —
-`start` wide right under the tile, `radius` wide at `depth` below it — so the tile's corner
+depth, start, tile, edges }` cuts a cone behind a corner piece's tile corner next
+to the face centre (edge pieces too with `edges: true`) — `start` wide right under
+the tile, `radius` wide at `depth` below it; `tile` takes the cut up into the tile
+to that height above the face, leaving a thin overhanging corner — so the tile's corner
 overhangs and the piece clears the centre when a corner is cut (`qiyiSC`:
 clear up to ~12° with the layers off by the same angle). Shaped pieces get a
 dark mechanism ball in the middle (`mechanism`, radius, default 1.15), so the

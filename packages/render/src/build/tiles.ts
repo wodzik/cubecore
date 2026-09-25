@@ -69,6 +69,16 @@ export function tileKit(skin: Skin): TileKit {
   // A ball: the same from every side, so layers turn round it; only its dark surface shows deep in the gaps.
   const mechanism = skin.pieces ? new SphereGeometry(skin.pieces.mechanism ?? 1.15, 32, 24) : null;
 
+  // Corner-cutting relief: the tile corner(s) next to the face centre (corner pieces; edges if asked).
+  const reliefAt = (layout: ReturnType<typeof stickerLayout>, s: number): [number, number][] => {
+    const relief = skin.pieces?.relief;
+    if (!relief) return [];
+    const h = s / 2, su = -Math.sign(layout.u), sv = -Math.sign(layout.v);
+    if (layout.kind === "corner") return [[su * h, sv * h]];
+    if (layout.kind === "edge" && relief.edges) return layout.u ? [[su * h, h], [su * h, -h]] : [[h, sv * h], [-h, sv * h]];
+    return [];
+  };
+
   const outlineFor = (fi: number) => {
     const layout = stickerLayout(fi, shape);
     const path = skin.stickers.paths?.[layout.kind];
@@ -103,17 +113,24 @@ export function tileKit(skin: Skin): TileKit {
     centerBody,
     mechanism,
     tile(fi) {
-      const { outline, mitre, key, thickness: t, layout } = outlineFor(fi);
+      const { outline, mitre, key, thickness: t, layout, side: s } = outlineFor(fi);
+      const relief = skin.pieces?.relief;
+      const at = relief?.tile !== undefined ? reliefAt(layout, s) : [];
+      const undercut = relief && at.length ? { at, r: relief.start ?? 0, z: relief.tile! } : undefined;
       const kind = skin.stickers.kinds?.[layout.kind];
       const bevel = Math.min(kind?.bevel ?? skin.stickers.bevel ?? 0, t);
       const dome = kind?.dome;
       // A domed tile reaches deeper, so its lowered corners stay above its bottom.
       const sink = inset + 0.002 + (dome ? dome.drop : 0);
-      return cached(`tile|${key}|${bevel}|${dome ? `${dome.flat},${dome.drop}` : ""}`, () =>
+      return cached(`tile|${key}|${bevel}|${dome ? `${dome.flat},${dome.drop}` : ""}|${undercut ? "uc" : ""}`, () =>
         t > 0
           ? solidToGeometry(
               ((solid) => (dome ? applyDome(solid, dome, sink) : solid))(
-                tileSolid(dome ? densify(outline) : outline, { thickness: t, bevel, segments: 4, sink, edgeRadius: skin.stickers.edgeRadius ?? 0 }, mitre),
+                tileSolid(
+                  dome || undercut ? densify(outline, undercut ? 192 : 128) : outline,
+                  { thickness: t, bevel, segments: 4, sink, edgeRadius: skin.stickers.edgeRadius ?? 0, undercut },
+                  mitre,
+                ),
               ),
             )
           : new ShapeGeometry(new Shape(outline.map(([x, y]) => new Vector2(x, y)))),
@@ -126,11 +143,8 @@ export function tileKit(skin: Skin): TileKit {
       // Solid pieces: through the whole cubie. The walls lean in, so where two meet inside the
       // piece the one from the nearer tile is outermost — the colours split on the diagonals.
       const depth = pieces.fill === "solid" ? size : pieces.depth;
-      // Corner-cutting relief behind the tile corner(s) next to the face centre.
-      const h = s / 2, su = -Math.sign(layout.u), sv = -Math.sign(layout.v);
-      const at: [number, number][] =
-        layout.kind === "corner" ? [[su * h, sv * h]] : layout.kind === "edge" ? (layout.u ? [[su * h, h], [su * h, -h]] : [[h, sv * h], [-h, sv * h]]) : [];
-      const relief = pieces.relief ? { at, ...pieces.relief } : undefined;
+      const at = reliefAt(layout, s);
+      const relief = pieces.relief && at.length ? { at, ...pieces.relief } : undefined;
       return cached(`skirt|${key}|${depth}`, () =>
         solidToGeometry(skirtSolid(relief ? densify(outline, 192) : outline, { top: inset + 0.002, depth, taper: pieces.taper, wall: pieces.wall, relief }, mitre)),
       );

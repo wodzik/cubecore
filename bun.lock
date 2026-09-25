@@ -18,6 +18,15 @@
         "typescript": "^5.6.0",
       },
     },
+    "packages/analyze": {
+      "name": "@cubecore/analyze",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cubecore/cfop": "workspace:*",
+        "@cubecore/core": "workspace:*",
+        "@cubecore/solve": "workspace:*",
+      },
+    },
     "packages/bld": {
       "name": "@cubecore/bld",
       "version": "0.0.0",
@@ -160,6 +169,8 @@
     },
   },
   "packages": {
+    "@cubecore/analyze": ["@cubecore/analyze@workspace:packages/analyze"],
+
     "@cubecore/bld": ["@cubecore/bld@workspace:packages/bld"],
 
     "@cubecore/bluetooth": ["@cubecore/bluetooth@workspace:packages/bluetooth"],

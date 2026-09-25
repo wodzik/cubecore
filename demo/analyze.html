@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>cubecore scramble analyzer</title>
+    <style>
+      :root { color-scheme: dark; --bg: #0b0b0c; --panel: #151517; --line: #2a2a2e; --text: #e6e6e6; --muted: #8b8b93; --accent: #7aa2ff; --known: #6fd49b; }
+      * { box-sizing: border-box; }
+      body { margin: 0; font: 14px/1.45 system-ui, sans-serif; background: var(--bg); color: var(--text); }
+      main { max-width: 1100px; margin: 0 auto; padding: 16px; display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+      @media (min-width: 950px) { main { grid-template-columns: minmax(0, 1fr) 420px; } }
+      .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+      .panel + .panel { margin-top: 12px; }
+      h2 { font-size: 12px; margin: 0 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+      .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+      input[type="text"], select, button { background: #232327; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; font: 13px system-ui; }
+      input[type="text"] { font-family: ui-monospace, monospace; flex: 1; min-width: 16em; }
+      button { cursor: pointer; }
+      button.primary { background: var(--accent); color: #0b0b0c; border-color: var(--accent); font-weight: 600; }
+      .muted { color: var(--muted); font-size: 12px; }
+      table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      th, td { text-align: left; padding: 6px 6px; border-bottom: 1px solid var(--line); }
+      th { color: var(--muted); font-weight: 500; font-size: 12px; }
+      tbody tr { cursor: pointer; }
+      tbody tr:hover { background: #1c1c20; }
+      tbody tr.on { background: #20243a; }
+      .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; border: 1px solid #0006; }
+      .moves { font-family: ui-monospace, monospace; }
+      .case { color: var(--accent); }
+      .known { color: var(--known); }
+      td.num { text-align: right; font-variant-numeric: tabular-nums; }
+      cube-player { height: 380px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div>
+        <section class="panel">
+          <h2>Scramble</h2>
+          <div class="row">
+            <input type="text" id="scramble" spellcheck="false" value="D2 R2 F2 U' B2 U L2 D' F2 U2 R' B L' D' B2 U' F' R2 B' U" />
+            <button id="random">Random</button>
+          </div>
+          <div class="row" style="margin-top: 8px">
+            <label class="muted">Start
+              <select id="start">
+                <option value="cross">Full solve (cross)</option>
+                <option value="xcross">Cross+1 (XCross)</option>
+                <option value="xxcross">Cross+2 (XXCross)</option>
+                <option value="xxxcross">Cross+3 (XXXCross)</option>
+              </select>
+            </label>
+            <label class="muted">Pairs
+              <select id="f2l">
+                <option value="optimal">fewest moves</option>
+                <option value="algorithms">F2L algorithms</option>
+              </select>
+            </label>
+            <button id="go" class="primary">Analyze</button>
+            <span class="muted" id="status"></span>
+          </div>
+        </section>
+        <section class="panel">
+          <h2>By cross colour</h2>
+          <table>
+            <thead><tr><th>Cross</th><th class="num">Cross</th><th>Pair order</th><th>OLL</th><th>PLL</th><th class="num">Total</th></tr></thead>
+            <tbody id="colours"><tr><td colspan="6" class="muted">Analyze a scramble.</td></tr></tbody>
+          </table>
+        </section>
+        <section class="panel">
+          <h2 id="stepsTitle">Solution</h2>
+          <table>
+            <thead><tr><th>Step</th><th>Moves</th><th>Case</th><th class="num">#</th></tr></thead>
+            <tbody id="steps"></tbody>
+          </table>
+        </section>
+      </div>
+      <div>
+        <section class="panel">
+          <h2>Replay</h2>
+          <cube-player id="player" progress segment-labels></cube-player>
+          <p class="muted" id="replayInfo">Pick a cross colour.</p>
+        </section>
+      </div>
+    </main>
+    <script type="module" src="./analyze.ts"></script>
+  </body>
+</html>

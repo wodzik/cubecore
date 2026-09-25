@@ -492,3 +492,10 @@ Still open:
   speedcubedb names / groups, read relative to the blocks (M slice may be
   off), corners only, pre-AUF; 648 corner arrangements → exactly one case;
   Roux's CMLL stage reports its case; `cmllCaseState(id)` for case practice.
+- 2026-09-25 — **F2L recognition, stats, scramble analyzer**: `recognizeF2L`
+  (speedcubedb F2L 1–41 per slot); timeline `ao` / `mo` / `bestAo` /
+  `sessionStats` (WCA / csTimer trimming, DNF); `@cubecore/analyze`
+  (`analyzeScramble`: per cross colour, cross or Cross+1…3, all pair orders
+  by fewest moves or by F2L algorithms, OLL / PLL cases, coverage; worker
+  with IndexedDB tables). Demo `/analyze`. Measured: pair-by-pair optimal
+  steps ms, XXXCross 0.3–1.5 s, a full analysis ~0.5 s / ~50 ms warm.

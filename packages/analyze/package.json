@@ -1,0 +1,13 @@
+{
+  "name": "@cubecore/analyze",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "sideEffects": false,
+  "dependencies": {
+    "@cubecore/core": "workspace:*",
+    "@cubecore/cfop": "workspace:*",
+    "@cubecore/solve": "workspace:*"
+  }
+}

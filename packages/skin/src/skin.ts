@@ -66,12 +66,13 @@ export interface Skin {
     /** How far a tile stands out from the plastic (cubie units) — stickerless tiles are thicker. */
     thickness?: number;
     /**
-     * Per piece kind: a different tile size / thickness — e.g. a centre cap
-     * that is smaller and stands out more than the other tiles. Unset values
-     * fall back to `size` / `thickness`. `dome`: a top that is flat inside a
-     * circle (`flat` × the tile's reach) and falls `drop` lower at the corners.
+     * Per piece kind: a different tile size / thickness / edge round — e.g. a
+     * centre cap that is smaller and stands out more than the other tiles.
+     * Unset values fall back to `size` / `thickness` / `bevel`. `dome`: a top
+     * that is flat inside a circle (`flat` × the tile's reach) and falls `drop`
+     * lower at the corners.
      */
-    kinds?: Partial<Record<PieceKind, { size?: number; thickness?: number; dome?: { flat: number; drop: number } }>>;
+    kinds?: Partial<Record<PieceKind, { size?: number; thickness?: number; bevel?: number; dome?: { flat: number; drop: number } }>>;
     /** Radius of the rounded top edge of a tile (cubie units, ≤ thickness). Default 0 (sharp). */
     bevel?: number;
     /**
@@ -330,12 +331,13 @@ export const SKINS = {
       // Tiles touch; soft, pillowy edges and a well-rounded cube edge (as the real cube).
       size: 0.996,
       radius: 0.04,
-      shape: { corner: { inner: 0.14, outer: 0.03 }, edge: { inner: 0.25, outer: 0.03 }, center: 0.2 },
+      shape: { corner: { inner: 0.14, outer: 0.03 }, edge: { inner: 0.25, outer: 0.03 }, center: 0.28 },
       paths: QIYI_SC_PATHS,
       thickness: 0.07,
       bevel: 0.06,
-      // The centre cap: a round plateau level with the other tiles, its corners ~1.5 mm lower.
-      kinds: { center: { size: 0.99, dome: { flat: 0.76, drop: 0.09 } } }, // plateau level with the other tiles
+      // The centre cap, measured from QiYi's app model: a flat circle (radius 0.47) level with the other
+      // tiles, nearly touching the sides (a crisp rim there), then a straight slope down to the rounded corners.
+      kinds: { center: { size: 0.99, bevel: 0.01, dome: { flat: 0.82, drop: 0.083 } } },
       edgeRadius: 0.2,
       material: "plastic",
       roughness: 0.35,

@@ -102,11 +102,12 @@ export function tileKit(skin: Skin): TileKit {
     mechanism,
     tile(fi) {
       const { outline, mitre, key, thickness: t, layout } = outlineFor(fi);
-      const bevel = Math.min(skin.stickers.bevel ?? 0, t);
-      const dome = skin.stickers.kinds?.[layout.kind]?.dome;
+      const kind = skin.stickers.kinds?.[layout.kind];
+      const bevel = Math.min(kind?.bevel ?? skin.stickers.bevel ?? 0, t);
+      const dome = kind?.dome;
       // A domed tile reaches deeper, so its lowered corners stay above its bottom.
       const sink = inset + 0.002 + (dome ? dome.drop : 0);
-      return cached(`tile|${key}|${dome ? `${dome.flat},${dome.drop}` : ""}`, () =>
+      return cached(`tile|${key}|${bevel}|${dome ? `${dome.flat},${dome.drop}` : ""}`, () =>
         t > 0
           ? solidToGeometry(
               ((solid) => (dome ? applyDome(solid, dome, sink) : solid))(

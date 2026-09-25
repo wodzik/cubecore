@@ -15,8 +15,8 @@ preset and change what you need:
 | `gan356m` | GAN 356 M: square corner tiles, round edge tongues, near-round centres — measured from "GAN CUBE 356s M air" by Amyyu (Sketchfab, CC BY 4.0) |
 
 **Per piece kind:** `stickers.kinds` gives corner / edge / centre tiles their
-own size and thickness — e.g. a centre cap that is smaller and stands out
-more (`gan356m`: `kinds: { center: { size: 0.979, thickness: 0.04 } }`).
+own size, thickness and edge round (`bevel`) — e.g. a centre cap that is
+smaller and stands out more (`gan356m`: `kinds: { center: { size: 0.979, thickness: 0.04 } }`).
 Decals and features sit on their own tile's top. `tileSize(skin, kind)` /
 `tileThickness(skin, kind)` read the values.
 
@@ -29,9 +29,11 @@ each tile in the tile's colour — a corner is three coloured parts, an edge
 two, a centre one (cubes moulded in colour); the core keeps `body` (e.g.
 white stems: `body: "#e8e8e8"`). Needs `pieces` (shaped piece bodies).
 
-**Domed tiles:** `kinds: { center: { dome: { flat: 0.76, drop: 0.09 } } }` —
-the top is flat inside a circle (0.76 × the tile's reach), level with the
-other tiles, and slopes 0.09 lower towards the corners (QiYi's centre caps).
+**Domed tiles:** `kinds: { center: { dome: { flat: 0.82, drop: 0.083 } } }` —
+the top is flat inside a circle (0.82 × the tile's reach), level with the
+other tiles, and slopes straight down, 0.083 lower at the corners (QiYi's
+centre caps; `qiyiSC` matches the cap in QiYi's app to ~0.001). A domed
+centre's core shrinks so it stays under the lowered corners.
 
 **Solid coloured pieces:** `pieces: { …, colored: true, fill: "solid" }` —
 the plastic under each tile keeps its rounded, tapered shape but runs down to

@@ -4,7 +4,8 @@ import { SKINS, withStickers } from "./skin";
 describe("withStickers", () => {
   it("turns a stickerless brand into a stickered cube: black plastic platforms, the brand's stickers lying on them", () => {
     const s = withStickers(SKINS.moyu, "thin");
-    expect(s.body).toBe("#222222");
+    expect(s.body).toBe(SKINS.moyu.stickerSet!.body!); // MoYu's dark grey plastic
+    expect(withStickers(SKINS.standard).body).toBe("#222222"); // the default
     expect(s.pieces?.colored).toBeFalsy(); // black plastic under the tiles
     expect(s.stickers.overlay?.size).toBe(SKINS.moyu.stickerSet!.size);
     expect(s.stickers.overlay?.shape).toEqual(SKINS.moyu.stickerSet!.shape);

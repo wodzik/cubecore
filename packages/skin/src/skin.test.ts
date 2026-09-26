@@ -26,10 +26,11 @@ describe("withStickers", () => {
 });
 
 describe("stickered skins", () => {
-  it("QiYi's round cube is rounder than its square one and keeps its stickers further from the edges", () => {
+  it("QiYi's round and square cubes differ only in how round the body is", () => {
     const r = SKINS.qiyiStickersRounded.stickers, q = SKINS.qiyiStickersSquare.stickers;
     expect(r.edgeRadius!).toBeGreaterThan(q.edgeRadius!);
-    expect(r.overlay!.margin).toBeGreaterThan(q.overlay!.margin);
+    expect(r.cornerRound!).toBeGreaterThan(q.cornerRound!);
+    expect({ ...q.overlay, cornerRound: 0, edgeRadius: 0 }).toEqual({ ...r.overlay, cornerRound: 0, edgeRadius: 0 });
     for (const s of [SKINS.qiyiStickersRounded, SKINS.qiyiStickersSquare]) expect(s.body).toBe("#2e2e2e"); // QiYi's plastic
     expect(q.colors).toEqual(SKINS.qiyiSC.stickers.colors);
   });

@@ -243,9 +243,10 @@ const WESTERN = ["#ffffff", "#e8322f", "#1fb24a", "#ffd500", "#ff8a00", "#1e5eff
 /**
  * QiYi's stickered cubes, measured from the models in QiYi's app ("black
  * rounded" / "black square"): flat stickers on black pedestals, ~0.87–0.89 of
- * a face, kept 0.21 / 0.15 from the cube's edges; a big round on a corner
- * sticker at the cube's corner; round centre stickers on a domed centre; the
- * body rounded at the edges (0.24 / 0.15) and more at the corners (0.37 / 0.22).
+ * a face, kept 0.21 from the cube's edges; a big round on a corner sticker
+ * at the cube's corner; round centre stickers on a domed centre. The two
+ * differ only in how round the body is: at the edges 0.24 / 0.15, at the
+ * corners 0.37 / 0.22.
  */
 export const QIYI_ROUND_STICKERS: StickerSet = {
   size: 0.892,
@@ -261,20 +262,8 @@ export const QIYI_ROUND_STICKERS: StickerSet = {
   // The plastic under them: a round-cornered centre, edges rounded towards it almost like their stickers.
   base: { corner: { inner: 0.14, outer: 0.03 }, edge: { inner: 0.28, outer: 0.03 }, center: 0.45 },
 };
-export const QIYI_SQUARE_STICKERS: StickerSet = {
-  size: 0.898,
-  centerSize: 0.894,
-  margin: 0.15,
-  shape: { corner: { inner: 0.06, outer: 0.06 }, edge: { inner: 0.2, outer: 0.06 }, center: 0.5 },
-  cornerRadius: 0.15,
-  edgeRadius: 0.15,
-  cornerRound: 0.22,
-  centerDome: { flat: 0.65, drop: 0.05 },
-  pedestal: true,
-  body: "#2e2e2e",
-  // The plastic under them: a round-cornered centre, edges rounded towards it almost like their stickers.
-  base: { corner: { inner: 0.14, outer: 0.03 }, edge: { inner: 0.28, outer: 0.03 }, center: 0.45 },
-};
+/** The square one: the same stickers and pieces, only less rounded at the cube's edges and corners. */
+export const QIYI_SQUARE_STICKERS: StickerSet = { ...QIYI_ROUND_STICKERS, edgeRadius: 0.15, cornerRound: 0.22 };
 
 const QIYI_SC_PATHS = {
   corner:

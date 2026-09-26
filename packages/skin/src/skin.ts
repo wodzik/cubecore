@@ -476,7 +476,16 @@ const BRANDS = {
       fillOuter: true,
     },
     // MoYu's stickers (the stickered cube in MoYu's app): rounded squares, the corners towards the centre rounder.
-    stickerSet: { size: 0.875, margin: 0.0625, shape: { corner: { inner: 0.25, outer: 0.04 }, edge: { inner: 0.25, outer: 0.04 }, center: 0.25 }, edgeRadius: 0.1 },
+    // The pieces under them (the stickered cube in MoYu's app): nearly square blocks, the corners towards the
+    // centre rounded almost like the stickers, the cube's edges hardly rounded; MoYu's dark grey plastic.
+    stickerSet: {
+      size: 0.875,
+      margin: 0.0625,
+      shape: { corner: { inner: 0.25, outer: 0.04 }, edge: { inner: 0.25, outer: 0.04 }, center: 0.25 },
+      base: { corner: { inner: 0.32, outer: 0.026 }, edge: { inner: 0.31, outer: 0.026 }, center: 0.32 },
+      edgeRadius: 0.03,
+      body: "#313131",
+    },
     mask: { ignored: "#5a5a5a", oriented: "#39c7d4", dimAmount: 0.55 },
     hints: { enabled: false, distance: 1.4, opacity: 0.75, ignoredOpacity: 0.35 },
     background: null,

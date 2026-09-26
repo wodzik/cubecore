@@ -83,7 +83,7 @@ export class CubeScramble extends CubeSequenceElement {
   }
 
   protected startTracking(start: State): void {
-    this.tracker = new SequenceTracker(this.moves, start);
+    this.tracker = new SequenceTracker(this.moves, start, { frame: this.startFrame });
   }
 
   protected track(move: Move): SequenceProgress {

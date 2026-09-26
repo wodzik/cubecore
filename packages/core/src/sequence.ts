@@ -60,6 +60,12 @@ export interface NextTurn {
 export interface SequenceOptions {
   /** Longest undo worth showing (act's rule: 25). */
   maxCorrection?: number;
+  /**
+   * How the cube is held at the start (default: its own U on top, F in
+   * front) — e.g. after an algorithm with a net rotation (M, wide moves) the
+   * next one is written for the cube as now held.
+   */
+  frame?: Frame;
 }
 
 export class SequenceTracker {
@@ -77,7 +83,7 @@ export class SequenceTracker {
   constructor(target: string | readonly Move[], start: State, options: SequenceOptions = {}) {
     this.written = typeof target === "string" ? parseAlg(target) : [...target];
     this.maxCorrection = options.maxCorrection ?? 25;
-    const grip = new OrientationTracker();
+    const grip = new OrientationTracker(options.frame);
     this.frames = [];
     this.steps = this.written.flatMap((m, token) => {
       this.frames.push(grip.frame);

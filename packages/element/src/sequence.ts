@@ -29,7 +29,7 @@
  * Events: progress (detail: the progress), complete.
  */
 
-import { type Move, type NextTurn, type SequenceProgress, type State, type TurnArrow, formatMove, solvedState } from "@cubecore/core";
+import { type Frame, IDENTITY_FRAME, type Move, type NextTurn, type SequenceProgress, type State, type TurnArrow, formatMove, solvedState } from "@cubecore/core";
 import type { ArrowStyle } from "@cubecore/render";
 import { ElementBase } from "./base";
 
@@ -112,6 +112,8 @@ export abstract class CubeSequenceElement extends ElementBase {
   protected messagesBase: SequenceMessages = { undo: "Undo", reset: "Too far off — solve the cube and start again", complete: "" };
   private completed = false;
   private _player: ArrowTarget | null = null;
+  /** How the cube is held when the sequence starts (see `frame`). */
+  protected startFrame: Frame = IDENTITY_FRAME;
 
   static observedAttributes = ["arrows", "player", "arrow-shape"];
 
@@ -169,6 +171,19 @@ export abstract class CubeSequenceElement extends ElementBase {
     this.off?.();
     this.off = null;
     this.source = null;
+  }
+
+  /**
+   * How the cube is held when the sequence starts (default: its own U on top,
+   * F in front) — for an algorithm right after one with a net rotation.
+   * Setting it starts again.
+   */
+  get frame(): Frame {
+    return this.startFrame;
+  }
+  set frame(f: Frame | null) {
+    this.startFrame = f ?? IDENTITY_FRAME;
+    this.reset();
   }
 
   /** Start again from `start` (default: the attached cube's state, else solved). */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { SequenceTracker, applyMoves, formatAlg, parseAlg, solvedState } from "./index";
+import { SequenceTracker, applyMoves, formatAlg, parseAlg, solvedState, toFaceTurns } from "./index";
 
 const S = solvedState();
 const feed = (t: SequenceTracker, moves: string) => parseAlg(moves).map((m) => t.push(m)).at(-1)!;
@@ -49,5 +49,13 @@ describe("following a scramble", () => {
     const p = feed(t, "L R'");
     expect(p.tokens[0]).toBe("done");
     expect(t.steps.length).toBe(5);
+  });
+
+  it("starts from how the cube is held (after an algorithm with a net rotation)", () => {
+    // After M' (net x) the holder's U is the cube's F: the next "U" is reported as F.
+    const { frame } = toFaceTurns("M'");
+    const t = new SequenceTracker("U R", S, { frame });
+    expect(t.steps.map((s) => formatAlg([s.move]))).toEqual(["F", "R"]);
+    expect(feed(t, "F R").complete).toBe(true);
   });
 });

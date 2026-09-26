@@ -98,7 +98,7 @@ export class CubeAlgPractice extends CubeSequenceElement {
   }
 
   protected startTracking(start: State): void {
-    this.tracker = new PracticeTracker(this.moves, start, { reveal: this.revealMode(), hintOnMistake: this.getAttribute("hint-on-mistake") !== "off" });
+    this.tracker = new PracticeTracker(this.moves, start, { frame: this.startFrame, reveal: this.revealMode(), hintOnMistake: this.getAttribute("hint-on-mistake") !== "off" });
   }
 
   protected track(move: Move, time: number): PracticeProgress {

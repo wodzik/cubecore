@@ -7,6 +7,7 @@
 export const DEMOS = [
   { path: "/", title: "Core", hint: "State, notation, colour-neutral method tracking, masks, pictures, timeline" },
   { path: "/render", title: "3D renderer", hint: "Skins, tiles and pieces, decals and features, masks, back view, gyro" },
+  { path: "/skins", title: "Skin editor", hint: "Every skin parameter live: body, tiles, corners, centre dome, pieces, reliefs, stickers on black — and the skin as code" },
   { path: "/playground", title: "Playground", hint: "Every <cube-player> option: setup, 'algorithm solves the cube', timing, skins, theme, 2D views, masks — with the code" },
   { path: "/player", title: "Player", hint: "<cube-player>: controls, progress bar, theming, your own controls" },
   { path: "/react", title: "React", hint: "@cubecore/react: <CubePlayer>, <CubeAlg>, <CubeScramble>, useSmartCube, useSolverWorker" },

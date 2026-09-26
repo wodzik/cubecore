@@ -89,7 +89,11 @@ Every brand also comes as a stickered cube — the brand's pieces in black
 plastic (flat faces, rounded only at the cube's edges) with a thin sticker
 lying on each face (`stickers.overlay`: its own size, a `margin` from the
 cube's edges where the black rounded edge shows, corner radii and a
-`cornerRadius` at the cube's corners): `withStickers(skin, style)`, `style` one of
+`cornerRadius` at the cube's corners; `pedestal`: a black raised pedestal with
+a flat print on top). A sticker set can also round the cube's corners more
+than its edges (`cornerRound` → `stickers.cornerRound`, a ball at each cube
+corner) and dome the centre piece under a round sticker (`centerDome`):
+`withStickers(skin, style)`, `style` one of
 `"raised"` (thick, rounded stickers), `"thin"` (a real sticker, the default)
 or `"flat"` (a flat print). The sticker shapes come from `skin.stickerSet`
 (`gan356m`: GAN's sticker atlas — rounded squares, edges with a round tongue,

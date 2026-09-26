@@ -193,6 +193,11 @@ export interface StickerOverlay {
   thickness: number;
   /** Rounding of the sticker's edge (≤ thickness). Default: a hair. */
   bevel?: number;
+  /**
+   * A black pedestal with a flat print on top: the raised part is the body's
+   * plastic, only its top (inside the bevel) takes the colour.
+   */
+  pedestal?: boolean;
 }
 
 /**
@@ -201,10 +206,10 @@ export interface StickerOverlay {
  * edge shows round it), per-corner radii from the shape; a corner sticker's
  * corner at the cube's corner takes `cornerRadius`.
  */
-export function overlayOutline(faceletIndex: number, overlay: StickerOverlay, segments = 8): [number, number][] {
+export function overlayOutline(faceletIndex: number, overlay: StickerOverlay, segments = 8, inset = 0): [number, number][] {
   const layout = stickerLayout(faceletIndex, overlay.shape);
-  const half = (layout.kind === "center" ? (overlay.centerSize ?? overlay.size) : overlay.size) / 2;
-  const out = 0.5 - overlay.margin;
+  const half = (layout.kind === "center" ? (overlay.centerSize ?? overlay.size) : overlay.size) / 2 - inset;
+  const out = 0.5 - overlay.margin - inset;
   const o = outerSides(layout);
   const ext: TileExtents = { xMin: o.xMin ? -out : -half, xMax: o.xMax ? out : half, yMin: o.yMin ? -out : -half, yMax: o.yMax ? out : half };
   const side = 2 * half;
@@ -214,6 +219,6 @@ export function overlayOutline(faceletIndex: number, overlay: StickerOverlay, se
     [o.xMin, o.yMin],
     [o.xMax, o.yMin],
   ];
-  const radii = layout.radii.map((r, i) => (both[i][0] && both[i][1] && overlay.cornerRadius !== undefined ? overlay.cornerRadius : r * side));
+  const radii = layout.radii.map((r, i) => Math.max(0, (both[i][0] && both[i][1] && overlay.cornerRadius !== undefined ? overlay.cornerRadius : r * (side + 2 * inset)) - inset));
   return roundedRect(ext, radii, segments);
 }

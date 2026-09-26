@@ -14,7 +14,7 @@ import { BufferGeometry, Float32BufferAttribute, Shape, ShapeGeometry, ShapeUtil
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
 import { type PieceKind, type Skin, type StickerShape, overlayOutline, reachEdge, roundedOutline, stickerLayout, stickerlessOutline, tileSize, tileThickness } from "@cubecore/skin";
-import { type Mitre, type TileSolid, applyDome, densify, planeCut, skirtSolid, tileSolid } from "../tile";
+import { type Mitre, type TileSolid, applyDome, cornerRound, densify, planeCut, skirtSolid, tileSolid } from "../tile";
 
 export interface TileKit {
   /** Tile side (cubie units) — the usual one; `sideOf` per piece kind. */
@@ -39,6 +39,8 @@ export interface TileKit {
   tile(fi: number): BufferGeometry;
   /** The sticker lying on the tile at `fi` (`stickers.overlay`), in the tile's frame, or null. */
   overlay(fi: number): BufferGeometry | null;
+  /** With `overlay.pedestal`: the flat print on top of the (black) sticker pedestal at `fi`, or null. */
+  overlayCap(fi: number): BufferGeometry | null;
   /** The piece's plastic under that tile (`skin.pieces`), or null. */
   skirt(fi: number): BufferGeometry | null;
   /** The flat floating "back" sticker for position `fi`. */
@@ -82,6 +84,14 @@ export function tileKit(skin: Skin): TileKit {
     if (layout.kind === "corner") return [[su * h, sv * h]];
     if (layout.kind === "edge" && relief.edges) return layout.u ? [[su * h, h], [su * h, -h]] : [[h, sv * h], [-h, sv * h]];
     return [];
+  };
+
+  // Cube corners rounder than the edges: a ball at each corner (in a corner tile's frame).
+  const roundCorner = (solid: TileSolid, layout: ReturnType<typeof stickerLayout>): TileSolid => {
+    const R = skin.stickers.cornerRound;
+    if (!R || layout.kind !== "corner") return solid;
+    const top = thicknessOf("corner");
+    return cornerRound(solid, [layout.u * (edge - R), layout.v * (edge - R), top - R], [layout.u, layout.v, 1], R);
   };
 
   const outlineFor = (fi: number) => {
@@ -131,9 +141,9 @@ export function tileKit(skin: Skin): TileKit {
       return cached(`tile|${key}|${bevel}|${dome ? `${dome.flat},${dome.drop}` : ""}|${undercut ? "uc" : ""}`, () =>
         t > 0
           ? solidToGeometry(
-              ((solid) => (dome ? applyDome(solid, dome, sink) : solid))(
+              ((solid) => roundCorner(dome ? applyDome(solid, dome, sink) : solid, layout))(
                 tileSolid(
-                  dome || undercut ? densify(outline, undercut ? 192 : 128) : outline,
+                  dome || undercut || (skin.stickers.cornerRound && layout.kind === "corner") ? densify(outline, undercut ? 192 : 128) : outline,
                   { thickness: t, bevel, segments: 4, sink, edgeRadius: skin.stickers.edgeRadius ?? 0, undercut },
                   mitre,
                 ),
@@ -150,6 +160,18 @@ export function tileKit(skin: Skin): TileKit {
       return cached(`overlay|${fi}`, () => {
         const g = solidToGeometry(tileSolid(overlayOutline(fi, ov), { thickness: ov.thickness, bevel: Math.min(ov.bevel ?? 0.004, ov.thickness), segments: 2, sink: 0.002 }, null));
         g.translate(0, 0, base);
+        return g;
+      });
+    },
+    overlayCap(fi) {
+      const ov = skin.stickers.overlay;
+      if (!ov?.pedestal) return null;
+      const { layout } = outlineFor(fi);
+      const z = thicknessOf(layout.kind) + ov.thickness + 0.0008;
+      return cached(`cap|${fi}`, () => {
+        const pts = overlayOutline(fi, ov, 8, Math.min(ov.bevel ?? 0.004, ov.thickness));
+        const g = new ShapeGeometry(new Shape(pts.map(([x, y]) => new Vector2(x, y))));
+        g.translate(0, 0, z);
         return g;
       });
     },
@@ -171,11 +193,14 @@ export function tileKit(skin: Skin): TileKit {
       const dir: [number, number, number] = [layout.u / len, layout.v / len, 1 / len];
       return cached(`skirt|${key}|${depth}`, () =>
         solidToGeometry(
-          planeCut(
-            skirtSolid(densify(outline, 192), { top: inset + 0.002, depth, taper: pieces.taper, wall: pieces.wall, relief, steps: 32 }, mitre),
-            centre,
-            dir,
-            ball,
+          roundCorner(
+            planeCut(
+              skirtSolid(densify(outline, 192), { top: inset + 0.002, depth, taper: pieces.taper, wall: pieces.wall, relief, steps: 32 }, mitre),
+              centre,
+              dir,
+              ball,
+            ),
+            layout,
           ),
         ),
       );

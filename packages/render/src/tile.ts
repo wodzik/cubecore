@@ -429,3 +429,24 @@ export function planeCut(solid: TileSolid, c: readonly [number, number, number],
   }
   return { ...solid, positions, normals };
 }
+
+/**
+ * Round a cube corner: points of a corner piece's solid beyond the ball of
+ * radius `r` at `c` (in all three outward directions `dir`) are pulled onto
+ * it — a cube corner rounder than its edges.
+ */
+export function cornerRound(solid: TileSolid, c: readonly [number, number, number], dir: readonly [number, number, number], r: number): TileSolid {
+  const positions = solid.positions.slice();
+  const normals = solid.normals.slice();
+  for (let i = 0; i < positions.length; i += 3) {
+    const d = [positions[i] - c[0], positions[i + 1] - c[1], positions[i + 2] - c[2]];
+    if (d[0] * dir[0] <= 0 || d[1] * dir[1] <= 0 || d[2] * dir[2] <= 0) continue;
+    const l = Math.hypot(d[0], d[1], d[2]);
+    if (l <= r) continue;
+    for (let k = 0; k < 3; k++) {
+      positions[i + k] = c[k] + (d[k] / l) * r;
+      normals[i + k] = d[k] / l;
+    }
+  }
+  return { ...solid, positions, normals };
+}

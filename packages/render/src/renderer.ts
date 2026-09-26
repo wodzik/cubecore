@@ -439,11 +439,19 @@ export class CubeRenderer {
           mesh.quaternion.setFromRotationMatrix(basis);
           g.add(mesh);
           if (sticker) {
-            const sm = new Mesh(sticker, this.material("#000000", false));
+            // A pedestal is plastic with a flat print on top; otherwise the whole sticker is coloured.
+            const cap = kit.overlayCap(fi);
+            const sm = new Mesh(sticker, cap ? this.material(s.body, false) : this.material("#000000", false));
             sm.position.copy(mesh.position);
             sm.quaternion.copy(mesh.quaternion);
             g.add(sm);
-            this.paintTargets[fi].push(sm);
+            const painted = cap ? new Mesh(cap, this.material("#000000", false)) : sm;
+            if (cap) {
+              painted.position.copy(mesh.position);
+              painted.quaternion.copy(mesh.quaternion);
+              g.add(painted);
+            }
+            this.paintTargets[fi].push(painted);
           }
           const skirt = kit.skirt(fi);
           if (skirt) {

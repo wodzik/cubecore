@@ -130,6 +130,11 @@ export interface Skin {
      * stickered cube.
      */
     overlay?: StickerOverlay;
+    /**
+     * A cube corner rounder than its edges (cubie units): the corner pieces
+     * are rounded off by a ball of this radius at the cube's corners.
+     */
+    cornerRound?: number;
   };
   /**
    * The brand's sticker shapes for its stickered version (`withStickers`):
@@ -188,6 +193,10 @@ export interface StickerSet extends Omit<StickerOverlay, "thickness" | "bevel"> 
   edgeRadius?: number;
   /** The stickered cube's plastic. Default a soft black (#222222). */
   body?: string;
+  /** A cube corner rounder than the edges (cubie units) — see `stickers.cornerRound`. */
+  cornerRound?: number;
+  /** The centre piece's top under its sticker: flat in a circle, sloping to the corners (see `kinds.dome`). */
+  centerDome?: { flat: number; drop: number };
 }
 
 /** How a stickered version's stickers stand: thick and rounded, thin (a real sticker) or a flat print. */
@@ -231,26 +240,33 @@ const WESTERN = ["#ffffff", "#e8322f", "#1fb24a", "#ffd500", "#ff8a00", "#1e5eff
  */
 /**
  * QiYi's stickered cubes, measured from the models in QiYi's app ("black
- * rounded" / "black square"): stickers ~0.87–0.89 of a face, a big round on
- * a corner sticker at the cube's corner (smaller on the square cube), edge
- * stickers rounded towards the centre, round-ish centres.
+ * rounded" / "black square"): flat stickers on black pedestals, ~0.87–0.89 of
+ * a face, kept 0.21 / 0.15 from the cube's edges; a big round on a corner
+ * sticker at the cube's corner; round centre stickers on a domed centre; the
+ * body rounded at the edges (0.24 / 0.15) and more at the corners (0.37 / 0.22).
  */
 export const QIYI_ROUND_STICKERS: StickerSet = {
   size: 0.892,
   centerSize: 0.86,
   margin: 0.211,
-  shape: { corner: { inner: 0.06, outer: 0.06 }, edge: { inner: 0.2, outer: 0.06 }, center: 0.45 },
+  shape: { corner: { inner: 0.06, outer: 0.06 }, edge: { inner: 0.2, outer: 0.06 }, center: 0.5 },
   cornerRadius: 0.3,
   edgeRadius: 0.24,
+  cornerRound: 0.37,
+  centerDome: { flat: 0.65, drop: 0.05 },
+  pedestal: true,
   body: "#2e2e2e",
 };
 export const QIYI_SQUARE_STICKERS: StickerSet = {
   size: 0.898,
   centerSize: 0.894,
   margin: 0.15,
-  shape: { corner: { inner: 0.06, outer: 0.06 }, edge: { inner: 0.2, outer: 0.06 }, center: 0.42 },
+  shape: { corner: { inner: 0.06, outer: 0.06 }, edge: { inner: 0.2, outer: 0.06 }, center: 0.5 },
   cornerRadius: 0.15,
   edgeRadius: 0.15,
+  cornerRound: 0.22,
+  centerDome: { flat: 0.65, drop: 0.05 },
+  pedestal: true,
   body: "#2e2e2e",
 };
 
@@ -551,10 +567,11 @@ export function withStickers(skin: Skin, style: StickerStyle = "thin", options: 
       size: 0.995,
       shape: { corner: round, edge: round, center: 0.02 },
       paths: undefined,
-      kinds: undefined,
+      kinds: set.centerDome ? { center: { dome: set.centerDome } } : undefined,
       thickness: platform,
       bevel: 0.012,
       edgeRadius,
+      cornerRound: set.cornerRound,
       fillOuter: true,
       material: "plastic",
       overlay: { ...set, ...styles[style] },

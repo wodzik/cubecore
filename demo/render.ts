@@ -3,8 +3,8 @@ import { type Mask, MethodTracker, applyMoves, formatMove, invert, parseAlg, sol
 import { CFOP } from "../packages/cfop/src/index";
 import { MASK_NAMES, maskByName } from "../packages/methods/src/index";
 import { SvgCache, svgKey } from "../packages/image/src/index";
-import { type BackView, CubeRenderer, SKINS, type Skin, showPosition } from "../packages/render/src/index";
-import { type Decal, type StickerStyle, withStickers } from "../packages/skin/src/index";
+import { ARCHIVED_SKINS, type BackView, CubeRenderer, SKINS, type Skin, showPosition } from "../packages/render/src/index";
+import { type Decal, type StickerStyle, withFinish, withStickers } from "../packages/skin/src/index";
 import { ReplayClock, recording } from "../packages/timeline/src/index";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -64,17 +64,13 @@ $("scrub").oninput = () => {
 // Demo-only skins: a brand logo supplied by the app (the library ships none), and custom SVG tile outlines.
 const DEMO_SKINS: Record<string, Skin> = {
   ...SKINS,
-  // Finishes and coloured plastic (new skin options): the same cube matte, UV-coated, and moulded in colour.
-  "gan 356 m matte": { ...SKINS.gan356m, stickers: { ...SKINS.gan356m.stickers, finish: "matte" } },
-  "gan 356 m UV": { ...SKINS.gan356m, stickers: { ...SKINS.gan356m.stickers, finish: "uv" } },
-  "coloured pieces": { ...SKINS.gan356m, body: "#e8e8e8", pieces: { ...SKINS.gan356m.pieces, colored: true } },
   // Pieces from glTF files: the standard skin's settings, but every piece is a model (here: i4-style templates
   // exported by scripts/export-models.ts) — if you see i4 pieces, the models are what's drawn.
   "glTF models (sample)": {
     ...SKINS.standard,
-    stickers: { ...SKINS.standard.stickers, material: "plastic", roughness: 0.55, colors: SKINS.ganI4.stickers.colors },
-    models: { corner: "/models/ganI4-corner.gltf", edge: "/models/ganI4-edge.gltf", center: "/models/ganI4-center.gltf", surface: SKINS.ganI4.stickers.thickness },
-    features: SKINS.ganI4.features,
+    stickers: { ...SKINS.standard.stickers, material: "plastic", roughness: 0.55, colors: ARCHIVED_SKINS.ganI4.stickers.colors },
+    models: { corner: "/models/ganI4-corner.gltf", edge: "/models/ganI4-edge.gltf", center: "/models/ganI4-center.gltf", surface: ARCHIVED_SKINS.ganI4.stickers.thickness },
+    features: ARCHIVED_SKINS.ganI4.features,
   },
   // Per-face geometry: a charging port on the yellow (D) centre only — it stays on that sticker whatever you turn.
   "charging port on yellow": {
@@ -128,7 +124,10 @@ function applySkin() {
   const logo = $<HTMLInputElement>("logo").checked ? logoFor(name) : null;
   const withLogo = logo ? { ...chosen, decals: [...(chosen.decals ?? []), logo] } : chosen;
   const style = $<HTMLSelectElement>("stickers").value as StickerStyle | "";
-  const base = style ? withStickers(withLogo, style) : withLogo;
+  const stickered = style ? withStickers(withLogo, style) : withLogo;
+  // "Finish": the same cube matte or UV-coated.
+  const finish = $<HTMLSelectElement>("finish").value as "matte" | "uv" | "";
+  const base = finish ? withFinish(stickered, finish) : stickered;
   skin = base;
   renderer.setSkin({ ...base, hints: { ...base.hints, enabled: $<HTMLInputElement>("hints").checked } });
 }
@@ -136,6 +135,7 @@ $("backview").onchange = () => renderer.setBackView($<HTMLSelectElement>("backvi
 $("skin").onchange = applySkin;
 $("stickers").onchange = applySkin;
 $("logo").onchange = applySkin;
+$("finish").onchange = applySkin;
 $("explode").oninput = () => renderer.setExplode(Number($<HTMLInputElement>("explode").value) / 100);
 $("hints").onchange = applySkin;
 $("mask").onchange = () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { FRAMES, applyMoves, buildMask, presetMask, solvedState, spinsAfter } from "@cubecore/core";
-import { SKINS, type Skin } from "@cubecore/skin";
+import { ARCHIVED_SKINS, SKINS, type Skin } from "@cubecore/skin";
 import { SvgCache, renderSvg, svgKey } from "./index";
 
 const STD = SKINS.standard;
@@ -68,7 +68,7 @@ describe("renderSvg", () => {
   });
 
   it("centre holes from the skin: four per centre tile", () => {
-    expect(count(renderSvg(S, { view: "net", skin: SKINS.ganI4 }), 'fill-opacity="0.38"')).toBe(6 * 4);
+    expect(count(renderSvg(S, { view: "net", skin: ARCHIVED_SKINS.ganI4 }), 'fill-opacity="0.38"')).toBe(6 * 4);
     expect(count(renderSvg(S, { view: "net", skin: SKINS.gan }), 'fill-opacity="0.38"')).toBe(0);
   });
 

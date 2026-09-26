@@ -4,7 +4,9 @@
  * Default: ganI4 → demo/models/. Open them in Blender, reshape, keep the
  * material names (body, sticker-U / -F / -R), export as GLB.
  */
-import { SKINS } from "../packages/skin/src/index";
+import { ARCHIVED_SKINS, SKINS as CURRENT } from "../packages/skin/src/index";
+
+const SKINS = { ...CURRENT, ...ARCHIVED_SKINS }; // the i4 templates come from the archived i4 skin
 import { pieceTemplates } from "../packages/render/src/gltf";
 
 const name = (process.argv[2] ?? "ganI4") as keyof typeof SKINS;

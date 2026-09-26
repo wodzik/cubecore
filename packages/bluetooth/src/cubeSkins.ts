@@ -4,8 +4,7 @@
  * app registers (e.g. skins made for particular models) go before the
  * built-in defaults:
  *
- *   GAN i4 (name contains "i4")  → ganI4
- *   any other GAN                → gan
+ *   GAN                          → gan
  *   QiYi QY-SC (name QY-QYSC…)   → qiyiSC
  *   MoYu (name WCU_MY…)          → moyu
  *   anything else                → stickerless (most smart cubes are)
@@ -26,7 +25,6 @@ export interface CubeSkinRule {
 const test = (m: string | RegExp | undefined, value: string) => m === undefined || (typeof m === "string" ? value.startsWith(m) : m.test(value));
 
 const BUILT_IN: CubeSkinRule[] = [
-  { protocol: "gan", name: /i4\b|i4[^\d]|gan\s*i4/i, skin: "ganI4" },
   { protocol: "gan", skin: "gan" },
   { protocol: "qiyi", name: /^QY-QYSC/i, skin: "qiyiSC" },
   { protocol: "moyu", name: /^WCU_MY/i, skin: "moyu" },

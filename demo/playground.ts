@@ -23,7 +23,7 @@ const SOLVE: Recording = recording(
 $<HTMLTextAreaElement>("share").value = encodeShare({ recording: SOLVE, method: "cfop" });
 
 for (const name of Object.keys(SKINS)) $<HTMLSelectElement>("skin").add(new Option(name, name));
-$<HTMLSelectElement>("skin").value = "ganI4";
+$<HTMLSelectElement>("skin").value = "gan";
 for (const name of MASK_NAMES) $<HTMLSelectElement>("mask").add(new Option(name, name));
 for (const m of METHODS) $<HTMLSelectElement>("method").add(new Option(m.name, m.id));
 $<HTMLSelectElement>("method").value = "cfop";

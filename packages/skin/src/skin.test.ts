@@ -14,10 +14,10 @@ describe("withStickers", () => {
   });
 
   it("raised stickers stand out more than thin ones, a flat print hardly at all", () => {
-    const t = (style: "raised" | "thin" | "flat") => withStickers(SKINS.gan356m, style).stickers.overlay!.thickness;
+    const t = (style: "raised" | "thin" | "flat") => withStickers(SKINS.gan, style).stickers.overlay!.thickness;
     expect(t("raised")).toBeGreaterThan(t("thin"));
     expect(t("thin")).toBeGreaterThan(t("flat"));
-    expect(withStickers(SKINS.gan356m, "flat").stickers.overlay!.bevel).toBe(0);
+    expect(withStickers(SKINS.gan, "flat").stickers.overlay!.bevel).toBe(0);
   });
 
   it("uses the skin's own shapes when it has no sticker set", () => {

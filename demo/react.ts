@@ -13,7 +13,7 @@ function Guide() {
     "section",
     null,
     h("strong", null, "A guide"),
-    h(CubePlayer, { ref: player, id: "guide", alg: "R U R' U . R U2 R' // Sune", anchor: "end", tempo: 2, skin: "ganI4", progress: true, onEnded: () => setEnded((n) => n + 1) }),
+    h(CubePlayer, { ref: player, id: "guide", alg: "R U R' U . R U2 R' // Sune", anchor: "end", tempo: 2, skin: "gan", progress: true, onEnded: () => setEnded((n) => n + 1) }),
     h(CubeAlg, { player }),
     h("p", null, `ended ${ended}×`),
   );

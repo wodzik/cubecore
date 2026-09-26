@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { SKINS } from "@cubecore/skin";
+import { ARCHIVED_SKINS } from "@cubecore/skin";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { pieceTemplates } from "./gltf";
 import { stickerFaceOf } from "./pieceModels";
@@ -13,7 +13,7 @@ import { stickerFaceOf } from "./pieceModels";
 };
 
 describe("glTF piece templates", () => {
-  const t = pieceTemplates(SKINS.ganI4);
+  const t = pieceTemplates(ARCHIVED_SKINS.ganI4);
 
   it("one document per kind, with body and the kind's sticker materials", () => {
     const names = (k: keyof typeof t) => JSON.parse(t[k]).materials.map((m: { name: string }) => m.name).sort();

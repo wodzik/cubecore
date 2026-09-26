@@ -5,7 +5,7 @@ import { CubeAlg, CubeAlgPractice, CubePlayer, CubeScramble } from "./index";
 
 describe("React bindings (server render)", () => {
   it("attributes reach the element: flags only when on, tooltips off, dashed names", () => {
-    const html = renderToString(createElement(CubePlayer, { alg: "R U R' U'", anchor: "end", progress: true, markers: false, segmentLabels: true, tooltips: false, backView: "top-right", maxPause: 1500, skin: "ganI4", className: "cube" }));
+    const html = renderToString(createElement(CubePlayer, { alg: "R U R' U'", anchor: "end", progress: true, markers: false, segmentLabels: true, tooltips: false, backView: "top-right", maxPause: 1500, skin: "gan", className: "cube" }));
     expect(html).toContain('<cube-player');
     expect(html).toContain('alg="R U R&#x27; U&#x27;"');
     expect(html).toContain('anchor="end"');
@@ -15,7 +15,7 @@ describe("React bindings (server render)", () => {
     expect(html).toContain('tooltips="off"');
     expect(html).toContain('back-view="top-right"');
     expect(html).toContain('max-pause="1500"');
-    expect(html).toContain('skin="ganI4"');
+    expect(html).toContain('skin="gan"');
     expect(html).toMatch(/class(Name)?="cube"/);
   });
 

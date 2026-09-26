@@ -12,7 +12,7 @@ function Guide() {
   const player = useRef(null);
   return (
     <>
-      <CubePlayer ref={player} alg="R U R' U . R U2 R' // Sune" anchor="end" skin="ganI4" progress onEnded={() => …} />
+      <CubePlayer ref={player} alg="R U R' U . R U2 R' // Sune" anchor="end" skin="gan" progress onEnded={() => …} />
       <CubeAlg player={player} />
     </>
   );

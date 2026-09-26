@@ -9,21 +9,23 @@ preset and change what you need:
 |---|---|
 | `standard` | black plastic, rounded stickers |
 | `stickerless` | tiles filling the faces |
-| `gan` | GAN-style stickerless (rounded corner / edge tongues, near-round centres) |
-| `ganI4` | GAN i4 smart cube (from product photos) |
+| `gan` | GAN stickerless, after the GAN 356 M (measured from "GAN CUBE 356s M air" by Amyyu, Sketchfab, CC BY 4.0): square corner tiles, round edge tongues, near-round centres; thick tiles with soft edges on pieces moulded in colour — picked for GAN cubes |
 | `qiyiSC` | QiYi QY-SC smart cube: moulded in colour, tile outlines traced from QiYi's app model, pillowy tiles, well-rounded cube edges, dark gaps, domed centre — picked for QiYi cubes named QY-QYSC… |
 | `moyu` | MoYu smart cubes (WCU, MY32…): moulded in colour, thick tiles, shapes and colours from the cube model in MoYu's app — picked for MoYu cubes named WCU_MY… |
-| `gan356m` | GAN 356 M: square corner tiles, round edge tongues, near-round centres — measured from "GAN CUBE 356s M air" by Amyyu (Sketchfab, CC BY 4.0) |
+| `ganStickers`, `moyuStickers`, `qiyiStickersRounded`, `qiyiStickersSquare` | the stickered versions (see Stickered versions) |
+
+Earlier GAN skins (`gan` before 2026-09, `ganI4`, `gan356m`) are kept in
+`ARCHIVED_SKINS`.
 
 **Per piece kind:** `stickers.kinds` gives corner / edge / centre tiles their
 own size, thickness and edge round (`bevel`) — e.g. a centre cap that is
-smaller and stands out more (`gan356m`: `kinds: { center: { size: 0.979, thickness: 0.04 } }`).
+smaller and stands out more (`gan`: `kinds: { center: { size: 0.979, thickness: 0.07 } }`).
 Decals and features sit on their own tile's top. `tileSize(skin, kind)` /
 `tileThickness(skin, kind)` read the values.
 
 **Finish:** `stickers.finish: "matte"` (soft, diffuse) or `"uv"` (UV-coated:
 a clear glossy coat reflecting a soft room, sharp highlights) — lit plastic,
-overriding `roughness`.
+overriding `roughness`. Any skin can be shown matte or UV-coated without a skin of its own: `withFinish(skin, "matte" | "uv")` (undefined: the skin's own).
 
 **Coloured plastic:** `pieces: { …, colored: true }` paints the plastic under
 each tile in the tile's colour — a corner is three coloured parts, an edge
@@ -72,9 +74,9 @@ towards the face centre vs the others) and the colours — that's how
 import { SKINS, type Skin } from "@cubecore/skin";
 
 const mine: Skin = {
-  ...SKINS.ganI4,
+  ...SKINS.gan,
   body: "#202226",
-  stickers: { ...SKINS.ganI4.stickers, colors: ["#fff", "#e33", "#2c5", "#fd3", "#f82", "#26f"] },
+  stickers: { ...SKINS.gan.stickers, colors: ["#fff", "#e33", "#2c5", "#fd3", "#f82", "#26f"] },
 };
 renderer.setSkin(mine);
 renderSvg(state, { skin: mine });
@@ -97,8 +99,8 @@ the plastic tops under the stickers their own corner radii (`base`):
 `withStickers(skin, style)`, `style` one of
 `"raised"` (thick, rounded stickers), `"thin"` (a real sticker, the default)
 or `"flat"` (a flat print). The sticker shapes come from `skin.stickerSet`
-(`gan356m`: GAN's sticker atlas — rounded squares, edges with a round tongue,
-round centres; `moyu` and `qiyiSC`: the stickered cubes in their apps); a skin
+(`gan`: GAN's sticker atlas — rounded squares, edges with a round tongue,
+round centres, flat prints with the black plastic showing round them; `moyu` and `qiyiSC`: the stickered cubes in their apps); a skin
 without one gets its own tile shapes, at most 0.88 of a face. Colours, logos and
 the rest carry over.
 
@@ -106,7 +108,7 @@ the rest carry over.
 renderer.setSkin(withStickers(SKINS.moyu, "flat"));
 ```
 
-Ready-made: `ganStickers`, `moyuStickers` (thin stickers), and QiYi's two
+Ready-made: `ganStickers` (flat prints), `moyuStickers` (thin stickers), and QiYi's two
 stickered cubes from its app — `qiyiStickersRounded` ("black rounded": a
 round body, a big round on the corner stickers) and `qiyiStickersSquare`
 ("black square"); their sticker sets are exported as `QIYI_ROUND_STICKERS` /
@@ -218,7 +220,7 @@ the skin one model per piece kind:
 
 ```ts
 const mine: Skin = {
-  ...SKINS.ganI4,
+  ...SKINS.gan,
   models: { corner: "/models/my-corner.glb", edge: "/models/my-edge.glb", center: "/models/my-center.glb", surface: 0.04 },
 };
 ```
@@ -239,7 +241,7 @@ built-in pieces are drawn. `surface` = height of the sticker surface above
 the cubie face, so decals and features sit on it. `scale` if you didn't
 model in cubie units. 2D pictures keep using the skin's outlines.
 
-**Start from a template:** `bun scripts/export-models.ts ganI4 ./out` writes
+**Start from a template:** `bun scripts/export-models.ts ganI4 ./out` (the archived i4) writes
 the skin's pieces as `.gltf` in exactly this convention (`pieceTemplates(skin)`
 in code) — open in Blender, reshape, keep the material names, export GLB.
 `demo/models/` has the i4 templates (our own geometry, CC0); the "glTF models

@@ -25,3 +25,14 @@ describe("withStickers", () => {
     expect(withStickers(SKINS.stickerless).stickers.size).toBeLessThan(SKINS.stickerless.stickers.size);
   });
 });
+
+describe("stickered skins", () => {
+  it("QiYi's round cube is rounder than its square one, both black with QiYi's colours", () => {
+    expect(SKINS.qiyiStickersRounded.cubieRadius).toBeGreaterThan(SKINS.qiyiStickersSquare.cubieRadius);
+    for (const s of [SKINS.qiyiStickersRounded, SKINS.qiyiStickersSquare, SKINS.ganStickers, SKINS.moyuStickers]) {
+      expect(s.body).toBe("#161616");
+      expect(s.stickers.fillOuter).toBe(false);
+    }
+    expect(SKINS.qiyiStickersSquare.stickers.colors).toEqual(SKINS.qiyiSC.stickers.colors);
+  });
+});

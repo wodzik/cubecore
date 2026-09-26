@@ -98,6 +98,12 @@ the rest carry over.
 renderer.setSkin(withStickers(SKINS.moyu, "flat"));
 ```
 
+Ready-made: `ganStickers`, `moyuStickers` (thin stickers), and QiYi's two
+stickered cubes from its app — `qiyiStickersRounded` ("black rounded": a
+round body, a big round on the corner stickers) and `qiyiStickersSquare`
+("black square"); their sticker sets are exported as `QIYI_ROUND_STICKERS` /
+`QIYI_SQUARE_STICKERS` (`withStickers(skin, style, { set })`).
+
 ## The layers of a skin
 
 | What | Fields | Notes |

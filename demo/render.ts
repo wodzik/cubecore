@@ -73,6 +73,10 @@ const DEMO_SKINS: Record<string, Skin> = {
   "gan 356 m + logo": { ...SKINS.gan356m, decals: [{ select: { stickers: [4] }, image: "/assets/gan-logo.png", size: 0.75, blend: "multiply" }] },
   "qiyi sc + logo": { ...SKINS.qiyiSC, decals: [{ select: { stickers: [4] }, image: "/assets/qiyi-logo.png", size: 0.56, rotate: 2 }] },
   "moyu + logo": { ...SKINS.moyu, decals: [{ select: { stickers: [4] }, image: "/assets/moyu-logo.png", size: 0.62 }] },
+  "gan stickers + logo": { ...SKINS.ganStickers, decals: [{ select: { stickers: [4] }, image: "/assets/gan-logo.png", size: 0.75, blend: "multiply" }] },
+  "moyu stickers + logo": { ...SKINS.moyuStickers, decals: [{ select: { stickers: [4] }, image: "/assets/moyu-logo.png", size: 0.62 }] },
+  "qiyi black rounded + logo": { ...SKINS.qiyiStickersRounded, decals: [{ select: { stickers: [4] }, image: "/assets/qiyi-logo.png", size: 0.56, rotate: 2 }] },
+  "qiyi black square + logo": { ...SKINS.qiyiStickersSquare, decals: [{ select: { stickers: [4] }, image: "/assets/qiyi-logo.png", size: 0.56, rotate: 2 }] },
   "gan i4 + logo": { ...SKINS.ganI4, decals: [{ select: { stickers: [4] }, image: "/assets/gan-logo.png", size: 0.62, blend: "multiply" }] },
   // Pieces from glTF files: the standard skin's settings, but every piece is a model (here: i4-style templates
   // exported by scripts/export-models.ts) — if you see i4 pieces, the models are what's drawn.

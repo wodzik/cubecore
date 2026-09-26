@@ -176,6 +176,8 @@ export interface StickerSet {
   centerSize?: number;
   shape: StickerShape;
   paths?: StickerPaths;
+  /** Rounding of the black cubies (cubie units) — bigger for a rounder cube. Default 0.08. */
+  cubieRadius?: number;
 }
 
 /** How a stickered version's stickers stand: thick and rounded, thin (a real sticker) or a flat print. */
@@ -217,6 +219,27 @@ const WESTERN = ["#ffffff", "#e8322f", "#1fb24a", "#ffd500", "#ff8a00", "#1e5eff
  * and the edge tiles' long curve there. Stickerless — outer sides run to the
  * cube edge.
  */
+/**
+ * QiYi's stickered cubes, measured from the models in QiYi's app ("black
+ * rounded" / "black square"): stickers ~0.87–0.89 of a face, a big round on
+ * a corner sticker at the cube's corner (smaller on the square cube), edge
+ * stickers rounded towards the centre, round-ish centres.
+ */
+export const QIYI_ROUND_STICKERS: StickerSet = {
+  size: 0.87,
+  centerSize: 0.86,
+  shape: { corner: { inner: 0.06, outer: 0.06 }, edge: { inner: 0.2, outer: 0.06 }, center: 0.45 },
+  paths: { corner: "M0.4 0 H0.94 Q1 0 1 0.06 V0.94 Q1 1 0.94 1 H0.06 Q0 1 0 0.94 V0.4 Q0 0 0.4 0 Z" },
+  cubieRadius: 0.3,
+};
+export const QIYI_SQUARE_STICKERS: StickerSet = {
+  size: 0.89,
+  centerSize: 0.89,
+  shape: { corner: { inner: 0.06, outer: 0.06 }, edge: { inner: 0.2, outer: 0.06 }, center: 0.42 },
+  paths: { corner: "M0.2 0 H0.94 Q1 0 1 0.06 V0.94 Q1 1 0.94 1 H0.06 Q0 1 0 0.94 V0.2 Q0 0 0.2 0 Z" },
+  cubieRadius: 0.15,
+};
+
 const QIYI_SC_PATHS = {
   corner:
     "M0 0.499 L0 0 L0.950 0 L0.978 0.004 L0.993 0.015 L1 0.033 L1 0.856 L0.992 0.899 L0.982 0.926 L0.959 0.959 L0.931 0.979 L0.899 0.992 L0.856 1 L0.033 1 L0.015 0.993 L0.004 0.978 L0 0.950 Z",
@@ -233,7 +256,7 @@ const LIGHT_PAGE: SkinTheme = {
   hints: { opacity: 0.85, ignoredOpacity: 0.55, colors: ["#6f7b8a", "#e8322f", "#1fb24a", "#e0bb00", "#ff8a00", "#1e5eff"] },
 };
 
-export const SKINS = {
+const BRANDS = {
   /** Black plastic, rounded stickers — a typical modern speed cube. */
   standard: {
     body: "#101010",
@@ -393,13 +416,8 @@ export const SKINS = {
       roughness: 0.35,
       fillOuter: true,
     },
-    // QiYi's stickers (the stickered cube in QiYi's app): a big round at the cube corner, edges rounded towards the centre.
-    stickerSet: {
-      size: 0.87,
-      centerSize: 0.86,
-      shape: { corner: { inner: 0.06, outer: 0.06 }, edge: { inner: 0.2, outer: 0.06 }, center: 0.45 },
-      paths: { corner: "M0.4 0 H0.94 Q1 0 1 0.06 V0.94 Q1 1 0.94 1 H0.06 Q0 1 0 0.94 V0.4 Q0 0 0.4 0 Z" },
-    },
+    // QiYi's stickers: the round black cube in QiYi's app (see QIYI_SQUARE_STICKERS for the square one).
+    stickerSet: QIYI_ROUND_STICKERS,
     mask: { ignored: "#5a5a5a", oriented: "#39c7d4", dimAmount: 0.55 },
     hints: { enabled: false, distance: 1.4, opacity: 0.75, ignoredOpacity: 0.35 },
     background: null,
@@ -440,6 +458,18 @@ export const SKINS = {
   },
 } satisfies Record<string, Skin>;
 
+export const SKINS = {
+  ...BRANDS,
+  /** GAN, stickered: GAN's stickers (rounded squares, edges with a round tongue, round centres) on black. */
+  ganStickers: withStickers(BRANDS.gan356m, "thin"),
+  /** MoYu, stickered: MoYu's stickers on black. */
+  moyuStickers: withStickers(BRANDS.moyu, "thin"),
+  /** QiYi, stickered — the round black cube ("black rounded" in QiYi's app). */
+  qiyiStickersRounded: withStickers(BRANDS.qiyiSC, "raised", { set: QIYI_ROUND_STICKERS }),
+  /** QiYi, stickered — the square black cube ("black square" in QiYi's app). */
+  qiyiStickersSquare: withStickers(BRANDS.qiyiSC, "raised", { set: QIYI_SQUARE_STICKERS }),
+} satisfies Record<string, Skin>;
+
 /** Tile side of a piece kind, relative to a cubie face (`stickers.kinds` or `stickers.size`). */
 export const tileSize = (skin: Skin, kind: PieceKind): number => skin.stickers.kinds?.[kind]?.size ?? skin.stickers.size;
 /** How far a piece kind's tiles stand out (`stickers.kinds` or `stickers.thickness`). */
@@ -472,27 +502,28 @@ export function withColors(skin: Skin, colors: readonly [string, string, string,
   return { ...skin, stickers: { ...skin.stickers, colors } };
 }
 
-const STICKER_STYLES: Record<StickerStyle, { thickness: number; bevel: number }> = {
-  raised: { thickness: 0.03, bevel: 0.022 },
-  thin: { thickness: 0.012, bevel: 0.006 },
-  flat: { thickness: 0.002, bevel: 0 },
-};
 
 /**
  * The stickered version of a skin: a black, rounded body with the brand's
  * stickers (`skin.stickerSet`, else the skin's own shapes, at most 0.88 of a face)
  * on top — `raised` (thick, rounded), `thin` (like a real sticker) or `flat`
- * (a print). Colours, logos and the rest stay.
+ * (a print). `options.set`: another sticker set of the brand (e.g. QiYi's
+ * square cube). Colours, logos and the rest stay.
  */
-export function withStickers(skin: Skin, style: StickerStyle = "thin"): Skin {
-  const set = skin.stickerSet ?? { size: Math.min(skin.stickers.size, 0.88), shape: skin.stickers.shape ?? { corner: { inner: skin.stickers.radius, outer: skin.stickers.radius }, edge: { inner: skin.stickers.radius, outer: skin.stickers.radius }, center: skin.stickers.radius } };
-  const { thickness, bevel } = STICKER_STYLES[style];
+export function withStickers(skin: Skin, style: StickerStyle = "thin", options: { set?: StickerSet } = {}): Skin {
+  const styles: Record<StickerStyle, { thickness: number; bevel: number }> = {
+    raised: { thickness: 0.03, bevel: 0.022 },
+    thin: { thickness: 0.012, bevel: 0.006 },
+    flat: { thickness: 0.002, bevel: 0 },
+  };
+  const set = options.set ?? skin.stickerSet ?? { size: Math.min(skin.stickers.size, 0.88), shape: skin.stickers.shape ?? { corner: { inner: skin.stickers.radius, outer: skin.stickers.radius }, edge: { inner: skin.stickers.radius, outer: skin.stickers.radius }, center: skin.stickers.radius } };
+  const { thickness, bevel } = styles[style];
   return {
     ...skin,
     body: "#161616",
     pictureBody: undefined,
     cubieSize: 0.985,
-    cubieRadius: 0.08,
+    cubieRadius: set.cubieRadius ?? 0.08,
     bodyInset: 0.004,
     pieces: undefined,
     stickers: {

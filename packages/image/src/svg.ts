@@ -51,6 +51,7 @@ import {
   selectedStickers,
   stickerColor,
   stickerLayout,
+  overlayOutline,
   stickerlessOutline,
   themed,
   tileSize,
@@ -229,6 +230,12 @@ export function renderSvg(state: State, options: SvgOptions = {}): string {
     const layout = stickerLayout(f.index, shape);
     const path = skin.stickers.paths?.[layout.kind];
     const kindSide = sideOf(layout.kind);
+    // Stickers lying on the body (stickered cubes): the sticker's own outline on the plastic.
+    const overlay = skin.stickers.overlay;
+    if (overlay) {
+      out += `<path d="${polygon(overlayOutline(f.index, overlay, 6).map(([x, y]) => v.project(f.face, onFace(f, x, y))))}" fill="${fill}"/>`;
+      continue;
+    }
     if (path) {
       const reach = skin.stickers.fillOuter && layout.kind !== "center" ? { left: layout.kind === "corner", top: true, edge: 0.506 } : undefined;
       out += `<path d="${attr(path)}" transform="${boxTransform(f, kindSide, layout.pathQuarters, v.project, [0, 0], 0, reach)}" fill="${fill}"/>`;

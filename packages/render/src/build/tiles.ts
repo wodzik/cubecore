@@ -13,7 +13,7 @@
 import { BufferGeometry, Float32BufferAttribute, Shape, ShapeGeometry, ShapeUtils, SphereGeometry, Vector2 } from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
-import { type PieceKind, type Skin, type StickerShape, reachEdge, roundedOutline, stickerLayout, stickerlessOutline, tileSize, tileThickness } from "@cubecore/skin";
+import { type PieceKind, type Skin, type StickerShape, overlayOutline, reachEdge, roundedOutline, stickerLayout, stickerlessOutline, tileSize, tileThickness } from "@cubecore/skin";
 import { type Mitre, type TileSolid, applyDome, densify, planeCut, skirtSolid, tileSolid } from "../tile";
 
 export interface TileKit {
@@ -37,6 +37,8 @@ export interface TileKit {
   mechanism: BufferGeometry | null;
   /** The tile at facelet position `fi`, in its face's local frame (x = a, y = b, z = outward). */
   tile(fi: number): BufferGeometry;
+  /** The sticker lying on the tile at `fi` (`stickers.overlay`), in the tile's frame, or null. */
+  overlay(fi: number): BufferGeometry | null;
   /** The piece's plastic under that tile (`skin.pieces`), or null. */
   skirt(fi: number): BufferGeometry | null;
   /** The flat floating "back" sticker for position `fi`. */
@@ -110,7 +112,8 @@ export function tileKit(skin: Skin): TileKit {
     side,
     thickness,
     sideOf,
-    thicknessOf,
+    // Where things on a sticker sit: on the tile, or on the sticker lying on it.
+    thicknessOf: (kind: PieceKind) => thicknessOf(kind) + (skin.stickers.overlay?.thickness ?? 0),
     faceOffset,
     body,
     centerBody,
@@ -138,6 +141,17 @@ export function tileKit(skin: Skin): TileKit {
             )
           : new ShapeGeometry(new Shape(outline.map(([x, y]) => new Vector2(x, y)))),
       );
+    },
+    overlay(fi) {
+      const ov = skin.stickers.overlay;
+      if (!ov) return null;
+      const { layout } = outlineFor(fi);
+      const base = thicknessOf(layout.kind);
+      return cached(`overlay|${fi}`, () => {
+        const g = solidToGeometry(tileSolid(overlayOutline(fi, ov), { thickness: ov.thickness, bevel: Math.min(ov.bevel ?? 0.004, ov.thickness), segments: 2, sink: 0.002 }, null));
+        g.translate(0, 0, base);
+        return g;
+      });
     },
     skirt(fi) {
       const pieces = skin.pieces;

@@ -106,6 +106,7 @@ export class CubeRenderer {
   private size = { w: 1, h: 1 };
   private root = new Group(); // gyroscope orientation applies here
   private cubieGroups: Group[] = [];
+  private explode = 0;
   /** Meshes coloured as the sticker at each facelet position (a built-in tile, or a model's sticker-X meshes). */
   private paintTargets: Mesh[][] = [];
   /** Tile frame at each facelet position (z = 0 on the cubie face): where decals and features attach. */
@@ -236,6 +237,12 @@ export class CubeRenderer {
     this.skin = themed(skin, this.theme);
     this.build();
     this.applyCamera();
+    this.requestRender();
+  }
+
+  /** Pull the pieces apart to show their shapes: 0 = assembled, ~0.5 = well apart. */
+  setExplode(amount: number): void {
+    this.explode = Math.max(0, amount);
     this.requestRender();
   }
 
@@ -425,10 +432,19 @@ export class CubeRenderer {
           g.add(anchor);
           this.anchors[fi] = anchor;
         } else {
-          const mesh = new Mesh(kit.tile(fi), this.material("#000000", false));
+          // With stickers on top, the tile is the body's plastic and the sticker takes the colour.
+          const sticker = kit.overlay(fi);
+          const mesh = new Mesh(kit.tile(fi), sticker ? this.material(s.body, false) : this.material("#000000", false));
           mesh.position.set(...f.pos).addScaledVector(normal, kit.faceOffset);
           mesh.quaternion.setFromRotationMatrix(basis);
           g.add(mesh);
+          if (sticker) {
+            const sm = new Mesh(sticker, this.material("#000000", false));
+            sm.position.copy(mesh.position);
+            sm.quaternion.copy(mesh.quaternion);
+            g.add(sm);
+            this.paintTargets[fi].push(sm);
+          }
           const skirt = kit.skirt(fi);
           if (skirt) {
             const m = new Mesh(skirt, bodyMat);
@@ -438,7 +454,7 @@ export class CubeRenderer {
             // Coloured plastic: the piece under the tile is painted like the tile (and follows it through the state).
             if (s.pieces?.colored) this.paintTargets[fi].push(m);
           }
-          this.paintTargets[fi].push(mesh);
+          if (!sticker) this.paintTargets[fi].push(mesh);
           this.anchors[fi] = mesh;
         }
         this.cubieOfFacelet[fi] = ci;
@@ -490,6 +506,8 @@ export class CubeRenderer {
       const g = this.cubieGroups[i];
       if (turn && axis && turn.turns(c.pos)) g.quaternion.setFromAxisAngle(axis, turn.angle * this.partial!.progress);
       else g.quaternion.identity();
+      // Exploded view: each piece pushed out along its place's direction (turning with its layer).
+      g.position.set(c.pos[0], c.pos[1], c.pos[2]).multiplyScalar(this.explode).applyQuaternion(g.quaternion);
     });
   }
 

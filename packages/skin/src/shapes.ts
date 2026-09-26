@@ -177,3 +177,43 @@ export function roundedRect(ext: TileExtents, radii: readonly number[], segments
   });
   return pts;
 }
+
+/** A sticker laid on a (black) tile — see `Skin.stickers.overlay`. */
+export interface StickerOverlay {
+  /** Side of the sticker (fraction of a cubie face) — its inner sides. */
+  size: number;
+  centerSize?: number;
+  /** How far the sticker keeps from the cube's outer edges (cubie units) — room for the rounded cube edge. */
+  margin: number;
+  /** Corner radii as in `StickerShape` (fractions of the sticker side). */
+  shape: StickerShape;
+  /** Radius where a corner sticker meets the cube's corner (cubie units). Default: its outer radius. */
+  cornerRadius?: number;
+  /** How far the sticker stands on the tile (cubie units). */
+  thickness: number;
+  /** Rounding of the sticker's edge (≤ thickness). Default: a hair. */
+  bevel?: number;
+}
+
+/**
+ * A sticker's outline on its tile: the inner sides at the sticker's size,
+ * the sides on the cube's outer edge `margin` short of it (the black rounded
+ * edge shows round it), per-corner radii from the shape; a corner sticker's
+ * corner at the cube's corner takes `cornerRadius`.
+ */
+export function overlayOutline(faceletIndex: number, overlay: StickerOverlay, segments = 8): [number, number][] {
+  const layout = stickerLayout(faceletIndex, overlay.shape);
+  const half = (layout.kind === "center" ? (overlay.centerSize ?? overlay.size) : overlay.size) / 2;
+  const out = 0.5 - overlay.margin;
+  const o = outerSides(layout);
+  const ext: TileExtents = { xMin: o.xMin ? -out : -half, xMax: o.xMax ? out : half, yMin: o.yMin ? -out : -half, yMax: o.yMax ? out : half };
+  const side = 2 * half;
+  const both = [
+    [o.xMax, o.yMax],
+    [o.xMin, o.yMax],
+    [o.xMin, o.yMin],
+    [o.xMax, o.yMin],
+  ];
+  const radii = layout.radii.map((r, i) => (both[i][0] && both[i][1] && overlay.cornerRadius !== undefined ? overlay.cornerRadius : r * side));
+  return roundedRect(ext, radii, segments);
+}

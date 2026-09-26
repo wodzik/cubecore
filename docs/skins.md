@@ -85,8 +85,11 @@ different colour scheme is just another `colors` array (`withColors`).
 
 ## Stickered versions
 
-Every brand also comes as a stickered cube — a black, rounded body with the
-brand's stickers on it: `withStickers(skin, style)`, `style` one of
+Every brand also comes as a stickered cube — the brand's pieces in black
+plastic (flat faces, rounded only at the cube's edges) with a thin sticker
+lying on each face (`stickers.overlay`: its own size, a `margin` from the
+cube's edges where the black rounded edge shows, corner radii and a
+`cornerRadius` at the cube's corners): `withStickers(skin, style)`, `style` one of
 `"raised"` (thick, rounded stickers), `"thin"` (a real sticker, the default)
 or `"flat"` (a flat print). The sticker shapes come from `skin.stickerSet`
 (`gan356m`: GAN's sticker atlas — rounded squares, edges with a round tongue,

@@ -4,7 +4,7 @@ import { CFOP } from "../packages/cfop/src/index";
 import { MASK_NAMES, maskByName } from "../packages/methods/src/index";
 import { SvgCache, svgKey } from "../packages/image/src/index";
 import { type BackView, CubeRenderer, SKINS, type Skin, showPosition } from "../packages/render/src/index";
-import { type StickerStyle, withStickers } from "../packages/skin/src/index";
+import { type Decal, type StickerStyle, withStickers } from "../packages/skin/src/index";
 import { ReplayClock, recording } from "../packages/timeline/src/index";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -64,20 +64,10 @@ $("scrub").oninput = () => {
 // Demo-only skins: a brand logo supplied by the app (the library ships none), and custom SVG tile outlines.
 const DEMO_SKINS: Record<string, Skin> = {
   ...SKINS,
-  "gan + logo": { ...SKINS.gan, decals: [{ select: { stickers: [4] }, image: "/assets/gan-logo.png", size: 0.72, blend: "multiply" }] },
   // Finishes and coloured plastic (new skin options): the same cube matte, UV-coated, and moulded in colour.
   "gan 356 m matte": { ...SKINS.gan356m, stickers: { ...SKINS.gan356m.stickers, finish: "matte" } },
   "gan 356 m UV": { ...SKINS.gan356m, stickers: { ...SKINS.gan356m.stickers, finish: "uv" } },
   "coloured pieces": { ...SKINS.gan356m, body: "#e8e8e8", pieces: { ...SKINS.gan356m.pieces, colored: true } },
-  // The logo is yours to supply (demo/assets is git-ignored: brand logos stay out of the repo).
-  "gan 356 m + logo": { ...SKINS.gan356m, decals: [{ select: { stickers: [4] }, image: "/assets/gan-logo.png", size: 0.75, blend: "multiply" }] },
-  "qiyi sc + logo": { ...SKINS.qiyiSC, decals: [{ select: { stickers: [4] }, image: "/assets/qiyi-logo.png", size: 0.56, rotate: 2 }] },
-  "moyu + logo": { ...SKINS.moyu, decals: [{ select: { stickers: [4] }, image: "/assets/moyu-logo.png", size: 0.62 }] },
-  "gan stickers + logo": { ...SKINS.ganStickers, decals: [{ select: { stickers: [4] }, image: "/assets/gan-logo.png", size: 0.75, blend: "multiply" }] },
-  "moyu stickers + logo": { ...SKINS.moyuStickers, decals: [{ select: { stickers: [4] }, image: "/assets/moyu-logo.png", size: 0.62 }] },
-  "qiyi black rounded + logo": { ...SKINS.qiyiStickersRounded, decals: [{ select: { stickers: [4] }, image: "/assets/qiyi-logo.png", size: 0.56, rotate: 2 }] },
-  "qiyi black square + logo": { ...SKINS.qiyiStickersSquare, decals: [{ select: { stickers: [4] }, image: "/assets/qiyi-logo.png", size: 0.56, rotate: 2 }] },
-  "gan i4 + logo": { ...SKINS.ganI4, decals: [{ select: { stickers: [4] }, image: "/assets/gan-logo.png", size: 0.62, blend: "multiply" }] },
   // Pieces from glTF files: the standard skin's settings, but every piece is a model (here: i4-style templates
   // exported by scripts/export-models.ts) — if you see i4 pieces, the models are what's drawn.
   "glTF models (sample)": {
@@ -122,17 +112,31 @@ for (const name of Object.keys(DEMO_SKINS)) $<HTMLSelectElement>("skin").add(new
 for (const p of MASK_NAMES) $<HTMLSelectElement>("mask").add(new Option(p, p));
 let skin: Skin = SKINS.standard;
 let mask: Mask | null = null;
+// The brand's logo on the white centre — yours to supply: demo/assets is git-ignored, brand logos stay out of the repo.
+function logoFor(name: string): Decal | null {
+  const centre = { stickers: [4] };
+  if (/qiyi/i.test(name)) return { select: centre, image: "/assets/qiyi-logo.png", size: 0.56, rotate: 2 };
+  if (/moyu/i.test(name)) return { select: centre, image: "/assets/moyu-logo.png", size: 0.62 };
+  if (/gan/i.test(name)) return { select: centre, image: "/assets/gan-logo.png", size: /i4/i.test(name) ? 0.62 : 0.75, blend: "multiply" };
+  return null;
+}
+
 function applySkin() {
-  // "Stickers": the same brand as a stickered cube (black body; raised, thin or flat stickers).
-  const chosen = DEMO_SKINS[$<HTMLSelectElement>("skin").value];
+  // "Stickers": the same brand as a stickered cube (black body; raised, thin or flat stickers). "Logo": the brand's logo.
+  const name = $<HTMLSelectElement>("skin").value;
+  const chosen = DEMO_SKINS[name];
+  const logo = $<HTMLInputElement>("logo").checked ? logoFor(name) : null;
+  const withLogo = logo ? { ...chosen, decals: [...(chosen.decals ?? []), logo] } : chosen;
   const style = $<HTMLSelectElement>("stickers").value as StickerStyle | "";
-  const base = style ? withStickers(chosen, style) : chosen;
+  const base = style ? withStickers(withLogo, style) : withLogo;
   skin = base;
   renderer.setSkin({ ...base, hints: { ...base.hints, enabled: $<HTMLInputElement>("hints").checked } });
 }
 $("backview").onchange = () => renderer.setBackView($<HTMLSelectElement>("backview").value as BackView);
 $("skin").onchange = applySkin;
 $("stickers").onchange = applySkin;
+$("logo").onchange = applySkin;
+$("explode").oninput = () => renderer.setExplode(Number($<HTMLInputElement>("explode").value) / 100);
 $("hints").onchange = applySkin;
 $("mask").onchange = () => {
   const v = $<HTMLSelectElement>("mask").value;

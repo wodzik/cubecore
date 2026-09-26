@@ -5,7 +5,7 @@
 
 import type { MaskState } from "@cubecore/core";
 import type { Decal, FeatureUse } from "./attachments";
-import type { PieceKind, StickerPaths, StickerShape } from "./shapes";
+import type { PieceKind, StickerOverlay, StickerPaths, StickerShape } from "./shapes";
 
 export interface Skin {
   /** Plastic colour. */
@@ -123,6 +123,13 @@ export interface Skin {
      * gaps remain only between neighbouring pieces on a face.
      */
     fillOuter?: boolean;
+    /**
+     * Stickers on the tiles: the tiles become the body's plastic (a raised
+     * black platform, rounded at the cube's edges) and a thin sticker of its
+     * own shape lies on each, kept `margin` from the cube's edges — a
+     * stickered cube.
+     */
+    overlay?: StickerOverlay;
   };
   /**
    * The brand's sticker shapes for its stickered version (`withStickers`):
@@ -171,13 +178,16 @@ export interface Skin {
   themes?: { light?: SkinTheme; dark?: SkinTheme };
 }
 
-export interface StickerSet {
-  size: number;
-  centerSize?: number;
-  shape: StickerShape;
-  paths?: StickerPaths;
-  /** Rounding of the black cubies (cubie units) — bigger for a rounder cube. Default 0.08. */
-  cubieRadius?: number;
+/**
+ * A brand's stickers for its stickered cube (`withStickers`): the sticker's
+ * size, margin from the cube's edges and corner radii (see StickerOverlay),
+ * and how round the body is at the cube's edges.
+ */
+export interface StickerSet extends Omit<StickerOverlay, "thickness" | "bevel"> {
+  /** Rounding of the body at the cube's edges (cubie units). Default 0.1. */
+  edgeRadius?: number;
+  /** The stickered cube's plastic. Default a soft black (#222222). */
+  body?: string;
 }
 
 /** How a stickered version's stickers stand: thick and rounded, thin (a real sticker) or a flat print. */
@@ -226,18 +236,22 @@ const WESTERN = ["#ffffff", "#e8322f", "#1fb24a", "#ffd500", "#ff8a00", "#1e5eff
  * stickers rounded towards the centre, round-ish centres.
  */
 export const QIYI_ROUND_STICKERS: StickerSet = {
-  size: 0.87,
+  size: 0.892,
   centerSize: 0.86,
+  margin: 0.211,
   shape: { corner: { inner: 0.06, outer: 0.06 }, edge: { inner: 0.2, outer: 0.06 }, center: 0.45 },
-  paths: { corner: "M0.4 0 H0.94 Q1 0 1 0.06 V0.94 Q1 1 0.94 1 H0.06 Q0 1 0 0.94 V0.4 Q0 0 0.4 0 Z" },
-  cubieRadius: 0.3,
+  cornerRadius: 0.3,
+  edgeRadius: 0.24,
+  body: "#2e2e2e",
 };
 export const QIYI_SQUARE_STICKERS: StickerSet = {
-  size: 0.89,
-  centerSize: 0.89,
+  size: 0.898,
+  centerSize: 0.894,
+  margin: 0.15,
   shape: { corner: { inner: 0.06, outer: 0.06 }, edge: { inner: 0.2, outer: 0.06 }, center: 0.42 },
-  paths: { corner: "M0.2 0 H0.94 Q1 0 1 0.06 V0.94 Q1 1 0.94 1 H0.06 Q0 1 0 0.94 V0.2 Q0 0 0.2 0 Z" },
-  cubieRadius: 0.15,
+  cornerRadius: 0.15,
+  edgeRadius: 0.15,
+  body: "#2e2e2e",
 };
 
 const QIYI_SC_PATHS = {
@@ -371,8 +385,9 @@ const BRANDS = {
     stickerSet: {
       size: 0.82,
       centerSize: 0.867,
-      shape: { corner: { inner: 0.07, outer: 0.07 }, edge: { inner: 0.07, outer: 0.07 }, center: 0.5 },
-      paths: { edge: "M0.06 0 H0.94 Q1 0 1 0.06 V0.78 C1 0.86 0.75 1 0.5 1 C0.25 1 0 0.86 0 0.78 V0.06 Q0 0 0.06 0 Z" },
+      margin: 0.09,
+      shape: { corner: { inner: 0.07, outer: 0.07 }, edge: { inner: 0.4, outer: 0.07 }, center: 0.5 },
+      edgeRadius: 0.1,
     },
     mask: { ignored: "#5a5a5a", oriented: "#39c7d4", dimAmount: 0.55 },
     hints: { enabled: false, distance: 1.4, opacity: 0.75, ignoredOpacity: 0.35 },
@@ -450,7 +465,7 @@ const BRANDS = {
       fillOuter: true,
     },
     // MoYu's stickers (the stickered cube in MoYu's app): rounded squares, the corners towards the centre rounder.
-    stickerSet: { size: 0.875, shape: { corner: { inner: 0.25, outer: 0.04 }, edge: { inner: 0.25, outer: 0.04 }, center: 0.25 } },
+    stickerSet: { size: 0.875, margin: 0.0625, shape: { corner: { inner: 0.25, outer: 0.04 }, edge: { inner: 0.25, outer: 0.04 }, center: 0.25 }, edgeRadius: 0.1 },
     mask: { ignored: "#5a5a5a", oriented: "#39c7d4", dimAmount: 0.55 },
     hints: { enabled: false, distance: 1.4, opacity: 0.75, ignoredOpacity: 0.35 },
     background: null,
@@ -512,31 +527,37 @@ export function withColors(skin: Skin, colors: readonly [string, string, string,
  */
 export function withStickers(skin: Skin, style: StickerStyle = "thin", options: { set?: StickerSet } = {}): Skin {
   const styles: Record<StickerStyle, { thickness: number; bevel: number }> = {
-    raised: { thickness: 0.03, bevel: 0.022 },
-    thin: { thickness: 0.012, bevel: 0.006 },
+    raised: { thickness: 0.03, bevel: 0.012 },
+    thin: { thickness: 0.015, bevel: 0.005 },
     flat: { thickness: 0.002, bevel: 0 },
   };
-  const set = options.set ?? skin.stickerSet ?? { size: Math.min(skin.stickers.size, 0.88), shape: skin.stickers.shape ?? { corner: { inner: skin.stickers.radius, outer: skin.stickers.radius }, edge: { inner: skin.stickers.radius, outer: skin.stickers.radius }, center: skin.stickers.radius } };
-  const { thickness, bevel } = styles[style];
+  const own = skin.stickers.shape ?? { corner: { inner: skin.stickers.radius, outer: skin.stickers.radius }, edge: { inner: skin.stickers.radius, outer: skin.stickers.radius }, center: skin.stickers.radius };
+  const size = Math.min(skin.stickers.size, 0.88);
+  const set = options.set ?? skin.stickerSet ?? { size, margin: (1 - size) / 2, shape: own };
+  const edgeRadius = set.edgeRadius ?? 0.1;
+  const platform = 0.03;
+  const round = { inner: 0.02, outer: 0.02 };
   return {
     ...skin,
-    body: "#161616",
+    body: set.body ?? "#222222",
     pictureBody: undefined,
-    cubieSize: 0.985,
-    cubieRadius: set.cubieRadius ?? 0.08,
-    bodyInset: 0.004,
-    pieces: undefined,
+    // The black body: flat faces nearly touching, rounded only at the cube's edges (deep enough for the round).
+    cubieSize: 0.998,
+    cubieRadius: 0.01,
+    bodyInset: Math.max(0.01, (1 - Math.SQRT1_2) * edgeRadius - platform + 0.005),
+    pieces: { depth: 0.3, taper: 0.3, wall: 0.35, mechanism: 1, core: 0.5, fill: "solid" },
     stickers: {
       ...skin.stickers,
-      size: set.size,
-      shape: set.shape,
-      paths: set.paths,
-      kinds: set.centerSize ? { center: { size: set.centerSize } } : undefined,
-      thickness,
-      bevel,
-      edgeRadius: 0,
-      fillOuter: false,
-      material: style === "flat" ? skin.stickers.material : "plastic",
+      size: 0.995,
+      shape: { corner: round, edge: round, center: 0.02 },
+      paths: undefined,
+      kinds: undefined,
+      thickness: platform,
+      bevel: 0.012,
+      edgeRadius,
+      fillOuter: true,
+      material: "plastic",
+      overlay: { ...set, ...styles[style] },
     },
   };
 }

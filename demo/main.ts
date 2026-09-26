@@ -100,7 +100,7 @@ for (const p of MASK_NAMES) $<HTMLSelectElement>("mask").add(new Option(`mask: $
 
 function drawImages(state: Uint8Array) {
   const colors = SCHEMES[$<HTMLSelectElement>("scheme").value];
-  const skin = withColors(SKINS.standard, colors as unknown as Parameters<typeof withColors>[1]);
+  const skin = withColors(SKINS.default, colors as unknown as Parameters<typeof withColors>[1]);
   const preset = $<HTMLSelectElement>("mask").value;
   // "Last layer on top": look at the cube from the frame whose top is the method's last layer.
   const t = new MethodTracker(CFOP, applyMoves(solvedState(), scramble));

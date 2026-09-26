@@ -69,12 +69,12 @@ describe("stickerlessOutline", () => {
 });
 
 describe("per-kind tiles", async () => {
-  const { SKINS, tileSize, tileThickness } = await import("./skin");
+  const { ARCHIVED_SKINS, SKINS, tileSize, tileThickness } = await import("./skin");
   it("gan: a smaller, thicker centre cap; the rest as usual", () => {
     const s = SKINS.gan;
     expect(tileSize(s, "center")).toBeLessThan(tileSize(s, "edge"));
     expect(tileThickness(s, "center")).toBeGreaterThan(tileThickness(s, "corner"));
-    expect(tileSize(SKINS.standard, "center")).toBe(SKINS.standard.stickers.size);
+    expect(tileSize(ARCHIVED_SKINS.standard, "center")).toBe(ARCHIVED_SKINS.standard.stickers.size);
   });
 });
 

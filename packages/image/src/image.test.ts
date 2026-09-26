@@ -3,7 +3,7 @@ import { FRAMES, applyMoves, buildMask, presetMask, solvedState, spinsAfter } fr
 import { ARCHIVED_SKINS, SKINS, type Skin } from "@cubecore/skin";
 import { SvgCache, renderSvg, svgKey } from "./index";
 
-const STD = SKINS.standard;
+const STD = SKINS.default; // what renderSvg draws without a skin
 
 const S = solvedState();
 const count = (svg: string, needle: string) => svg.split(needle).length - 1;

@@ -101,14 +101,14 @@ describe("clock sync and gyro", () => {
 describe("skins for cubes", async () => {
   const { registerCubeSkin, skinForCube } = await import("./index");
   const { SKINS } = await import("@cubecore/skin");
-  it("GAN → gan, QiYi SC → qiyiSC, MoYu → moyu, the rest → stickerless; app rules come first", () => {
+  it("GAN → gan, QiYi SC → qiyiSC, MoYu → moyu, the rest → default; app rules come first", () => {
     expect(skinForCube({ protocol: { id: "gan-gen4" }, name: "GAN i4 AB12" })).toBe(SKINS.gan);
     expect(skinForCube({ protocol: { id: "gan-gen3" }, name: "GAN356 i Carry" })).toBe(SKINS.gan);
     expect(skinForCube({ protocol: { id: "qiyi" }, name: "QY-QYSC-S-A812" })).toBe(SKINS.qiyiSC);
-    expect(skinForCube({ protocol: { id: "qiyi" }, name: "XMD-TornadoV4-i-034C" })).toBe(SKINS.stickerless);
+    expect(skinForCube({ protocol: { id: "qiyi" }, name: "XMD-TornadoV4-i-034C" })).toBe(SKINS.default);
     expect(skinForCube({ protocol: { id: "moyu32" }, name: "WCU_MY32_1234" })).toBe(SKINS.moyu);
-    registerCubeSkin({ protocol: "moyu", skin: "standard" });
-    expect(skinForCube({ protocol: { id: "moyu32" } })).toBe(SKINS.standard);
-    expect(session().s.suggestedSkin).toBe(SKINS.stickerless); // simulated
+    registerCubeSkin({ protocol: "moyu", skin: "qiyiSC" });
+    expect(skinForCube({ protocol: { id: "moyu32" } })).toBe(SKINS.qiyiSC);
+    expect(session().s.suggestedSkin).toBe(SKINS.default); // simulated
   });
 });

@@ -282,9 +282,10 @@ const LIGHT_PAGE: SkinTheme = {
 };
 
 /**
- * Earlier GAN skins, kept for reference (not in SKINS): the first GAN look,
- * the i4 (with its holes), and the GAN 356 M measured from a 3D model — the
- * current `gan` / `ganStickers` are built from it.
+ * Earlier skins, kept for reference (not in SKINS): the first GAN look, the
+ * i4 (with its holes — `default` is built from it), the GAN 356 M measured
+ * from a 3D model (`gan` / `ganStickers` are built from it), and the first
+ * generic looks `standard` (black plastic, stickers) and `stickerless`.
  */
 export const ARCHIVED_SKINS = {
   /**
@@ -387,30 +388,6 @@ export const ARCHIVED_SKINS = {
     background: null,
     themes: { light: LIGHT_PAGE },
   },
-} satisfies Record<string, Skin>;
-
-const BRANDS = {
-  /**
-   * GAN (stickerless), after the GAN 356 M: square corner tiles, edge tiles
-   * with a round tongue towards the centre, near-round centres — thick tiles
-   * with soft, well-rounded edges on pieces moulded in colour. No logo —
-   * that's up to the app (a decal).
-   */
-  gan: {
-    ...ARCHIVED_SKINS.gan356m,
-    body: "#2b2a28",
-    pictureBody: null,
-    pieces: { ...ARCHIVED_SKINS.gan356m.pieces, colored: true },
-    stickers: {
-      ...ARCHIVED_SKINS.gan356m.stickers,
-      thickness: 0.06,
-      bevel: 0.05,
-      edgeRadius: 0.16,
-      kinds: { center: { size: 0.979, thickness: 0.07, bevel: 0.055 } },
-    },
-    // The stickered cube: the same shapes as the tiles, smaller, so the black plastic shows round them.
-    stickerSet: { size: 0.76, centerSize: 0.8, margin: 0.12, shape: ARCHIVED_SKINS.gan356m.stickers.shape, edgeRadius: 0.1 },
-  },
   /** Black plastic, rounded stickers — a typical modern speed cube. */
   standard: {
     body: "#101010",
@@ -433,6 +410,47 @@ const BRANDS = {
     hints: { enabled: false, distance: 1.4, opacity: 0.75, ignoredOpacity: 0.35 },
     background: null,
     themes: { light: LIGHT_PAGE },
+  },
+} satisfies Record<string, Skin>;
+
+const BRANDS = {
+  /**
+   * The default look: a modern stickerless speed cube, after the GAN i4's
+   * pieces (the sample glTF models are exported from it) — thick matte tiles
+   * with soft edges, corners towards the centre rounded, squarish centres,
+   * pieces moulded in colour. Stickered: `defaultStickers`.
+   */
+  default: {
+    ...ARCHIVED_SKINS.ganI4,
+    features: undefined, // plain centres (the i4's tension holes stay with the archived i4)
+    body: "#1f1f1f",
+    cubieSize: 0.998,
+    cubieRadius: 0.01,
+    bodyInset: 0.02,
+    pieces: { depth: 0.3, taper: 0.3, wall: 0.35, relief: { radius: 0.3, depth: 0.12, start: 0.16, tile: 0.01 }, mechanism: 1, core: 0.5, colored: true, fill: "solid" },
+    // The stickered cube: the same shapes, smaller, the plastic under them following their curves.
+    stickerSet: { size: 0.84, centerSize: 0.84, margin: 0.08, shape: ARCHIVED_SKINS.ganI4.stickers.shape, edgeRadius: 0.08 },
+  },
+  /**
+   * GAN (stickerless), after the GAN 356 M: square corner tiles, edge tiles
+   * with a round tongue towards the centre, near-round centres — thick tiles
+   * with soft, well-rounded edges on pieces moulded in colour. No logo —
+   * that's up to the app (a decal).
+   */
+  gan: {
+    ...ARCHIVED_SKINS.gan356m,
+    body: "#2b2a28",
+    pictureBody: null,
+    pieces: { ...ARCHIVED_SKINS.gan356m.pieces, colored: true },
+    stickers: {
+      ...ARCHIVED_SKINS.gan356m.stickers,
+      thickness: 0.06,
+      bevel: 0.05,
+      edgeRadius: 0.16,
+      kinds: { center: { size: 0.979, thickness: 0.07, bevel: 0.055 } },
+    },
+    // The stickered cube: the same shapes as the tiles, smaller, so the black plastic shows round them.
+    stickerSet: { size: 0.76, centerSize: 0.8, margin: 0.12, shape: ARCHIVED_SKINS.gan356m.stickers.shape, edgeRadius: 0.1 },
   },
   /**
    * QiYi QY-SC smart cube (from photos): stickerless, moulded in colour
@@ -528,6 +546,8 @@ export const SKINS = {
   ganStickers: withStickers(BRANDS.gan, "flat"),
   /** MoYu, stickered: MoYu's stickers on black. */
   moyuStickers: withStickers(BRANDS.moyu, "thin"),
+  /** The default look, stickered: its shapes as stickers on black plastic that follows their curves. */
+  defaultStickers: withStickers(BRANDS.default, "thin"),
   /** QiYi, stickered — the round black cube ("black rounded" in QiYi's app). */
   qiyiStickersRounded: withStickers(BRANDS.qiyiSC, "raised", { set: QIYI_ROUND_STICKERS }),
   /** QiYi, stickered — the square black cube ("black square" in QiYi's app). */

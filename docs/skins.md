@@ -7,15 +7,14 @@ preset and change what you need:
 
 | preset | |
 |---|---|
-| `standard` | black plastic, rounded stickers |
-| `stickerless` | tiles filling the faces |
+| `default` | the default: a modern stickerless speed cube after the GAN i4's pieces (the sample glTF models) — thick matte tiles, corners towards the centre rounded, squarish centres, pieces moulded in colour; stickered: `defaultStickers` — picked for cubes without a skin of their own |
 | `gan` | GAN stickerless, after the GAN 356 M (measured from "GAN CUBE 356s M air" by Amyyu, Sketchfab, CC BY 4.0): square corner tiles, round edge tongues, near-round centres; thick tiles with soft edges on pieces moulded in colour — picked for GAN cubes |
 | `qiyiSC` | QiYi QY-SC smart cube: moulded in colour, tile outlines traced from QiYi's app model, pillowy tiles, well-rounded cube edges, dark gaps, domed centre — picked for QiYi cubes named QY-QYSC… |
 | `moyu` | MoYu smart cubes (WCU, MY32…): moulded in colour, thick tiles, shapes and colours from the cube model in MoYu's app — picked for MoYu cubes named WCU_MY… |
-| `ganStickers`, `moyuStickers`, `qiyiStickersRounded`, `qiyiStickersSquare` | the stickered versions (see Stickered versions) |
+| `defaultStickers`, `ganStickers`, `moyuStickers`, `qiyiStickersRounded`, `qiyiStickersSquare` | the stickered versions (see Stickered versions) |
 
-Earlier GAN skins (`gan` before 2026-09, `ganI4`, `gan356m`) are kept in
-`ARCHIVED_SKINS`.
+Earlier skins (`gan` before 2026-09, `ganI4`, `gan356m`, `standard`,
+`stickerless`) are kept in `ARCHIVED_SKINS`.
 
 **Per piece kind:** `stickers.kinds` gives corner / edge / centre tiles their
 own size, thickness and edge round (`bevel`) — e.g. a centre cap that is

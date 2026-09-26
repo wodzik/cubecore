@@ -60,7 +60,7 @@ Styling like the other sequence elements (`--cc-seq-*`, `::part`, a
 ## Letters on the cube
 
 ```ts
-player.skin = letterSkin(SKINS.standard, { scheme: RUWIX, rotation: "x2 y'" });
+player.skin = letterSkin(SKINS.default, { scheme: RUWIX, rotation: "x2 y'" });
 ```
 
 Each sticker carries the letter of its home position (as held, upright for

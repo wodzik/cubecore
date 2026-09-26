@@ -142,7 +142,7 @@ export class CubeRenderer {
   private orientationSmoothing = 0;
 
   constructor(private readonly container: HTMLElement, options: RendererOptions = {}) {
-    this.baseSkin = options.skin ?? SKINS.standard;
+    this.baseSkin = options.skin ?? SKINS.default;
     this.theme = options.theme ?? "dark";
     this.skin = themed(this.baseSkin, this.theme);
     this.quarterMs = options.quarterTurnMs ?? 120;

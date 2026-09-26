@@ -10,7 +10,7 @@ const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as 
 const analyzer = createAnalyzerWorker("/analyzer-worker.js"); // see demo/serve.ts
 const solver = createSolverWorker("/solver-worker.js");
 const player = $<CubePlayer>("player");
-const FACE_COLOUR: Record<string, string> = Object.fromEntries(["U", "R", "F", "D", "L", "B"].map((f, i) => [f, SKINS.standard.stickers.colors[i]]));
+const FACE_COLOUR: Record<string, string> = Object.fromEntries(["U", "R", "F", "D", "L", "B"].map((f, i) => [f, SKINS.default.stickers.colors[i]]));
 const COLOUR_NAME: Record<string, string> = { U: "white", R: "red", F: "green", D: "yellow", L: "orange", B: "blue" };
 let current: Analysis | null = null;
 let roux: RouxAnalysisResult | null = null;

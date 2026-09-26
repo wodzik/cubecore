@@ -3,8 +3,8 @@
  * letter of its HOME position and keeps it wherever it goes — so the letter
  * showing in the buffer is the next letter to remember.
  *
- *   player.skin = letterSkin(SKINS.standard);                       // colours + letters
- *   player.skin = letterSkin(SKINS.standard, { alwaysShow: true });   // letters stay on masked (grey) stickers too
+ *   player.skin = letterSkin(SKINS.default);                       // colours + letters
+ *   player.skin = letterSkin(SKINS.default, { alwaysShow: true });   // letters stay on masked (grey) stickers too
  */
 
 import { FACELETS, FACE_BASIS, type Move, applyMoves, solvedState } from "@cubecore/core";

@@ -36,13 +36,13 @@ describe("decal images", () => {
 });
 
 describe("themes", async () => {
-  const { SKINS, themed, hintColor, stickerColor } = await import("./index");
+  const { ARCHIVED_SKINS, themed, hintColor, stickerColor } = await import("./index");
   it("light pages get lighter masked greys and a visible white back sticker; dark keeps the preset", () => {
-    const light = themed(SKINS.standard, "light");
-    expect(light.mask.ignored).not.toBe(SKINS.standard.mask.ignored);
-    expect(themed(SKINS.standard, "dark")).toBe(SKINS.standard);
+    const light = themed(ARCHIVED_SKINS.standard, "light");
+    expect(light.mask.ignored).not.toBe(ARCHIVED_SKINS.standard.mask.ignored);
+    expect(themed(ARCHIVED_SKINS.standard, "dark")).toBe(ARCHIVED_SKINS.standard);
     expect(hintColor(light, 0, "regular")).not.toBe("#ffffff");
-    expect(hintColor(SKINS.standard, 0, "regular")).toBe(stickerColor(SKINS.standard, 0, "regular"));
+    expect(hintColor(ARCHIVED_SKINS.standard, 0, "regular")).toBe(stickerColor(ARCHIVED_SKINS.standard, 0, "regular"));
     expect(hintColor(light, 0, "ignored")).toBe(light.mask.ignored);
   });
 });

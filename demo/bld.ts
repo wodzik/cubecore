@@ -15,7 +15,7 @@ const bld = $<CubeBld>("bld");
 const solver = createSolverWorker("/solver-worker.js"); // see demo/serve.ts
 let session: SmartCubeSession | null = null;
 let simulated: SimulatedCube | null = null;
-let baseSkin: Skin = SKINS.standard;
+let baseSkin: Skin = SKINS.default;
 
 const hold = () => $<HTMLSelectElement>("hold").value;
 const scheme = () => $<HTMLSelectElement>("scheme").value as keyof typeof SCHEMES;
@@ -57,7 +57,7 @@ $("reveal").onchange = () => bld.setAttribute("reveal", $<HTMLSelectElement>("re
 function use(s: SmartCubeSession) {
   session = s;
   player.attach(s, { gyro: false });
-  baseSkin = s.suggestedSkin ?? SKINS.standard;
+  baseSkin = s.suggestedSkin ?? SKINS.default;
   applyView();
   $("info").textContent = `${s.info.name} · ${s.info.protocol.name}`;
   for (const id of ["solved", "newScramble", "memoNow"]) $<HTMLButtonElement>(id).disabled = false;

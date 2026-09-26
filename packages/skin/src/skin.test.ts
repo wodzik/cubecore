@@ -1,11 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import { SKINS, withStickers } from "./skin";
+import { ARCHIVED_SKINS, SKINS, withStickers } from "./skin";
 
 describe("withStickers", () => {
   it("turns a stickerless brand into a stickered cube: black plastic platforms, the brand's stickers lying on them", () => {
     const s = withStickers(SKINS.moyu, "thin");
     expect(s.body).toBe(SKINS.moyu.stickerSet!.body!); // MoYu's dark grey plastic
-    expect(withStickers(SKINS.standard).body).toBe("#222222"); // the default
+    expect(withStickers(ARCHIVED_SKINS.standard).body).toBe("#222222"); // the default
     expect(s.pieces?.colored).toBeFalsy(); // black plastic under the tiles
     expect(s.stickers.overlay?.size).toBe(SKINS.moyu.stickerSet!.size);
     expect(s.stickers.overlay?.shape).toEqual(SKINS.moyu.stickerSet!.shape);
@@ -21,8 +21,8 @@ describe("withStickers", () => {
   });
 
   it("uses the skin's own shapes when it has no sticker set", () => {
-    expect(withStickers(SKINS.standard).stickers.overlay!.size).toBeLessThanOrEqual(SKINS.standard.stickers.size);
-    expect(withStickers(SKINS.stickerless).stickers.overlay!.size).toBeLessThan(SKINS.stickerless.stickers.size);
+    expect(withStickers(ARCHIVED_SKINS.standard).stickers.overlay!.size).toBeLessThanOrEqual(ARCHIVED_SKINS.standard.stickers.size);
+    expect(withStickers(ARCHIVED_SKINS.stickerless).stickers.overlay!.size).toBeLessThan(ARCHIVED_SKINS.stickerless.stickers.size);
   });
 });
 

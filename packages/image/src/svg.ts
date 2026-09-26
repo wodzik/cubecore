@@ -64,7 +64,7 @@ export interface SvgOptions {
   view?: View;
   /** Output width in px (height follows the view's aspect ratio). */
   size?: number;
-  /** Looks — the same skin the 3D renderer uses. Default `SKINS.standard`. */
+  /** Looks — the same skin the 3D renderer uses. Default `SKINS.default`. */
   skin?: Skin;
   mask?: Mask;
   /** Draw the cube as held in this frame (e.g. to show a case with the cross on D whatever face it was solved on). */
@@ -205,7 +205,7 @@ const attr = (v: string) => v.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 export function renderSvg(state: State, options: SvgOptions = {}): string {
   const viewName = options.view ?? "iso";
   const size = options.size ?? 160;
-  const skin: Skin = themed(options.skin ?? SKINS.standard, options.theme ?? "dark");
+  const skin: Skin = themed(options.skin ?? SKINS.default, options.theme ?? "dark");
   const v = VIEWS[viewName];
   const s = options.frame && options.frame !== IDENTITY_FRAME ? frameView(state, options.frame) : state;
   const sideOf = (kind: PieceKind) => tileSize(skin, kind) * skin.cubieSize;

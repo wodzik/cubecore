@@ -35,7 +35,7 @@ emits a `state` event with reason `"facelets"` if they disagreed.
 "held as shown". Axes default to GAN's; pass `axes` for other cubes.
 
 **Looks.** `session.suggestedSkin` picks a skin for the connected cube (GAN
-i4 → `ganI4`, other GAN → `gan`, QiYi QY-SC → `qiyiSC`, else `stickerless`); `player.attach(cube,
+GAN → `gan`, QiYi QY-SC → `qiyiSC`, MoYu WCU_MY… → `moyu`, else `default`); `player.attach(cube,
 { autoSkin: true })` uses it. Add your own models first with
 `registerCubeSkin({ protocol: "moyu", name: /V10/, skin: myMoyuSkin })`.
 

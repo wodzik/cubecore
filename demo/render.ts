@@ -3,7 +3,7 @@ import { type Mask, MethodTracker, applyMoves, formatMove, invert, parseAlg, sol
 import { CFOP } from "../packages/cfop/src/index";
 import { MASK_NAMES, maskByName } from "../packages/methods/src/index";
 import { SvgCache, svgKey } from "../packages/image/src/index";
-import { ARCHIVED_SKINS, type BackView, CubeRenderer, SKINS, type Skin, showPosition } from "../packages/render/src/index";
+import { type BackView, CubeRenderer, SKINS, type Skin, showPosition } from "../packages/render/src/index";
 import { type Decal, type StickerStyle, withFinish, withStickers } from "../packages/skin/src/index";
 import { ReplayClock, recording } from "../packages/timeline/src/index";
 
@@ -64,17 +64,9 @@ $("scrub").oninput = () => {
 // Demo-only skins: a brand logo supplied by the app (the library ships none), and custom SVG tile outlines.
 const DEMO_SKINS: Record<string, Skin> = {
   ...SKINS,
-  // Pieces from glTF files: the standard skin's settings, but every piece is a model (here: i4-style templates
-  // exported by scripts/export-models.ts) — if you see i4 pieces, the models are what's drawn.
-  "glTF models (sample)": {
-    ...SKINS.standard,
-    stickers: { ...SKINS.standard.stickers, material: "plastic", roughness: 0.55, colors: ARCHIVED_SKINS.ganI4.stickers.colors },
-    models: { corner: "/models/ganI4-corner.gltf", edge: "/models/ganI4-edge.gltf", center: "/models/ganI4-center.gltf", surface: ARCHIVED_SKINS.ganI4.stickers.thickness },
-    features: ARCHIVED_SKINS.ganI4.features,
-  },
   // Per-face geometry: a charging port on the yellow (D) centre only — it stays on that sticker whatever you turn.
   "charging port on yellow": {
-    ...SKINS.stickerless,
+    ...SKINS.default,
     features: [
       { select: { faces: ["D"], kinds: ["center"] }, type: "slot", params: { width: 0.42, height: 0.11, radius: 0.055 } },
       { select: { faces: ["D"], kinds: ["center"] }, type: "holes", params: { radius: 0.035, at: [[-0.55, -0.45], [0.55, -0.45]] } },
@@ -82,7 +74,7 @@ const DEMO_SKINS: Record<string, Skin> = {
   },
   // Your own images on stickers: an SVG arrow on every red sticker — turn R / U to see them ride along and turn.
   "custom SVG decals": {
-    ...SKINS.stickerless,
+    ...SKINS.default,
     decals: [
       {
         select: { faces: ["R"] },
@@ -92,9 +84,9 @@ const DEMO_SKINS: Record<string, Skin> = {
     ],
   },
   "custom SVG tiles": {
-    ...SKINS.stickerless,
+    ...SKINS.default,
     stickers: {
-      ...SKINS.stickerless.stickers,
+      ...SKINS.default.stickers,
       // Paths in a 0..1 box, face centre towards the bottom-right (corner) / bottom (edge).
       paths: {
         corner: "M0 0 H1 V0.62 L0.62 1 H0 Z",
@@ -106,7 +98,7 @@ const DEMO_SKINS: Record<string, Skin> = {
 };
 for (const name of Object.keys(DEMO_SKINS)) $<HTMLSelectElement>("skin").add(new Option(name, name));
 for (const p of MASK_NAMES) $<HTMLSelectElement>("mask").add(new Option(p, p));
-let skin: Skin = SKINS.standard;
+let skin: Skin = SKINS.default;
 let mask: Mask | null = null;
 // The brand's logo on the white centre — yours to supply: demo/assets is git-ignored, brand logos stay out of the repo.
 function logoFor(name: string): Decal | null {

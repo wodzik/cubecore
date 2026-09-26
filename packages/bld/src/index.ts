@@ -6,7 +6,7 @@
  *   const m = memo(state);             // { edges: ["Q","U",…], corners: [...], parity, … }
  *   formatMemo(m.edges)                // "QU SR NX IV PR DE"
  *   const t = new BldTracker(state);   // push the cube's moves; t.progress says which letter is done
- *   player.skin = letterSkin(SKINS.standard);
+ *   player.skin = letterSkin(SKINS.default);
  */
 
 export * from "./scheme";

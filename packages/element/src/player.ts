@@ -381,7 +381,7 @@ export class CubePlayer extends ElementBase {
   private resolveSkin(): Skin {
     if (this._skin) return this._skin;
     const name = this.getAttribute("skin") as keyof typeof SKINS | null;
-    return (name && SKINS[name]) || SKINS.standard;
+    return (name && SKINS[name]) || SKINS.default;
   }
 
   private load(): void {

@@ -197,6 +197,8 @@ export interface StickerSet extends Omit<StickerOverlay, "thickness" | "bevel"> 
   cornerRound?: number;
   /** The centre piece's top under its sticker: flat in a circle, sloping to the corners (see `kinds.dome`). */
   centerDome?: { flat: number; drop: number };
+  /** Corner radii of the plastic tops the stickers lie on (fractions of a face). Default nearly square. */
+  base?: StickerShape;
 }
 
 /** How a stickered version's stickers stand: thick and rounded, thin (a real sticker) or a flat print. */
@@ -256,6 +258,8 @@ export const QIYI_ROUND_STICKERS: StickerSet = {
   centerDome: { flat: 0.65, drop: 0.05 },
   pedestal: true,
   body: "#2e2e2e",
+  // The plastic under them: a round-cornered centre, edges rounded towards it almost like their stickers.
+  base: { corner: { inner: 0.14, outer: 0.03 }, edge: { inner: 0.28, outer: 0.03 }, center: 0.45 },
 };
 export const QIYI_SQUARE_STICKERS: StickerSet = {
   size: 0.898,
@@ -268,6 +272,8 @@ export const QIYI_SQUARE_STICKERS: StickerSet = {
   centerDome: { flat: 0.65, drop: 0.05 },
   pedestal: true,
   body: "#2e2e2e",
+  // The plastic under them: a round-cornered centre, edges rounded towards it almost like their stickers.
+  base: { corner: { inner: 0.14, outer: 0.03 }, edge: { inner: 0.28, outer: 0.03 }, center: 0.45 },
 };
 
 const QIYI_SC_PATHS = {
@@ -565,7 +571,7 @@ export function withStickers(skin: Skin, style: StickerStyle = "thin", options: 
     stickers: {
       ...skin.stickers,
       size: 0.995,
-      shape: { corner: round, edge: round, center: 0.02 },
+      shape: set.base ?? { corner: round, edge: round, center: 0.02 },
       paths: undefined,
       kinds: set.centerDome ? { center: { dome: set.centerDome } } : undefined,
       thickness: platform,

@@ -92,7 +92,8 @@ cube's edges where the black rounded edge shows, corner radii and a
 `cornerRadius` at the cube's corners; `pedestal`: a black raised pedestal with
 a flat print on top). A sticker set can also round the cube's corners more
 than its edges (`cornerRound` → `stickers.cornerRound`, a ball at each cube
-corner) and dome the centre piece under a round sticker (`centerDome`):
+corner), dome the centre piece under a round sticker (`centerDome`) and give
+the plastic tops under the stickers their own corner radii (`base`):
 `withStickers(skin, style)`, `style` one of
 `"raised"` (thick, rounded stickers), `"thin"` (a real sticker, the default)
 or `"flat"` (a flat print). The sticker shapes come from `skin.stickerSet`

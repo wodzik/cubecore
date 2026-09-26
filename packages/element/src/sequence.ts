@@ -26,6 +26,10 @@
  * --cc-arrow-wrong-way when the right face went the wrong way.
  * `arrow-shape="circle"` for arcs instead of ribbons along the faces.
  *
+ * `masked` shows every move as a dot (the progress colours stay) — for
+ * practising from memory; `decorations` adds text around moves (trigger
+ * parentheses).
+ *
  * Events: progress (detail: the progress), complete.
  */
 
@@ -43,6 +47,9 @@ export interface MoveSource {
   readonly state: State;
   on(type: "move", listener: (e: { move: Move; time?: number }) => void): () => void;
 }
+
+/** Text shown before / after written moves, by move index. */
+export type Decorations = Partial<Record<number, { prefix?: string; suffix?: string }>>;
 
 /** One move as shown: its text, where it stands, whether it's shown (else a dot). */
 export interface ShownToken {
@@ -69,6 +76,7 @@ export const SEQUENCE_STYLES = /* css */ `
   --cc-seq-todo: color-mix(in srgb, currentColor 82%, transparent);
   --cc-seq-hidden: color-mix(in srgb, currentColor 45%, transparent);
   --cc-seq-undo: #ff8a4c;
+  --cc-seq-decoration: color-mix(in srgb, currentColor 70%, transparent);
   --cc-arrow: #2f8bff;
   --cc-arrow-undo: #ff4545;
   --cc-arrow-wrong-way: #ff9a1f;
@@ -79,6 +87,8 @@ export const SEQUENCE_STYLES = /* css */ `
   display: block;
 }
 :host([headless]) .container { display: none; }
+.group { display: inline-flex; align-items: baseline; }
+.decoration { color: var(--cc-seq-decoration); }
 .container { display: flex; flex-direction: column; gap: 0.5em; }
 .moves { display: flex; flex-wrap: wrap; gap: 0.1em var(--cc-seq-gap); font: 600 var(--cc-seq-size) / 1.5 var(--cc-seq-font); }
 .move { padding: 0 0.18em; border-radius: 0.25em; transition: color 0.15s ease, background 0.15s ease; }
@@ -115,7 +125,8 @@ export abstract class CubeSequenceElement extends ElementBase {
   /** How the cube is held when the sequence starts (see `frame`). */
   protected startFrame: Frame = IDENTITY_FRAME;
 
-  static observedAttributes = ["arrows", "player", "arrow-shape"];
+  static observedAttributes = ["arrows", "player", "arrow-shape", "masked"];
+  private _decorations: Decorations = {};
 
   attributeChangedCallback(): void {
     this.update();
@@ -249,15 +260,32 @@ export abstract class CubeSequenceElement extends ElementBase {
     this.update();
   }
 
+  /**
+   * Text around written moves, e.g. trigger groups "F (R U R' U') F'":
+   * `{ 1: { prefix: "(" }, 4: { suffix: ")" } }` (by move index; part "decoration").
+   */
+  get decorations(): Decorations {
+    return this._decorations;
+  }
+  set decorations(d: Decorations | null) {
+    this._decorations = d ?? {};
+    this.update();
+  }
+
   // ─── rendering ───
 
   protected update(): void {
     const p = this.progress;
+    const masked = this.hasAttribute("masked");
+    const deco = (text: string | undefined) => (text ? `<span class="decoration" part="decoration">${escapeHtml(text)}</span>` : "");
     this.root.querySelector(".moves")!.innerHTML = this.tokens()
-      .map((t) => {
-        const cls = t.visible ? t.status : `${t.status} hidden`;
-        const parts = t.visible ? `move move-${t.status}` : `move move-${t.status} move-hidden`;
-        return `<span class="move ${cls}" part="${parts}">${t.visible ? escapeHtml(t.text) : "•"}</span>`;
+      .map((t, i) => {
+        const visible = t.visible && !masked;
+        const cls = visible ? t.status : `${t.status} hidden`;
+        const parts = visible ? `move move-${t.status}` : `move move-${t.status} move-hidden`;
+        const d = this._decorations[i];
+        const move = `<span class="move ${cls}" part="${parts}">${visible ? escapeHtml(t.text) : "•"}</span>`;
+        return d ? `<span class="group">${deco(d.prefix)}${move}${deco(d.suffix)}</span>` : move;
       })
       .join("");
     const showUndo = !!p && p.undo.length > 0 && !p.needsReset;

@@ -197,7 +197,7 @@ export interface StickerSet extends Omit<StickerOverlay, "thickness" | "bevel"> 
   cornerRound?: number;
   /** The centre piece's top under its sticker: flat in a circle, sloping to the corners (see `kinds.dome`). */
   centerDome?: { flat: number; drop: number };
-  /** Corner radii of the plastic tops the stickers lie on (fractions of a face). Default nearly square. */
+  /** Corner radii of the plastic tops the stickers lie on (fractions of a face). Default: the stickers' own. */
   base?: StickerShape;
 }
 
@@ -408,8 +408,8 @@ const BRANDS = {
       edgeRadius: 0.16,
       kinds: { center: { size: 0.979, thickness: 0.07, bevel: 0.055 } },
     },
-    // GAN's stickers for the stickered cube: smaller than the pieces' faces, so the black plastic shows round them.
-    stickerSet: { ...ARCHIVED_SKINS.gan356m.stickerSet, size: 0.76, centerSize: 0.8, margin: 0.12 },
+    // The stickered cube: the same shapes as the tiles, smaller, so the black plastic shows round them.
+    stickerSet: { size: 0.76, centerSize: 0.8, margin: 0.12, shape: ARCHIVED_SKINS.gan356m.stickers.shape, edgeRadius: 0.1 },
   },
   /** Black plastic, rounded stickers — a typical modern speed cube. */
   standard: {
@@ -585,7 +585,6 @@ export function withStickers(skin: Skin, style: StickerStyle = "thin", options: 
   const set = options.set ?? skin.stickerSet ?? { size, margin: (1 - size) / 2, shape: own };
   const edgeRadius = set.edgeRadius ?? 0.1;
   const platform = 0.03;
-  const round = { inner: 0.02, outer: 0.02 };
   return {
     ...skin,
     body: set.body ?? "#222222",
@@ -598,7 +597,8 @@ export function withStickers(skin: Skin, style: StickerStyle = "thin", options: 
     stickers: {
       ...skin.stickers,
       size: 0.995,
-      shape: set.base ?? { corner: round, edge: round, center: 0.02 },
+      // The plastic under the stickers follows their curves (as on real stickered cubes) unless the set says otherwise.
+      shape: set.base ?? set.shape,
       paths: undefined,
       kinds: set.centerDome ? { center: { dome: set.centerDome } } : undefined,
       thickness: platform,

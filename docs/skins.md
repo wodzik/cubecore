@@ -95,12 +95,13 @@ cube's edges where the black rounded edge shows, corner radii and a
 a flat print on top). A sticker set can also round the cube's corners more
 than its edges (`cornerRound` → `stickers.cornerRound`, a ball at each cube
 corner), dome the centre piece under a round sticker (`centerDome`) and give
-the plastic tops under the stickers their own corner radii (`base`):
+the plastic tops under the stickers their own corner radii (`base`; by default
+they follow the stickers' curves):
 `withStickers(skin, style)`, `style` one of
 `"raised"` (thick, rounded stickers), `"thin"` (a real sticker, the default)
 or `"flat"` (a flat print). The sticker shapes come from `skin.stickerSet`
-(`gan`: GAN's sticker atlas — rounded squares, edges with a round tongue,
-round centres, flat prints with the black plastic showing round them; `moyu` and `qiyiSC`: the stickered cubes in their apps); a skin
+(`gan`: the tiles' own shapes, smaller — flat prints with the black plastic
+showing round them; `moyu` and `qiyiSC`: the stickered cubes in their apps); a skin
 without one gets its own tile shapes, at most 0.88 of a face. Colours, logos and
 the rest carry over.
 

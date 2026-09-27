@@ -1,0 +1,34 @@
+{
+  "name": "@cubecore/skin",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Cube skins as data: tiles, piece shapes, decals, features, glTF pieces, themes",
+  "license": "MPL-2.0",
+  "author": "Tomasz Wodzikowski",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wodzik/cubecore.git",
+    "directory": "packages/skin"
+  },
+  "homepage": "https://github.com/wodzik/cubecore#readme",
+  "bugs": "https://github.com/wodzik/cubecore/issues",
+  "keywords": [
+    "rubiks-cube",
+    "speedcubing",
+    "cube",
+    "skin",
+    "theme"
+  ],
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src",
+    "!src/**/*.test.ts"
+  ],
+  "sideEffects": false,
+  "dependencies": {
+    "@cubecore/core": "workspace:*"
+  }
+}

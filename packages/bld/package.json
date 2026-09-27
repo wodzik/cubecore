@@ -1,0 +1,35 @@
+{
+  "name": "@cubecore/bld",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Blindfolded solving (Old Pochmann): letter schemes, memo, execution tracking",
+  "license": "MPL-2.0",
+  "author": "Tomasz Wodzikowski",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wodzik/cubecore.git",
+    "directory": "packages/bld"
+  },
+  "homepage": "https://github.com/wodzik/cubecore#readme",
+  "bugs": "https://github.com/wodzik/cubecore/issues",
+  "keywords": [
+    "rubiks-cube",
+    "speedcubing",
+    "cube",
+    "blindfolded",
+    "bld"
+  ],
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src",
+    "!src/**/*.test.ts"
+  ],
+  "sideEffects": false,
+  "dependencies": {
+    "@cubecore/core": "workspace:*",
+    "@cubecore/skin": "workspace:*"
+  }
+}

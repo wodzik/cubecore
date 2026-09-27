@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+
+# Brand logos for the local demo live outside the repo (../cubecore-assets); never here
+demo/assets/

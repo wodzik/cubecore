@@ -1,0 +1,36 @@
+{
+  "name": "@cubecore/cfop",
+  "version": "0.0.0",
+  "private": true,
+  "description": "CFOP for cubecore: stages, checks, masks, OLL / PLL / F2L recognition",
+  "license": "MPL-2.0",
+  "author": "Tomasz Wodzikowski",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wodzik/cubecore.git",
+    "directory": "packages/cfop"
+  },
+  "homepage": "https://github.com/wodzik/cubecore#readme",
+  "bugs": "https://github.com/wodzik/cubecore/issues",
+  "keywords": [
+    "rubiks-cube",
+    "speedcubing",
+    "cube",
+    "cfop",
+    "oll",
+    "pll",
+    "f2l"
+  ],
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src",
+    "!src/**/*.test.ts"
+  ],
+  "sideEffects": false,
+  "dependencies": {
+    "@cubecore/core": "workspace:*"
+  }
+}

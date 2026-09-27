@@ -1,0 +1,33 @@
+{
+  "name": "@cubecore/zz",
+  "version": "0.0.0",
+  "private": true,
+  "description": "ZZ for cubecore: EOLine / EOCross, blocks, last layer",
+  "license": "MPL-2.0",
+  "author": "Tomasz Wodzikowski",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wodzik/cubecore.git",
+    "directory": "packages/zz"
+  },
+  "homepage": "https://github.com/wodzik/cubecore#readme",
+  "bugs": "https://github.com/wodzik/cubecore/issues",
+  "keywords": [
+    "rubiks-cube",
+    "speedcubing",
+    "cube",
+    "zz"
+  ],
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src",
+    "!src/**/*.test.ts"
+  ],
+  "sideEffects": false,
+  "dependencies": {
+    "@cubecore/core": "workspace:*"
+  }
+}

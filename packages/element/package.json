@@ -1,0 +1,47 @@
+{
+  "name": "@cubecore/element",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Web components: <cube-player>, <cube-scramble>, <cube-alg-practice>, <cube-bld>, <cube-alg>",
+  "license": "MPL-2.0",
+  "author": "Tomasz Wodzikowski",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wodzik/cubecore.git",
+    "directory": "packages/element"
+  },
+  "homepage": "https://github.com/wodzik/cubecore#readme",
+  "bugs": "https://github.com/wodzik/cubecore/issues",
+  "keywords": [
+    "rubiks-cube",
+    "speedcubing",
+    "cube",
+    "web-components",
+    "player"
+  ],
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src",
+    "!src/**/*.test.ts"
+  ],
+  "sideEffects": [
+    "./src/index.ts"
+  ],
+  "dependencies": {
+    "@cubecore/core": "workspace:*",
+    "@cubecore/render": "workspace:*",
+    "@cubecore/skin": "workspace:*",
+    "@cubecore/timeline": "workspace:*",
+    "@cubecore/image": "workspace:*",
+    "@cubecore/bld": "workspace:*"
+  },
+  "peerDependencies": {
+    "three": ">=0.160"
+  },
+  "devDependencies": {
+    "@cubecore/cfop": "workspace:*"
+  }
+}

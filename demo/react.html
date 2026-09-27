@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>cubecore React demo</title>
+    <style>
+      :root { color-scheme: dark; --bg: #0b0b0c; --panel: #151517; --line: #2a2a2e; --text: #e6e6e6; --muted: #8b8b93; }
+      * { box-sizing: border-box; }
+      body { margin: 0; font: 14px/1.45 system-ui, sans-serif; background: var(--bg); color: var(--text); }
+      main { max-width: 1000px; margin: 0 auto; padding: 16px; display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+      header { max-width: 1000px; margin: 0 auto; padding: 16px 16px 0; }
+      h1 { font-size: 18px; margin: 0 0 4px; } p { margin: 0 0 8px; color: var(--muted); }
+      section { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+      cube-player { height: 360px; }
+      button { background: #232327; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 7px 11px; cursor: pointer; }
+      code { font: 12px ui-monospace, monospace; color: #c9d4ff; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>@cubecore/react</h1>
+      <p><code>&lt;CubePlayer&gt;</code>, <code>&lt;CubeAlg&gt;</code>, <code>&lt;CubeScramble&gt;</code>, <code>useSmartCube()</code>, <code>useSolverWorker()</code> — this page is a small React app.</p>
+    </header>
+    <main id="app"></main>
+    <script type="module" src="./react.ts"></script>
+  </body>
+</html>

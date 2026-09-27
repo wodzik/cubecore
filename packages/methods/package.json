@@ -1,0 +1,40 @@
+{
+  "name": "@cubecore/methods",
+  "version": "0.0.0",
+  "private": true,
+  "description": "All cubecore methods together, masks by name",
+  "license": "MPL-2.0",
+  "author": "Tomasz Wodzikowski",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wodzik/cubecore.git",
+    "directory": "packages/methods"
+  },
+  "homepage": "https://github.com/wodzik/cubecore#readme",
+  "bugs": "https://github.com/wodzik/cubecore/issues",
+  "keywords": [
+    "rubiks-cube",
+    "speedcubing",
+    "cube",
+    "cfop",
+    "roux",
+    "zz"
+  ],
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src",
+    "!src/**/*.test.ts"
+  ],
+  "sideEffects": false,
+  "dependencies": {
+    "@cubecore/core": "workspace:*",
+    "@cubecore/cfop": "workspace:*",
+    "@cubecore/roux": "workspace:*",
+    "@cubecore/zz": "workspace:*",
+    "@cubecore/petrus": "workspace:*",
+    "@cubecore/lbl": "workspace:*"
+  }
+}

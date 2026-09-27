@@ -1,0 +1,45 @@
+{
+  "name": "@cubecore/image",
+  "version": "0.0.0",
+  "private": true,
+  "description": "SVG / PNG cube pictures (iso, top, net) from cubecore skins",
+  "license": "MPL-2.0",
+  "author": "Tomasz Wodzikowski",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wodzik/cubecore.git",
+    "directory": "packages/image"
+  },
+  "homepage": "https://github.com/wodzik/cubecore#readme",
+  "bugs": "https://github.com/wodzik/cubecore/issues",
+  "keywords": [
+    "rubiks-cube",
+    "speedcubing",
+    "cube",
+    "svg",
+    "png",
+    "image"
+  ],
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./png-node": "./src/png-node.ts"
+  },
+  "files": [
+    "src",
+    "!src/**/*.test.ts"
+  ],
+  "sideEffects": false,
+  "dependencies": {
+    "@cubecore/core": "workspace:*",
+    "@cubecore/skin": "workspace:*"
+  },
+  "peerDependencies": {
+    "@resvg/resvg-js": ">=2"
+  },
+  "peerDependenciesMeta": {
+    "@resvg/resvg-js": {
+      "optional": true
+    }
+  }
+}

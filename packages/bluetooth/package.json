@@ -1,0 +1,39 @@
+{
+  "name": "@cubecore/bluetooth",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Smart (Bluetooth) cube sessions: GAN, MoYu, QiYi, GoCube, Giiker — timed moves, gyro, battery",
+  "license": "MPL-2.0",
+  "author": "Tomasz Wodzikowski",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wodzik/cubecore.git",
+    "directory": "packages/bluetooth"
+  },
+  "homepage": "https://github.com/wodzik/cubecore#readme",
+  "bugs": "https://github.com/wodzik/cubecore/issues",
+  "keywords": [
+    "rubiks-cube",
+    "speedcubing",
+    "cube",
+    "bluetooth",
+    "smart-cube",
+    "gan",
+    "moyu",
+    "qiyi"
+  ],
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src",
+    "!src/**/*.test.ts"
+  ],
+  "sideEffects": false,
+  "dependencies": {
+    "@cubecore/core": "workspace:*",
+    "smartcube-web-bluetooth": "github:poliva/smartcube-web-bluetooth",
+    "@cubecore/skin": "workspace:*"
+  }
+}

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>cubecore scramble &amp; practice</title>
+    <style>
+      :root { color-scheme: dark; --bg: #0b0b0c; --panel: #151517; --line: #2a2a2e; --text: #e6e6e6; --muted: #8b8b93; --accent: #7aa2ff; }
+      * { box-sizing: border-box; }
+      body { margin: 0; font: 14px/1.45 system-ui, sans-serif; background: var(--bg); color: var(--text); }
+      main { max-width: 760px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+      .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+      .spacer { flex: 1; }
+      button, select, input[type="text"] { background: #232327; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 7px 11px; font: 13px system-ui; }
+      input[type="text"] { font-family: ui-monospace, monospace; flex: 1; min-width: 12em; }
+      button { cursor: pointer; }
+      button:hover:not(:disabled) { border-color: var(--accent); }
+      button.primary { background: var(--accent); color: #0b0b0c; border-color: var(--accent); font-weight: 600; }
+      button:disabled { opacity: 0.45; cursor: default; }
+      .muted { color: var(--muted); font-size: 12px; }
+      .tabs { display: inline-flex; background: #1b1b1e; border: 1px solid var(--line); border-radius: 10px; padding: 3px; }
+      .tabs button { border: 0; background: transparent; color: var(--muted); padding: 7px 16px; border-radius: 7px; font-weight: 600; }
+      .tabs button[aria-selected="true"] { background: #2c2c32; color: var(--text); }
+      .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; min-height: 150px; }
+      .panel[hidden] { display: none; }
+      cube-scramble, cube-alg-practice { --cc-accent: var(--accent); --cc-seq-size: 24px; }
+      #setup { --cc-seq-size: 18px; }
+      #setupBox { border-left: 3px solid var(--accent); padding-left: 10px; }
+      cube-player { height: min(56vh, 520px); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+      .swatch { display: inline-flex; align-items: center; gap: 4px; }
+      .swatch input { width: 26px; height: 22px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: none; cursor: pointer; }
+      .keys { font: 12px ui-monospace, monospace; color: var(--muted); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="row">
+        <button id="connect" class="primary">Connect cube</button>
+        <button id="simulate">Simulated cube</button>
+        <button id="solved" disabled>Mark solved</button>
+        <span class="muted" id="info">Not connected.</span>
+      </div>
+
+      <div class="row">
+        <div class="tabs" role="tablist">
+          <button role="tab" id="tabScramble" aria-selected="true">Scramble</button>
+          <button role="tab" id="tabAlg" aria-selected="false">Algorithm</button>
+        </div>
+        <span class="spacer"></span>
+        <label class="muted"><input type="checkbox" id="arrows" checked /> Arrows</label>
+        <select id="arrowShape" aria-label="Arrow shape">
+          <option value="box">Along the faces</option>
+          <option value="circle">Arc</option>
+        </select>
+        <label class="muted swatch" title="Next move"><input type="color" id="colNext" value="#2f8bff" /> next</label>
+        <label class="muted swatch" title="Undo a slip"><input type="color" id="colUndo" value="#ff4545" /> undo</label>
+        <label class="muted swatch" title="Right face, wrong way"><input type="color" id="colWrong" value="#ff9a1f" /> wrong way</label>
+      </div>
+
+      <section class="panel" id="scramblePanel">
+        <cube-scramble id="scramble" editable player="player"></cube-scramble>
+        <div class="row">
+          <button id="newScramble" disabled>New scramble</button>
+          <span class="muted" id="scrambleInfo">Connect a cube to get a scramble (made from its current state).</span>
+        </div>
+      </section>
+
+      <section class="panel" id="algPanel" hidden>
+        <div class="row">
+          <select id="preset">
+            <option value="R U R' U R U2 R'">Sune</option>
+            <option value="R U R' U' R' F R2 U' R' U' R U R' F'">T-perm</option>
+            <option value="M2 U M2 U2 M2 U M2">H-perm (M)</option>
+            <option value="r U R' U' r' F R F'">OLL 33 (r)</option>
+            <option value="F R U R' U' F'">OLL 45</option>
+          </select>
+          <input type="text" id="alg" spellcheck="false" aria-label="Algorithm" />
+          <select id="reveal" aria-label="What to show">
+            <option value="all">Show moves</option>
+            <option value="done" selected>Hide until done</option>
+            <option value="none">Hide all</option>
+          </select>
+        </div>
+        <div class="row">
+          <button id="setupCase" disabled>Set up case</button>
+          <span class="muted" id="practiceInfo">Start solved, set up the case, then do the algorithm.</span>
+        </div>
+        <div id="setupBox" hidden>
+          <div class="muted">Setup:</div>
+          <cube-scramble id="setup" player="player"></cube-scramble>
+        </div>
+        <cube-alg-practice id="practice" player="player" reveal="done"></cube-alg-practice>
+      </section>
+
+      <cube-player id="player" controls="none"></cube-player>
+      <p class="keys" id="keys" hidden>Simulated cube: U R F D L B · Shift = prime</p>
+    </main>
+    <script type="module" src="./sequences.ts"></script>
+  </body>
+</html>

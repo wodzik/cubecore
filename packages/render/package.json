@@ -1,0 +1,39 @@
+{
+  "name": "@cubecore/render",
+  "version": "0.0.0",
+  "private": true,
+  "description": "three.js renderer for cubecore skins: masks, back view, gyro orientation, turn arrows",
+  "license": "MPL-2.0",
+  "author": "Tomasz Wodzikowski",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wodzik/cubecore.git",
+    "directory": "packages/render"
+  },
+  "homepage": "https://github.com/wodzik/cubecore#readme",
+  "bugs": "https://github.com/wodzik/cubecore/issues",
+  "keywords": [
+    "rubiks-cube",
+    "speedcubing",
+    "cube",
+    "three",
+    "webgl",
+    "3d"
+  ],
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src",
+    "!src/**/*.test.ts"
+  ],
+  "sideEffects": false,
+  "dependencies": {
+    "@cubecore/core": "workspace:*",
+    "@cubecore/skin": "workspace:*"
+  },
+  "peerDependencies": {
+    "three": ">=0.160"
+  }
+}

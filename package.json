@@ -1,0 +1,28 @@
+{
+  "name": "cubecore-monorepo",
+  "private": true,
+  "license": "MPL-2.0",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc -p .",
+    "demo": "bun demo/serve.ts"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "@types/aes-js": "^3.1.4",
+    "@types/bun": "latest",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/three": "^0.186.0",
+    "@types/web-bluetooth": "^0.0.21",
+    "cubing": "0.63.4",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "three": "^0.186.1",
+    "typescript": "^5.6.0"
+  }
+}

@@ -1,8 +1,8 @@
 # Making a skin
 
-A skin is **plain data** (`Skin` from `@cubecore/skin`). The same object
-drives the 3D renderer (`@cubecore/render`) and the SVG/PNG pictures
-(`@cubecore/image`), so one skin looks the same everywhere. Start from a
+A skin is **plain data** (`Skin` from `cubecore/skin`). The same object
+drives the 3D renderer (`cubecore/render`) and the SVG/PNG pictures
+(`cubecore/image`), so one skin looks the same everywhere. Start from a
 preset and change what you need:
 
 | preset | |
@@ -57,7 +57,7 @@ a small triangle on a corner's inner point, a strip along an edge's inner edge,
 a flat back on a centre (`qiyiSC`: `mechanism: 1`).
 
 **2D pictures:** `pictureBody` — the plastic between tiles in
-`@cubecore/image` pictures; `null` makes the gaps see-through (light plastic
+`cubecore/image` pictures; `null` makes the gaps see-through (light plastic
 with white tiles would blur together). Default: `body`.
 
 **Logo:** a decal on the centre sticker (`select: { stickers: [4] }` = the
@@ -70,7 +70,7 @@ towards the face centre vs the others) and the colours — that's how
 `gan356m` was made; the model file itself isn't needed at runtime.
 
 ```ts
-import { SKINS, type Skin } from "@cubecore/skin";
+import { SKINS, type Skin } from "cubecore/skin";
 
 const mine: Skin = {
   ...SKINS.gan,
@@ -195,7 +195,7 @@ Built in: `holes` (`radius`, `at`, `opacity`) and `slot` (`width`, `height`,
 `radius`, `at`, `opacity`). Add your own with `defineFeature`:
 
 ```ts
-import { defineFeature } from "@cubecore/skin";
+import { defineFeature } from "cubecore/skin";
 
 defineFeature({
   type: "ridge",
@@ -249,11 +249,11 @@ like logos.
 
 ## Where the code lives
 
-- `@cubecore/skin` — `skin.ts` (the data model, presets), `shapes.ts` (tile
+- `cubecore/skin` — `skin.ts` (the data model, presets), `shapes.ts` (tile
   outlines), `attachments.ts` (selectors, decals, `defineFeature`, built-ins).
-- `@cubecore/render` — `tile.ts` (tile / piece solids, pure maths),
+- `cubecore/render` — `tile.ts` (tile / piece solids, pure maths),
   `pieceModels.ts` (placing glTF pieces), `gltf.ts` (templates), `build/models.ts` (loading),
   `build/tiles.ts` (three.js geometry for a skin), `build/attachments.ts`
   (decals & features riding on stickers), `renderer.ts` (scene, animation).
-- `@cubecore/image` — `svg.ts` (the same skin as SVG).
+- `cubecore/image` — `svg.ts` (the same skin as SVG).
 

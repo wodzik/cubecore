@@ -5,7 +5,7 @@
  */
 
 import { type Move, type State, applyMove, faceletsOf, formatMove, parseAlg, solvedState } from "@cubecore/core";
-import type { SmartCubeCommand, SmartCubeEvent } from "smartcube-web-bluetooth";
+import type { SmartCubeCommand, SmartCubeEvent } from "./vendor/smartcube-web-bluetooth";
 import type { CubeConnection } from "./session";
 import type { Quat } from "./gyro";
 

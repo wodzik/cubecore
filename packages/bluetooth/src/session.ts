@@ -15,7 +15,7 @@
  */
 
 import { type Move, type State, applyMove, parseAlg, relativeState, solvedState, stateFromFacelets, statesEqual } from "@cubecore/core";
-import type { ConnectSmartCubeOptions, SmartCubeCapabilities, SmartCubeCommand, SmartCubeEvent } from "smartcube-web-bluetooth";
+import type { ConnectSmartCubeOptions, SmartCubeCapabilities, SmartCubeCommand, SmartCubeEvent } from "./vendor/smartcube-web-bluetooth";
 import type { Skin } from "@cubecore/skin";
 import { ClockSync } from "./clock";
 import { skinForCube } from "./cubeSkins";
@@ -88,7 +88,7 @@ export class SmartCubeSession {
 
   /** Ask the browser for a cube and connect (needs a user gesture; Chrome / Edge / Bluefy). */
   static async connect(options?: ConnectSmartCubeOptions, session?: SessionOptions): Promise<SmartCubeSession> {
-    const { connectSmartCube } = await import("smartcube-web-bluetooth");
+    const { connectSmartCube } = await import("./vendor/smartcube-web-bluetooth");
     return new SmartCubeSession(await connectSmartCube(options), session);
   }
 

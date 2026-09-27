@@ -1,6 +1,6 @@
-# Core and methods (`@cubecore/core`, `cfop`, `roux`, `zz`, `petrus`, `lbl`, `methods`)
+# Core and methods (`cubecore/core`, `cfop`, `roux`, `zz`, `petrus`, `lbl`, `methods`)
 
-`@cubecore/core` is headless — no DOM, no three.js — and runs in the browser,
+`cubecore/core` is headless — no DOM, no three.js — and runs in the browser,
 Node, Bun and workers. Everything else builds on it.
 
 ## State and notation
@@ -10,7 +10,7 @@ A state is a `Uint8Array` of 54 stickers: position → which sticker sits there
 too, so rotations and slices are ordinary permutations.
 
 ```ts
-import { applyMoves, isSolved, parseAlg, formatAlg, invert, simplify, moveCount, solvedState } from "@cubecore/core";
+import { applyMoves, isSolved, parseAlg, formatAlg, invert, simplify, moveCount, solvedState } from "cubecore/core";
 
 const s = applyMoves(solvedState(), "R U R' U'");   // a string or Move[]
 isSolved(s);                                        // false; a solved cube held any way counts as solved
@@ -47,7 +47,7 @@ run on `view(state, frame)`, so every method works on any face in any
 colour scheme.
 
 ```ts
-import { FRAMES, frameFor, frameForColors, view, transformMoves } from "@cubecore/core";
+import { FRAMES, frameFor, frameForColors, view, transformMoves } from "cubecore/core";
 
 const whiteDown = frameForColors(state, "U");       // the frame with the white (U-coloured) centre down
 const canonical = view(state, whiteDown);           // the state as seen held that way
@@ -62,8 +62,8 @@ view. The method packages build theirs from `checks` (`crossSolved`,
 no engine change.
 
 ```ts
-import { MethodTracker, analyzeSolve } from "@cubecore/core";
-import { CFOP } from "@cubecore/cfop";
+import { MethodTracker, analyzeSolve } from "cubecore/core";
+import { CFOP } from "cubecore/cfop";
 
 const tracker = new MethodTracker(CFOP, "R U F' D2 …");     // the scramble (or a start state)
 cube.on("move", ({ move, time }) => {
@@ -82,12 +82,12 @@ doesn't take over the analysis. `detail` is the F2L slot as physical faces
 
 | package | method | stages | extras |
 |---|---|---|---|
-| `@cubecore/cfop` | `CFOP` | cross, F2L 1–4 (any order), OLL, PLL, AUF | OLL / PLL / F2L recognition ([cases.md](cases.md)), masks `cross` `f2l` `oll` `pll` `coll` `zbll` `els` `cls`…, `CFOP_TRAINERS` |
-| `@cubecore/roux` | `ROUX` | first block, second block, CMLL, EO, UL/UR, L4E | CMLL recognition, masks `fb` `blocks` `cmll` `lse` `eo` `ulur`, `ROUX_TRAINERS` |
-| `@cubecore/zz` | `ZZ` | EOLine, left and right block, last layer | EOCross check, masks `eoline` `eocross` `f2l`, `ZZ_TRAINERS` |
-| `@cubecore/petrus` | `PETRUS` | 2×2×2, 2×2×3, EO, F2L, last layer | masks |
-| `@cubecore/lbl` | `LBL` | the beginner's method: cross, first layer, second layer, orient, permute corners, permute edges | masks |
-| `@cubecore/methods` | `METHODS`, `methodById` | all of the above | `maskByName("cfop:oll", frame)`, `MASK_NAMES` |
+| `cubecore/cfop` | `CFOP` | cross, F2L 1–4 (any order), OLL, PLL, AUF | OLL / PLL / F2L recognition ([cases.md](cases.md)), masks `cross` `f2l` `oll` `pll` `coll` `zbll` `els` `cls`…, `CFOP_TRAINERS` |
+| `cubecore/roux` | `ROUX` | first block, second block, CMLL, EO, UL/UR, L4E | CMLL recognition, masks `fb` `blocks` `cmll` `lse` `eo` `ulur`, `ROUX_TRAINERS` |
+| `cubecore/zz` | `ZZ` | EOLine, left and right block, last layer | EOCross check, masks `eoline` `eocross` `f2l`, `ZZ_TRAINERS` |
+| `cubecore/petrus` | `PETRUS` | 2×2×2, 2×2×3, EO, F2L, last layer | masks |
+| `cubecore/lbl` | `LBL` | the beginner's method: cross, first layer, second layer, orient, permute corners, permute edges | masks |
+| `cubecore/methods` | `METHODS`, `methodById` | all of the above | `maskByName("cfop:oll", frame)`, `MASK_NAMES` |
 
 Trainer stages (`CFOP_TRAINERS`…) are the stage definitions the solver uses
 for trainer scrambles — see [scrambles.md](scrambles.md).
@@ -99,8 +99,8 @@ A mask gives every sticker a state: `regular`, `dim`, `ignored` (grey),
 rules on the canonical grip, built for the frame the cube is held in:
 
 ```ts
-import { buildMask, presetMask } from "@cubecore/core";
-import { cfopMask } from "@cubecore/cfop";
+import { buildMask, presetMask } from "cubecore/core";
+import { cfopMask } from "cubecore/cfop";
 
 renderer.setMask(cfopMask("oll", whiteDown));
 presetMask("first-layer");

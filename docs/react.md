@@ -1,4 +1,4 @@
-# React (`@cubecore/react`)
+# React (`cubecore/react`)
 
 Thin wrappers around the elements, plus two hooks. No styling of their own:
 use the elements' CSS variables and `::part()`; `className` / `style` / `id`
@@ -6,7 +6,7 @@ pass through. Works with React 18 and 19, and renders on the server (the
 elements register in the browser only).
 
 ```tsx
-import { CubePlayer, CubeAlg, CubeScramble, useSmartCube, useSolverWorker } from "@cubecore/react";
+import { CubePlayer, CubeAlg, CubeScramble, useSmartCube, useSolverWorker } from "cubecore/react";
 
 function Guide() {
   const player = useRef(null);

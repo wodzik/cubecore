@@ -1,4 +1,4 @@
-# 3D and pictures (`@cubecore/render`, `@cubecore/image`)
+# 3D and pictures (`cubecore/render`, `cubecore/image`)
 
 Both draw from the same skin ([skins.md](skins.md)): `render` with three.js
 (a live cube, or still pictures), `image` as SVG without WebGL (and PNG in
@@ -7,8 +7,8 @@ the browser or on a server).
 ## `CubeRenderer`
 
 ```ts
-import { CubeRenderer, SKINS } from "@cubecore/render";
-import { applyMoves, solvedState } from "@cubecore/core";
+import { CubeRenderer, SKINS } from "cubecore/render";
+import { applyMoves, solvedState } from "cubecore/core";
 
 const r = new CubeRenderer(document.querySelector("#cube")!, {
   skin: SKINS.gan,
@@ -29,10 +29,10 @@ const png = r.snapshot();                          // a data URL of the current 
 r.dispose();                                       // frees the WebGL context
 ```
 
-`@cubecore/render` re-exports `@cubecore/skin`, so `SKINS`, `withStickers`
+`cubecore/render` re-exports `cubecore/skin`, so `SKINS`, `withStickers`
 and the rest come from the same import. `setSkin` and `setTheme` switch
 the look of a live cube. `showPosition(renderer, start, moves, position)`
-shows a replay position from `@cubecore/timeline`.
+shows a replay position from `cubecore/timeline`.
 
 Browsers keep about 16 WebGL contexts per page. A page with many cubes
 should use one live renderer and still pictures for the rest.
@@ -40,7 +40,7 @@ should use one live renderer and still pictures for the rest.
 ## Still pictures from one renderer: `CubePictures`
 
 ```ts
-import { sharedPictures } from "@cubecore/render";
+import { sharedPictures } from "cubecore/render";
 
 const pictures = sharedPictures();                   // one hidden renderer for the page
 img.src = pictures.draw({ state, mask, skin, camera: { latitude: 20, longitude: 25 } }, cacheKey);
@@ -57,7 +57,7 @@ Arrows show the next turn on the 3D cube: two per turning layer, on
 opposite sides, travelling round the layer the way it turns.
 
 ```ts
-import { turnArrow } from "@cubecore/core";
+import { turnArrow } from "cubecore/core";
 
 r.setTurnArrows([turnArrow(move, frame)], { shape: "circle", color: "#2f8bff", speed: 0.35 });
 r.setTurnArrows(null);                               // off
@@ -75,10 +75,10 @@ r.setTurnArrows(null);                               // off
 Arrows are drawn after the stickers and the decals (logos), so a logo never
 covers them.
 
-## SVG pictures: `@cubecore/image`
+## SVG pictures: `cubecore/image`
 
 ```ts
-import { renderSvg, SvgCache, svgDataUrl, svgToPngBlob } from "@cubecore/image";
+import { renderSvg, SvgCache, svgDataUrl, svgToPngBlob } from "cubecore/image";
 
 const svg = renderSvg(state, { view: "iso", size: 160, skin, mask, frame, theme: "light" });
 img.src = svgDataUrl(svg);
@@ -90,7 +90,7 @@ const blob = await svgToPngBlob(svg, 320);           // in the browser
 - `frame` draws the cube held another way, e.g. a case with the cross on D
   whatever face it was solved on.
 - `SvgCache` caches by `svgKey(state, options)`.
-- On a server, `@cubecore/image/png-node` has `svgToPng(svg, width)` (needs
+- On a server, `cubecore/image/png-node` has `svgToPng(svg, width)` (needs
   `@resvg/resvg-js`).
 
 No WebGL and no DOM: `renderSvg` also runs in workers and on servers.

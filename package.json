@@ -9,7 +9,8 @@
   "scripts": {
     "test": "bun test",
     "typecheck": "tsc -p .",
-    "demo": "bun demo/serve.ts"
+    "demo": "bun demo/serve.ts",
+    "build:npm": "bun scripts/build-npm.ts"
   },
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",

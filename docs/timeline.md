@@ -1,11 +1,11 @@
-# Recordings, replay and statistics (`@cubecore/timeline`)
+# Recordings, replay and statistics (`cubecore/timeline`)
 
 Headless: a timed solve as data, and what to do with it.
 
 ## A recording
 
 ```ts
-import { recording, type Recording } from "@cubecore/timeline";
+import { recording, type Recording } from "cubecore/timeline";
 
 // Built by hand (times in ms since the timer started, when each move FINISHED):
 const rec = recording("R U R' U'", [["U", 420], ["R", 610], ["U'", 780]], 900);
@@ -21,8 +21,8 @@ Smart cubes report a move when it's done, so `t` is when it finished.
 ## Stage timings
 
 ```ts
-import { stageTimings, stageSegments } from "@cubecore/timeline";
-import { CFOP } from "@cubecore/cfop";
+import { stageTimings, stageSegments } from "cubecore/timeline";
+import { CFOP } from "cubecore/cfop";
 
 const { stages, fluency, bottomFace } = stageTimings(CFOP, rec);
 // stages: { stage, label, moveCount, startMs, endMs, recognitionMs, executionMs, skipped, detail }[]
@@ -37,8 +37,8 @@ segments for the progress bar of `<cube-player>`
 ## Replay
 
 ```ts
-import { ReplayClock, positionAt, compressPauses } from "@cubecore/timeline";
-import { showPosition } from "@cubecore/render";
+import { ReplayClock, positionAt, compressPauses } from "cubecore/timeline";
+import { showPosition } from "cubecore/render";
 
 const clock = new ReplayClock(compressPauses(rec, 1500));   // long pauses cut to 1.5 s
 clock.onChange((time, position) => showPosition(renderer, start, rec.moves.map((m) => m.move), position));
@@ -56,7 +56,7 @@ done, and the move under way with its progress.
 ## Codecs
 
 ```ts
-import { encodeRecording, decodeRecording, encodeShare, decodeShare } from "@cubecore/timeline";
+import { encodeRecording, decodeRecording, encodeShare, decodeShare } from "cubecore/timeline";
 
 const text = encodeRecording(rec);              // compact, URL-safe (base64url)
 const link = `#solve=${encodeShare({ recording: rec, method: "cfop", dnf: false, hideTimes: false })}`;
@@ -71,7 +71,7 @@ cube wasn't solved before the scramble. Both formats are versioned
 ## Statistics
 
 ```ts
-import { DNF, ao, bestAo, mo, sessionStats } from "@cubecore/timeline";
+import { DNF, ao, bestAo, mo, sessionStats } from "cubecore/timeline";
 
 const times = [9870, 11020, DNF, 10450, 9990];
 ao(times, 5);                                  // WCA average: best and worst dropped

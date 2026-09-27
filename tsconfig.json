@@ -17,13 +17,7 @@
     "types": [
       "bun",
       "web-bluetooth"
-    ],
-    "baseUrl": ".",
-    "paths": {
-      "smartcube-web-bluetooth": [
-        "packages/bluetooth/node_modules/smartcube-web-bluetooth/src/index.ts"
-      ]
-    }
+    ]
   },
   "include": [
     "packages/*/src"

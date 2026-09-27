@@ -1,14 +1,14 @@
 # `<cube-player>`
 
 ```html
-<script type="module">import "@cubecore/element";</script>
+<script type="module">import "cubecore/element";</script>
 
 <cube-player alg="R U R' U R U2 R'" setup="R U2 R' U' R U' R'" tempo="2"></cube-player>
 <cube-player id="solve" progress markers skin="gan"></cube-player>
 <script type="module">
   const p = document.getElementById("solve");
-  p.recording = myRecording;   // a timed solve (@cubecore/timeline) — plays in real time
-  p.method = CFOP;             // stage markers on the progress bar (@cubecore/cfop)
+  p.recording = myRecording;   // a timed solve (cubecore/timeline) — plays in real time
+  p.method = CFOP;             // stage markers on the progress bar (cubecore/cfop)
 </script>
 ```
 
@@ -18,7 +18,7 @@
 |---|---|
 | `alg`, `setup`, `tempo` | an algorithm at a steady tempo (moves per second), after a setup (moves, or a `State` via the property) |
 | `anchor` | `start` (default): play the algorithm from the (set-up) cube · `end`: the algorithm **solves** the cube — it starts at setup + the algorithm's inverse and ends solved (case practice) |
-| `visualization` | `3d` (default), `net`, `top`, `iso` — the 2D views are SVG pictures (@cubecore/image) with the same skin and mask |
+| `visualization` | `3d` (default), `net`, `top`, `iso` — the 2D views are SVG pictures (cubecore/image) with the same skin and mask |
 | `recording` (property) | a timed solve; takes precedence over `alg` |
 | `skin` | preset name, or a `Skin` object via the property |
 | `back-view` | `none` / `side-by-side` / `top-right` |
@@ -54,7 +54,7 @@ and progress bar. The difference is where the times come from:
 The bar can be split into **sections** — plain data, not tied to any method:
 
 ```ts
-interface Segment {           // @cubecore/timeline
+interface Segment {           // cubecore/timeline
   start: number; end: number; // ms
   label: string;              // "F2L 2"
   id?: string;                // "f2l-2" → ::part(segment-f2l-2)

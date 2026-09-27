@@ -1,4 +1,4 @@
-# OLL / PLL recognition (`@cubecore/cfop`)
+# OLL / PLL recognition (`cubecore/cfop`)
 
 Cases, numbering, names and groups as on speedcubedb.com: OLL 1–57
 (groups "Dot Case", "Square Shapes", "OCLL"…), PLL Aa, Ab, E, F, Ga–Gd, H,
@@ -8,7 +8,7 @@ Ja, Jb, Na, Nb, Ra, Rb, T, Ua, Ub, V, Y, Z (groups "Adj Swap", "Opp Swap",
 ## Recognising a cube
 
 ```ts
-import { recognizeLastLayer, recognizeOll, recognizePll } from "@cubecore/cfop";
+import { recognizeLastLayer, recognizeOll, recognizePll } from "cubecore/cfop";
 
 recognizeLastLayer(session.state);
 // { face: "U", oll: { id: "OLL 27", group: "OCLL", preAuf: "U'", alg: "R U R' U R U2 R'" }, pll: null }
@@ -39,18 +39,18 @@ t.boundaries;       // [… { stage: "oll", case: "OLL 27", … }, { stage: "pll
 with a stage's `recognize(state)`; `withLastLayerCases(stages)` adds OLL /
 PLL recognition to other methods' last-layer stages (ZZ, Petrus).
 
-## CMLL (`@cubecore/roux`)
+## CMLL (`cubecore/roux`)
 
 42 cases, names and groups as on speedcubedb.com (O, H, Pi, U, T, Sune, Anti
 Sune, L — "Sune Left Bar", "H Columns"…), one standard algorithm each
 (`CMLL_CASES`).
 
 ```ts
-import { recognizeCmll, recognizeCmllAnywhere, cmllCaseState, secondBlock } from "@cubecore/roux";
+import { recognizeCmll, recognizeCmllAnywhere, cmllCaseState, secondBlock } from "cubecore/roux";
 
 recognizeCmll(state);                          // blocks on L / R, bottom D: { id, group, preAuf, alg } | null (skip)
 recognizeCmllAnywhere(state, secondBlock);     // any orientation: { match, frame }
-scrambleTo(cmllCaseState("Sune Left Bar"), { from: cube.state });   // practise one case (@cubecore/solve)
+scrambleTo(cmllCaseState("Sune Left Bar"), { from: cube.state });   // practise one case (cubecore/solve)
 ```
 
 Read relative to the blocks, not the centres — the M slice may be off —

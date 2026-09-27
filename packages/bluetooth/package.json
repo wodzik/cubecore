@@ -33,7 +33,9 @@
   "sideEffects": false,
   "dependencies": {
     "@cubecore/core": "workspace:*",
-    "smartcube-web-bluetooth": "github:poliva/smartcube-web-bluetooth",
-    "@cubecore/skin": "workspace:*"
+    "@cubecore/skin": "workspace:*",
+    "aes-js": "^3.1.2",
+    "lz-string": "^1.5.0",
+    "rxjs": "^7.8.2"
   }
 }

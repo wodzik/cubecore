@@ -74,5 +74,6 @@ export function solverClient(worker: Worker): SolverClient {
  * rewrite worker URLs — see demo/serve.ts).
  */
 export function createSolverWorker(url?: string | URL): SolverClient {
-  return solverClient(new Worker(url ?? new URL("./worker.ts", import.meta.url), { type: "module" }));
+  // Written out in full: bundlers only recognise the literal `new Worker(new URL(…), { type: "module" })`.
+  return solverClient(url ? new Worker(url, { type: "module" }) : new Worker(new URL("./worker.ts", import.meta.url), { type: "module" }));
 }

@@ -1,4 +1,4 @@
-# Scramble analysis (`@cubecore/analyze`)
+# Scramble analysis (`cubecore/analyze`)
 
 In the spirit of speedcubedb.com/analyze: for each cross colour, a good
 CFOP way through a scramble — so an app can show the optimal cross, the
@@ -6,7 +6,7 @@ recommended first pair, the pair order, the cases that come up, and how
 much of it the solver's own algorithms cover.
 
 ```ts
-import { analyzeScramble, createAnalyzerWorker } from "@cubecore/analyze";
+import { analyzeScramble, createAnalyzerWorker } from "cubecore/analyze";
 
 const a = analyzeScramble("D2 R2 F2 U' B2 …", { f2l: "optimal", start: "cross" });
 a.best.face            // "F" — the best cross colour (physical face)

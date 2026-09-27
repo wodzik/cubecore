@@ -47,5 +47,6 @@ export function analyzerClient(worker: Worker): AnalyzerClient {
 
 /** Start the analyser worker (bundlers pick up `./worker.ts`; or pass the URL of one you built). */
 export function createAnalyzerWorker(url?: string | URL): AnalyzerClient {
-  return analyzerClient(new Worker(url ?? new URL("./worker.ts", import.meta.url), { type: "module" }));
+  // Written out in full: bundlers only recognise the literal `new Worker(new URL(…), { type: "module" })`.
+  return analyzerClient(url ? new Worker(url, { type: "module" }) : new Worker(new URL("./worker.ts", import.meta.url), { type: "module" }));
 }

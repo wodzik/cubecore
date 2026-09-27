@@ -45,7 +45,8 @@ export function stageTimings(method: Method, rec: Recording): SolveTimings {
     // A move's timestamp is when it completed; its start is ~the previous move's time.
     const firstStart = moveCount > 0 ? (prevIndex === 0 ? 0 : rec.moves[prevIndex - 1].t) : endMs;
     const firstDone = moveCount > 0 ? rec.moves[prevIndex].t : endMs;
-    const recognitionMs = moveCount > 0 ? Math.max(0, firstDone - firstStart - estimateTurnMs(rec)) : 0;
+    // AUF: a U turn or two — nothing to recognise, the whole stage is turning.
+    const recognitionMs = moveCount > 0 && b.stage !== "auf" ? Math.max(0, firstDone - firstStart - estimateTurnMs(rec)) : 0;
     const t: StageTiming = {
       stage: b.stage,
       label: labels.get(b.stage) ?? b.stage,

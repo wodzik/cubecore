@@ -64,7 +64,16 @@ export function startMoves(setup: string | readonly Move[], alg: readonly Move[]
   return anchor === "end" ? [...s, ...invert(alg)] : s;
 }
 
-/** Default tooltip text of a segment: "F2L 2 · FL · 3.21 s (recognition 0.80 · execution 2.41) · 9 moves". */
+/** A segment's popup in two lines: the heading ("OLL · 2.64 s") and the details ("recognition 1.55 · execution 1.09 · 7 moves"). */
+export function segmentLines(s: Segment): { title: string; details: string } {
+  const title = [s.label, s.detail, `${formatTime(s.end - s.start)} s`].filter(Boolean).join(" · ");
+  const details: string[] = [];
+  if (s.split !== undefined) details.push(`recognition ${formatTime(s.split - s.start)}`, `execution ${formatTime(s.end - s.split)}`);
+  if (s.moves !== undefined) details.push(`${s.moves} move${s.moves === 1 ? "" : "s"}`);
+  return { title, details: details.join(" · ") };
+}
+
+/** Default tooltip text of a segment (one line): "F2L 2 · FL · 3.21 s (recognition 0.80 · execution 2.41) · 9 moves". */
 export function segmentText(s: Segment): string {
   const parts = [s.label];
   if (s.detail) parts.push(s.detail);

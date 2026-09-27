@@ -54,7 +54,7 @@ import { renderSvg } from "@cubecore/image";
 import { type ArrowStyle, type BackView, CubeRenderer, showPosition } from "@cubecore/render";
 import { SKINS, type Skin, type Theme } from "@cubecore/skin";
 import { type Position, type Recording, ReplayClock, type Segment, compressPauses, segmentAt, segmentPlayed, stageSegments } from "@cubecore/timeline";
-import { type Marker, formatTime, fraction, segmentText, startMoves, stepTime, tempoRecording } from "./model";
+import { type Marker, formatTime, fraction, segmentLines, segmentText, startMoves, stepTime, tempoRecording } from "./model";
 import { ICONS, STYLES } from "./styles";
 import { ElementBase } from "./base";
 
@@ -573,11 +573,19 @@ export class CubePlayer extends ElementBase {
     }
     const s = this.segs[index];
     tip.innerHTML = "";
-    const text = document.createElement("span");
-    text.className = "tip";
-    text.setAttribute("part", "tooltip-text");
-    text.textContent = this.formatSegment(s);
-    tip.appendChild(text);
+    const line = (cls: string, part: string, content: string) => {
+      const el = document.createElement("span");
+      el.className = cls;
+      el.setAttribute("part", part);
+      el.textContent = content;
+      tip.appendChild(el);
+    };
+    if (this.formatSegment === segmentText) {
+      // The default: a heading and a quieter line of details.
+      const { title, details } = segmentLines(s);
+      line("tip tip-title", "tooltip-text tooltip-title", title);
+      if (details) line("tip tip-details", "tooltip-text tooltip-details", details);
+    } else line("tip", "tooltip-text", this.formatSegment(s));
     tip.hidden = false;
     const track = this.$(".track").getBoundingClientRect();
     const centre = ((s.start + s.end) / 2 / (this.duration || 1)) * track.width;

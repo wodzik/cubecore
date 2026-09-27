@@ -84,7 +84,7 @@ your own text, e.g. a translation). PageUp / PageDown jump between sections;
 adds tick marks at the section ends (or at `player.markers = [{ time, label }]`).
 
 Styling: `--cc-segment-1…8`, `--cc-segment-height`, `--cc-segment-gap`,
-`--cc-segment-unplayed`, `--cc-tooltip-bg`, `--cc-tooltip-fg`; parts `segment`,
+`--cc-segment-unplayed`, `--cc-tooltip-bg`, `--cc-tooltip-fg`, `--cc-tooltip-muted`, `--cc-tooltip-border`; parts `segment`,
 `segment-<id>`, `segment-played`, `segment-recognition`, `segment-labels`,
 `segment-label`, `segment-label-<id>`, `tooltip`, `tooltip-text`. Per section:
 `cube-player::part(segment-cross) { --seg: white; }`.

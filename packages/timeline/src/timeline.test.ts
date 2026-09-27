@@ -122,7 +122,9 @@ describe("stage timings", () => {
       ["cross", 4], ["f2l-1", 3], ["f2l-2", 3], ["f2l-3", 3], ["f2l-4", 3], ["oll", 7], ["pll", 14], ["auf", 1],
     ]);
     // Each stage starts with a 900 ms look; the first move itself is ~120 ms of it.
-    for (const s of t.stages) expect(s.recognitionMs).toBe(780);
+    for (const s of t.stages.filter((s) => s.stage !== "auf")) expect(s.recognitionMs).toBe(780);
+    // AUF is just a U turn: nothing to recognise.
+    expect(t.stages.at(-1)!.recognitionMs).toBe(0);
     for (const s of t.stages) expect(s.recognitionMs + s.executionMs).toBe(s.totalMs);
     expect(t.stages.at(-1)!.endMs).toBe(solve().moves.at(-1)!.t);
     expect(t.fluency!).toBeGreaterThan(0);

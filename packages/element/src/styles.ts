@@ -12,7 +12,7 @@
  * - ::part() for anything else: stage, flat (the 2D picture), progress, progress-track,
  *   progress-fill, progress-thumb, progress-marker, segment (+ segment-<id>),
  *   segment-played, segment-recognition, segment-labels, segment-label
- *   (+ segment-label-<id>), tooltip, tooltip-text, controls, buttons, button,
+ *   (+ segment-label-<id>), tooltip, tooltip-text (tooltip-title, tooltip-details), controls, buttons, button,
  *   button-start, button-back, button-play, button-forward, button-end,
  *   button-speed, time.
  * - Replace the controls entirely: put your own element in slot="controls"
@@ -48,9 +48,11 @@ export const STYLES = /* css */ `
   --cc-segment-height: calc(var(--cc-progress-height) + 2px);
   --cc-segment-gap: 2px;
   --cc-segment-unplayed: 30%;
-  /* popup: inverted page colours by default (text colour as background) */
-  --cc-tooltip-bg: color-mix(in srgb, currentColor 92%, transparent);
-  --cc-tooltip-fg: Canvas;
+  /* popup: dark and solid by default — readable on light and dark pages and over the cube */
+  --cc-tooltip-bg: rgb(17 20 28 / 0.97);
+  --cc-tooltip-fg: #f4f5f7;
+  --cc-tooltip-muted: #a9afbb;
+  --cc-tooltip-border: rgb(255 255 255 / 0.12);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -114,15 +116,17 @@ export const STYLES = /* css */ `
   width: max-content; max-width: min(320px, 100%);
   padding: 6px 9px;
   border-radius: 8px;
-  /* colour stays the page's text colour here, so the background can be derived from it… */
   background: var(--cc-tooltip-bg);
-  font: 500 12px/1.35 system-ui, sans-serif;
+  border: 1px solid var(--cc-tooltip-border);
+  font: 500 12px/1.4 system-ui, sans-serif;
   pointer-events: none;
   z-index: 2;
-  box-shadow: 0 6px 18px -8px rgb(0 0 0 / 0.5);
+  box-shadow: 0 8px 24px -8px rgb(0 0 0 / 0.6);
+  display: flex; flex-direction: column; gap: 1px;
 }
-/* …and the text inverts it. */
 .tooltip .tip { color: var(--cc-tooltip-fg); }
+.tooltip .tip-title { font-weight: 650; font-variant-numeric: tabular-nums; }
+.tooltip .tip-details { color: var(--cc-tooltip-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
 .tooltip[hidden] { display: none; }
 .labels { display: none; position: relative; height: 18px; margin-top: -4px; }
 :host([segment-labels]) .labels { display: block; }

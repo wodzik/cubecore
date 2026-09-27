@@ -28,7 +28,7 @@
 | `max-pause` | ms — recorded pauses longer than this are shortened in the replay (`compressPauses`) |
 | `mask`, `speeds`, `rate` | properties |
 
-API: `play()`, `pause()`, `toggle()`, `seek(ms)`, `stepForward()`, `stepBack()`,
+API: `play()`, `pause()`, `toggle()`, `seek(ms)`, `stepForward()` / `stepBack()` (the move animated, forwards or backwards),
 `toStart()`, `toEnd()`; `playing`, `currentTime`, `duration`, `renderer`.
 Events: `timeupdate` (`detail: { time, duration, applied }`), `play`, `pause`, `ended`,
 `error` (`detail: { message }` — e.g. notation that doesn't parse; the cube then shows the setup).

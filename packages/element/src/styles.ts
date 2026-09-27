@@ -193,10 +193,11 @@ button svg { width: 18px; height: 18px; display: block; fill: currentColor; poin
 
 /** Inline icons (no icon font, no network). */
 export const ICONS = {
-  start: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2v14H6zM20 5.5v13a.5.5 0 0 1-.78.42L9.5 12.4a.5.5 0 0 1 0-.8l9.72-6.52A.5.5 0 0 1 20 5.5z"/></svg>',
-  back: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 6.2v11.6a.5.5 0 0 1-.8.4L8 12.4a.5.5 0 0 1 0-.8l8.2-5.8a.5.5 0 0 1 .8.4zM6 6h2v12H6z"/></svg>',
+  // To the start / end: two triangles against a bar; one move back / on: a single triangle (as cubing.js).
+  start: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h2v14H4zM13 6.3v11.4a.5.5 0 0 1-.8.4L6.9 12.4a.5.5 0 0 1 0-.8l5.3-5.7a.5.5 0 0 1 .8.4zM20.5 6.3v11.4a.5.5 0 0 1-.8.4l-5.3-5.7a.5.5 0 0 1 0-.8l5.3-5.7a.5.5 0 0 1 .8.4z"/></svg>',
+  back: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 6.2v11.6a.5.5 0 0 1-.8.4l-7.7-5.8a.5.5 0 0 1 0-.8l7.7-5.8a.5.5 0 0 1 .8.4z"/></svg>',
   play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.6v12.8a.6.6 0 0 0 .92.5l10.1-6.4a.6.6 0 0 0 0-1L8.92 5.1a.6.6 0 0 0-.92.5z"/></svg>',
   pause: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="5" width="4" height="14" rx="1"/><rect x="13.5" y="5" width="4" height="14" rx="1"/></svg>',
-  forward: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 6.2v11.6a.5.5 0 0 0 .8.4l8.2-5.8a.5.5 0 0 0 0-.8L7.8 5.8a.5.5 0 0 0-.8.4zM16 6h2v12h-2z"/></svg>',
-  end: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 5h2v14h-2zM4 5.5v13a.5.5 0 0 0 .78.42l9.72-6.52a.5.5 0 0 0 0-.8L4.78 5.08A.5.5 0 0 0 4 5.5z"/></svg>',
+  forward: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6.2v11.6a.5.5 0 0 0 .8.4l7.7-5.8a.5.5 0 0 0 0-.8L8.8 5.8a.5.5 0 0 0-.8.4z"/></svg>',
+  end: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 5h2v14h-2zM3.5 6.3v11.4a.5.5 0 0 0 .8.4l5.3-5.7a.5.5 0 0 0 0-.8L4.3 5.9a.5.5 0 0 0-.8.4zM11 6.3v11.4a.5.5 0 0 0 .8.4l5.3-5.7a.5.5 0 0 0 0-.8l-5.3-5.7a.5.5 0 0 0-.8.4z"/></svg>',
 } as const;

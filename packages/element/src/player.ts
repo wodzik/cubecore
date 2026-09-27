@@ -53,7 +53,7 @@ import { type Mask, type Method, type Move, type State, type TurnArrow, applyMov
 import { renderSvg } from "@cubecore/image";
 import { type ArrowStyle, type BackView, CubeRenderer, showPosition } from "@cubecore/render";
 import { SKINS, type Skin, type Theme } from "@cubecore/skin";
-import { type Position, type Recording, ReplayClock, type Segment, compressPauses, segmentAt, segmentPlayed, stageSegments } from "@cubecore/timeline";
+import { type Position, type Recording, ReplayClock, type Segment, compressPauses, moveWindows, segmentAt, segmentPlayed, stageSegments } from "@cubecore/timeline";
 import { type Marker, formatTime, fraction, segmentLines, segmentText, startMoves, stepTime, tempoRecording } from "./model";
 import { ICONS, STYLES } from "./styles";
 import { ElementBase } from "./base";
@@ -97,6 +97,8 @@ export class CubePlayer extends ElementBase {
   private liveSource: LiveSource | null = null;
   private turnArrows: { arrows: readonly TurnArrow[]; style: ArrowStyle; owner: unknown } | null = null;
   private clock: ReplayClock | null = null;
+  /** How long a move animates (recording ms) — the clock's, and a step's. */
+  private maxAnimMs = 150;
   private unsubscribe: (() => void) | null = null;
   private rec: Recording = { scramble: [], moves: [], totalMs: 0 };
   private start: State = solvedState();
@@ -138,6 +140,7 @@ export class CubePlayer extends ElementBase {
 
   disconnectedCallback(): void {
     this.connected = false;
+    this.stopStep();
     this.darkQuery?.removeEventListener("change", this.onScheme);
     this.clock?.pause();
     this.unsubscribe?.();
@@ -298,6 +301,7 @@ export class CubePlayer extends ElementBase {
 
   play(): void {
     if (!this.clock || this.playing) return;
+    this.finishStep();
     this.clock.play();
     this.dispatchEvent(new Event("play"));
     this.updateUi(this.currentTime);
@@ -313,6 +317,7 @@ export class CubePlayer extends ElementBase {
     else this.play();
   }
   seek(ms: number): void {
+    this.stopStep();
     this.clock?.seek(ms);
   }
   /** Jump to the moment `k` moves are done (0 = the start). */
@@ -331,14 +336,63 @@ export class CubePlayer extends ElementBase {
     return this.rec.moves.map((m) => m.move);
   }
 
+  /** The next move, animated (as it turns when playing, at the current speed). */
   stepForward(): void {
     this.pause();
-    this.seek(stepTime(this.rec, this.currentTime, 1));
+    this.finishStep();
+    const time = this.currentTime;
+    const target = stepTime(this.rec, time, 1);
+    const k = this.rec.moves.findIndex((m) => m.t === target);
+    if (k < 0) return this.seek(target);
+    const [from, to] = moveWindows(this.rec, { maxAnimMs: this.maxAnimMs })[k];
+    this.animateStep(Math.max(time, from), to, to);
   }
+  /** The last move undone, animated backwards. */
   stepBack(): void {
     this.pause();
-    this.seek(stepTime(this.rec, this.currentTime, -1));
+    this.finishStep();
+    const time = this.currentTime;
+    const target = stepTime(this.rec, time, -1);
+    // The move being undone: the last one finished by now.
+    let k = -1;
+    this.rec.moves.forEach((m, i) => {
+      if (m.t <= time + 0.5) k = i;
+    });
+    if (k < 0) return this.seek(target);
+    const [from, to] = moveWindows(this.rec, { maxAnimMs: this.maxAnimMs })[k];
+    this.animateStep(Math.min(time, to), from, target);
   }
+  private stepFrame = 0;
+  private stepEnd: number | null = null;
+  /** Run the clock from `from` to `to` (recording ms) in real time, then settle on `end`. */
+  private animateStep(from: number, to: number, end: number): void {
+    const clock = this.clock;
+    if (!clock) return;
+    clock.seek(from);
+    // At least a quarter second: a step is for looking at the move.
+    const duration = Math.max(250, Math.abs(to - from) / (this._rate || 1));
+    const started = performance.now();
+    this.stepEnd = end;
+    const tick = () => {
+      const k = Math.min(1, (performance.now() - started) / duration);
+      if (k >= 1) return this.finishStep();
+      clock.seek(from + (to - from) * k);
+      this.stepFrame = requestAnimationFrame(tick);
+    };
+    this.stepFrame = requestAnimationFrame(tick);
+  }
+  /** A step still animating: jump to where it ends (another step, or anything else, comes next). */
+  private finishStep(): void {
+    if (this.stepEnd === null) return;
+    const end = this.stepEnd;
+    this.stopStep();
+    this.clock?.seek(end);
+  }
+  private stopStep(): void {
+    cancelAnimationFrame(this.stepFrame);
+    this.stepEnd = null;
+  }
+
   toStart(): void {
     this.pause();
     this.seek(0);
@@ -417,6 +471,7 @@ export class CubePlayer extends ElementBase {
     this.clock?.pause();
     this.unsubscribe?.();
     let maxAnimMs = 150;
+    this.stopStep();
     let solves: Move[] = [];
     try {
       if (this._recording) {
@@ -441,6 +496,7 @@ export class CubePlayer extends ElementBase {
       this.start = this._setupState ?? solvedState();
       this.dispatchEvent(new CustomEvent("error", { detail: { message: err instanceof Error ? err.message : String(err) } }));
     }
+    this.maxAnimMs = maxAnimMs;
     this.clock = new ReplayClock(this.rec, { maxAnimMs });
     this.clock.rate = this._rate;
     this.unsubscribe = this.clock.onChange((time, pos) => this.onTime(time, pos));

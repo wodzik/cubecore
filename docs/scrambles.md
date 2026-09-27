@@ -1,10 +1,10 @@
-# Solvers, scrambles and following them (`cubecore/solve`, `SequenceTracker`, `<cube-scramble>`)
+# Solvers, scrambles and following them (`@wodzik/cubecore/solve`, `SequenceTracker`, `<cube-scramble>`)
 
 ## Scrambles
 
 ```ts
-import { randomScramble, stageScramble, STAGES, createSolverWorker } from "cubecore/solve";
-import { frameFor, frameForColors } from "cubecore/core";
+import { randomScramble, stageScramble, STAGES, createSolverWorker } from "@wodzik/cubecore/solve";
+import { frameFor, frameForColors } from "@wodzik/cubecore/core";
 
 randomScramble();                                           // random state, ≤ 21 moves (two-phase)
 randomScramble({ preset: "ll", frame: frameFor("U") });     // last-layer case, cross on U
@@ -43,19 +43,19 @@ main thread), so the ~1.5 s per table is paid once per device.
 
 ### Trainer stages per method
 
-Stages are plain data (`StageDef` in `cubecore/core`: which pieces, goal
+Stages are plain data (`StageDef` in `@wodzik/cubecore/core`: which pieces, goal
 states, pieces kept solved, x-neutral blocks). Each method package exports
-its trainer stages; `cubecore/solve` runs any of them — the solver has no
+its trainer stages; `@wodzik/cubecore/solve` runs any of them — the solver has no
 method knowledge, the methods have no solver code:
 
 | package | stages |
 |---|---|
-| `cubecore/cfop` `CFOP_TRAINERS` | `cross`, `xcross(slot)`, `xxcross(a, b)` (adjacent or opposite), `pair(slot)` — free pair: cross + the pair formed one insert away (17 goal states) |
-| `cubecore/zz` `ZZ_TRAINERS` | `eocross` (level 10 from a list of cases found offline — a few in a million random states) |
-| `cubecore/roux` `ROUX_TRAINERS` | `fb`, `fs(side)` (any bottom colour on L: best of four), `fbdr(keep)`, `ss(side)` (first block kept), `eolr` (M / U only) |
+| `@wodzik/cubecore/cfop` `CFOP_TRAINERS` | `cross`, `xcross(slot)`, `xxcross(a, b)` (adjacent or opposite), `pair(slot)` — free pair: cross + the pair formed one insert away (17 goal states) |
+| `@wodzik/cubecore/zz` `ZZ_TRAINERS` | `eocross` (level 10 from a list of cases found offline — a few in a million random states) |
+| `@wodzik/cubecore/roux` `ROUX_TRAINERS` | `fb`, `fs(side)` (any bottom colour on L: best of four), `fbdr(keep)`, `ss(side)` (first block kept), `eolr` (M / U only) |
 
 ```ts
-import { ROUX_TRAINERS } from "cubecore/roux";
+import { ROUX_TRAINERS } from "@wodzik/cubecore/roux";
 stageScramble({ stage: ROUX_TRAINERS.ss("front"), length: 7, from: cube.state });
 stageSolver(ROUX_TRAINERS.fb()).solve(cube.state, { all: true });
 lseSolver(ROUX_TRAINERS.eolr()).nextMoves(cube.state);   // M / U hints
@@ -105,7 +105,7 @@ and events. They differ where a scramble and an algorithm differ:
 <cube-scramble editable></cube-scramble>
 <cube-alg-practice reveal="done"></cube-alg-practice>
 <script type="module">
-  import "cubecore/element";
+  import "@wodzik/cubecore/element";
   const scramble = document.querySelector("cube-scramble");
   scramble.scramble = moves;                 // string or Move[]
   scramble.attach(session);                  // follows the cube from its current state

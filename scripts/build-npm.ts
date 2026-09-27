@@ -1,6 +1,6 @@
 /**
- * Builds the npm package `cubecore` in dist/package — one package, a subpath
- * per workspace package (cubecore/core, cubecore/render…):
+ * Builds the npm package `@wodzik/cubecore` in dist/package — one package, a
+ * subpath per workspace package (@wodzik/cubecore/core, …/render…):
  *
  *   bun scripts/build-npm.ts [version]
  *   cd dist/package && npm publish          (you, after checking it)
@@ -76,7 +76,8 @@ for (const p of packages) {
 dependencies["@types/web-bluetooth"] = rootPkg.devDependencies["@types/web-bluetooth"];
 
 const pkg = {
-  name: "cubecore",
+  name: "@wodzik/cubecore",
+  publishConfig: { access: "public" },
   version,
   description: "A 3×3×3 cube library for the web, built around smart (Bluetooth) cubes: state, notation, methods, solvers and scrambles, a three.js renderer with skins, pictures, web components, React bindings.",
   license: "MPL-2.0",
@@ -99,4 +100,4 @@ const readme = (await Bun.file(join(root, "README.md")).text()).replace(/\]\((do
 await Bun.write(join(out, "README.md"), readme);
 await $`cp ${join(root, "LICENSE")} ${join(out, "LICENSE")}`;
 
-console.log(`cubecore ${version} → ${relative(root, out)} (${files.length} files, ${packages.length} subpaths)`);
+console.log(`@wodzik/cubecore ${version} → ${relative(root, out)} (${files.length} files, ${packages.length} subpaths)`);

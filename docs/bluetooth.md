@@ -1,11 +1,11 @@
-# Smart cubes (`cubecore/bluetooth`)
+# Smart cubes (`@wodzik/cubecore/bluetooth`)
 
 Wraps [smartcube-web-bluetooth](https://github.com/poliva/smartcube-web-bluetooth)
 (GAN, MoYu, QiYi, GoCube, Giiker) and speaks cubecore:
 
 ```ts
-import { SmartCubeSession } from "cubecore/bluetooth";
-import { MoveCollapser, MethodTracker } from "cubecore/core";
+import { SmartCubeSession } from "@wodzik/cubecore/bluetooth";
+import { MoveCollapser, MethodTracker } from "@wodzik/cubecore/core";
 
 const cube = await SmartCubeSession.connect({ enableAddressSearch: true }); // needs a click; Chrome / Edge / Bluefy, https or localhost
 const log = new MoveCollapser();

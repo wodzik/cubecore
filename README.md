@@ -6,38 +6,38 @@ solvers and random-state / trainer scrambles; timed recordings and share
 codecs; a three.js renderer with skins down to per-model piece geometry;
 SVG / PNG pictures; web components with themable controls; React bindings.
 
-TypeScript, ESM; one npm package (`cubecore`), developed as Bun workspaces. Everything runs in the browser; the
+TypeScript, ESM; one npm package (`@wodzik/cubecore`), developed as Bun workspaces. Everything runs in the browser; the
 headless packages also run in Node / Bun / workers.
 
 ## Packages
 
 | package | what |
 |---|---|
-| `cubecore/core` | state (sticker permutation + centre spins), notation (parse / format / invert / simplify / mirror, `(…)3`, `[A, B]`, `.` pauses, comments, source ranges), metrics, 24 frames and colour neutrality, check primitives, method engine (`Method`, `MethodTracker`), masks, pieces view (Kociemba), 15-char state codec, facelet strings, face turns as a smart cube reports them (`toFaceTurns`, `OrientationTracker`), live move log (`MoveCollapser`: R R → R2, R L' → M), following a scramble / algorithm (`SequenceTracker`) |
-| `cubecore/cfop`, `roux`, `zz`, `petrus`, `lbl` | methods: stages, their checks, masks, trainer stages; CFOP: OLL / PLL recognition (colour neutral, speedcubedb numbering and names; which case came up after F2L / OLL in a solve) |
-| `cubecore/methods` | all methods together, masks by name |
-| `cubecore/solve` | two-phase solver (≤ 21 moves, ms), optimal stage solvers (cross, EOCross, xcross, xxcross, slot, Roux blocks), random-state scrambles with presets, trainer scrambles (a stage in exactly N moves), from the cube's current state, any face; Web Worker with a Promise API; tables kept in IndexedDB |
-| `cubecore/timeline` | recordings, replay clock (moves end at their recorded time), stage timings, sections for progress bars, pause compression, recording and share codecs |
-| `cubecore/skin` | skins as data: tile shapes, stickerless tiles, piece shapes, decals (PNG / SVG), features (`defineFeature`), glTF piece models, light / dark themes; presets `default`, `gan`, `qiyiSC`, `moyu` and their stickered versions (`withStickers`), matte / UV (`withFinish`) |
-| `cubecore/render` | three.js `CubeRenderer`: skins, masks, back stickers, back view, gyro orientation, partial layers, glTF pieces (+ templates exporter) |
-| `cubecore/image` | SVG pictures (iso / top / net) from the same skin; PNG in the browser or via resvg on a server; cache keys |
-| `cubecore/bld` | Blindfolded (Old Pochmann): letter schemes (ruwix, Speffz), memo, execution followed letter by letter, a skin with letters |
-| `cubecore/analyze` | scramble analysis — CFOP: per cross colour the optimal cross / Cross+1…3, the best pair order (fewest moves or by F2L algorithms), OLL / PLL cases, coverage of known algorithms; Roux: per block side FB, second square + block, CMLL case, optimal LSE; ZZ: EOCross, R U L pairs, OCLL + PLL; worker |
-| `cubecore/element` | `<cube-player>` (algorithms at a tempo or timed solves; controls, progress bar with stage sections, 2D views, live mode), `<cube-scramble>` (follows a scramble on a smart cube; paste your own), `<cube-alg-practice>` (algorithm practice: hidden moves, hints, mistakes, TPS), `<cube-bld>` (blindfolded memo and execution), `<cube-alg>` (the text in sync) |
-| `cubecore/bluetooth` | `SmartCubeSession` over smartcube-web-bluetooth (GAN, MoYu, QiYi, GoCube, Giiker): moves timed by the cube's clock, resync, gyro, battery; skin per cube; `SimulatedCube` |
-| `cubecore/react` | `<CubePlayer>`, `<CubeScramble>`, `<CubeAlgPractice>`, `<CubeAlg>`, `useSmartCube()`, `useSolverWorker()` |
+| `@wodzik/cubecore/core` | state (sticker permutation + centre spins), notation (parse / format / invert / simplify / mirror, `(…)3`, `[A, B]`, `.` pauses, comments, source ranges), metrics, 24 frames and colour neutrality, check primitives, method engine (`Method`, `MethodTracker`), masks, pieces view (Kociemba), 15-char state codec, facelet strings, face turns as a smart cube reports them (`toFaceTurns`, `OrientationTracker`), live move log (`MoveCollapser`: R R → R2, R L' → M), following a scramble / algorithm (`SequenceTracker`) |
+| `@wodzik/cubecore/cfop`, `roux`, `zz`, `petrus`, `lbl` | methods: stages, their checks, masks, trainer stages; CFOP: OLL / PLL recognition (colour neutral, speedcubedb numbering and names; which case came up after F2L / OLL in a solve) |
+| `@wodzik/cubecore/methods` | all methods together, masks by name |
+| `@wodzik/cubecore/solve` | two-phase solver (≤ 21 moves, ms), optimal stage solvers (cross, EOCross, xcross, xxcross, slot, Roux blocks), random-state scrambles with presets, trainer scrambles (a stage in exactly N moves), from the cube's current state, any face; Web Worker with a Promise API; tables kept in IndexedDB |
+| `@wodzik/cubecore/timeline` | recordings, replay clock (moves end at their recorded time), stage timings, sections for progress bars, pause compression, recording and share codecs |
+| `@wodzik/cubecore/skin` | skins as data: tile shapes, stickerless tiles, piece shapes, decals (PNG / SVG), features (`defineFeature`), glTF piece models, light / dark themes; presets `default`, `gan`, `qiyiSC`, `moyu` and their stickered versions (`withStickers`), matte / UV (`withFinish`) |
+| `@wodzik/cubecore/render` | three.js `CubeRenderer`: skins, masks, back stickers, back view, gyro orientation, partial layers, glTF pieces (+ templates exporter) |
+| `@wodzik/cubecore/image` | SVG pictures (iso / top / net) from the same skin; PNG in the browser or via resvg on a server; cache keys |
+| `@wodzik/cubecore/bld` | Blindfolded (Old Pochmann): letter schemes (ruwix, Speffz), memo, execution followed letter by letter, a skin with letters |
+| `@wodzik/cubecore/analyze` | scramble analysis — CFOP: per cross colour the optimal cross / Cross+1…3, the best pair order (fewest moves or by F2L algorithms), OLL / PLL cases, coverage of known algorithms; Roux: per block side FB, second square + block, CMLL case, optimal LSE; ZZ: EOCross, R U L pairs, OCLL + PLL; worker |
+| `@wodzik/cubecore/element` | `<cube-player>` (algorithms at a tempo or timed solves; controls, progress bar with stage sections, 2D views, live mode), `<cube-scramble>` (follows a scramble on a smart cube; paste your own), `<cube-alg-practice>` (algorithm practice: hidden moves, hints, mistakes, TPS), `<cube-bld>` (blindfolded memo and execution), `<cube-alg>` (the text in sync) |
+| `@wodzik/cubecore/bluetooth` | `SmartCubeSession` over smartcube-web-bluetooth (GAN, MoYu, QiYi, GoCube, Giiker): moves timed by the cube's clock, resync, gyro, battery; skin per cube; `SimulatedCube` |
+| `@wodzik/cubecore/react` | `<CubePlayer>`, `<CubeScramble>`, `<CubeAlgPractice>`, `<CubeAlg>`, `useSmartCube()`, `useSolverWorker()` |
 
 ## Quick start
 
 ```html
-<script type="module">import "cubecore/element";</script>
+<script type="module">import "@wodzik/cubecore/element";</script>
 <cube-player alg="R U R' U R U2 R'" anchor="end" skin="gan" progress></cube-player>
 ```
 
 ```ts
-import { SmartCubeSession } from "cubecore/bluetooth";
-import { MoveCollapser } from "cubecore/core";
-import { createSolverWorker, STAGES } from "cubecore/solve";
+import { SmartCubeSession } from "@wodzik/cubecore/bluetooth";
+import { MoveCollapser } from "@wodzik/cubecore/core";
+import { createSolverWorker, STAGES } from "@wodzik/cubecore/solve";
 
 const cube = await SmartCubeSession.connect();          // from a click
 const log = new MoveCollapser();
@@ -76,7 +76,7 @@ bun run build:npm 0.1.0                    # the npm package in dist/package
 
 In the repository every part is a workspace package (`packages/core` is
 `@cubecore/core`…); `bun run build:npm` compiles them into the single
-`cubecore` package, one subpath each.
+`@wodzik/cubecore` package, one subpath each.
 
 The demo shows brand logos on the cubes only if you supply them: PNGs in
 `../cubecore-assets` next to the repo (or `CUBECORE_ASSETS=/path`). Brand
@@ -85,15 +85,13 @@ logos are trademarks and are never part of this repository.
 ## Install
 
 ```sh
-npm install cubecore            # plus three for 3D / elements, react for cubecore/react
+npm install @wodzik/cubecore            # plus three for 3D / elements, react for @wodzik/cubecore/react
 ```
 
 One package, a subpath per part — import only what you use:
-`cubecore/core`, `cubecore/cfop`, `cubecore/roux`, `cubecore/zz`, `cubecore/petrus`,
-`cubecore/lbl`, `cubecore/methods`, `cubecore/solve`, `cubecore/timeline`,
-`cubecore/skin`, `cubecore/render`, `cubecore/image` (+ `cubecore/image/png-node`),
-`cubecore/bld`, `cubecore/analyze`, `cubecore/element`, `cubecore/bluetooth`,
-`cubecore/react`. `three`, `react` and `@resvg/resvg-js` are optional peer
+`@wodzik/cubecore/` + `core`, `cfop`, `roux`, `zz`, `petrus`, `lbl`, `methods`,
+`solve`, `timeline`, `skin`, `render`, `image` (+ `image/png-node`), `bld`,
+`analyze`, `element`, `bluetooth`, `react`. `three`, `react` and `@resvg/resvg-js` are optional peer
 dependencies: install them if you use the parts that need them.
 
 The solver and analyser run in Web Workers created with

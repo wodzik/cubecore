@@ -1,4 +1,4 @@
-# Blindfolded (`cubecore/bld`, `<cube-bld>`)
+# Blindfolded (`@wodzik/cubecore/bld`, `<cube-bld>`)
 
 Old Pochmann: edges swapped one at a time with the UR buffer (T-perm with
 setup moves), corners with the ULB buffer (Y-perm), parity after the edges
@@ -21,7 +21,7 @@ Your own: `schemeByFaces(name, order)` or any `{ corners, edges }` map
 ## Memo
 
 ```ts
-import { memo, formatMemo } from "cubecore/bld";
+import { memo, formatMemo } from "@wodzik/cubecore/bld";
 const m = memo(session.state, { rotation: "x2 y'" });   // held yellow top, orange front
 formatMemo(m.edges);    // "HV PU EF TX DW AM"
 formatMemo(m.corners);  // "WU OI RJ"

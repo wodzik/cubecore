@@ -42,6 +42,7 @@ const a = await analyzer.analyze(scramble, { f2l: "algorithms", known: myCases }
 
 ```ts
 const r = analyzeRoux(scramble, { known: myCmllCases });     // or analyzer.analyzeRoux(…) in the worker
+analyzeRoux(scramble, { bottoms: ["U", "D"] });               // colour neutrality: blocks' bottom white or yellow only
 r.best.side / r.best.bottom   // the first block against this face, bottom on that one (best of four bottoms per side)
 r.best.rotation               // hold like this: block on the left, its bottom down
 r.best.steps                  // fb, ss ("front" / "back"), sb, cmll (case named), lse (M / U; eo / ulur / l4e move counts)

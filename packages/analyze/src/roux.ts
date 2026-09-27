@@ -22,6 +22,8 @@ import { rotationFor } from "./rotations";
 export interface RouxAnalyzeOptions {
   /** Physical faces the first block may go on (its left side); default all six. */
   sides?: readonly Face[];
+  /** Physical faces the blocks' bottom may be on (colour neutrality, like CFOP's `crosses`: e.g. ["U", "D"] = white / yellow); default all six. */
+  bottoms?: readonly Face[];
   /** Case ids the solver knows ("Sune Left Bar"…) — the CMLL step gets `known`. */
   known?: Iterable<string>;
 }
@@ -53,12 +55,14 @@ export interface RouxAnalysisResult {
 const FB_FIXED = { ...ROUX_TRAINERS.fb(), name: "roux-fb-fixed", neutral: undefined };
 const SIDES: RouxSide[] = ["front", "back"];
 
-/** One side (and its best bottom): the whole way through, as held. */
-export function analyzeRouxSide(scrambled: State, side: Face, known: Set<string> | null = null): RouxAnalysis {
+/** One side (and its best bottom, out of `bottoms` if given): the whole way through, as held. */
+export function analyzeRouxSide(scrambled: State, side: Face, known: Set<string> | null = null, bottoms?: readonly Face[]): RouxAnalysis {
   // The best bottom colour for the first block on this side.
   const fb = stageSolver(FB_FIXED);
   let best: { frame: Frame; moves: Move[] } | null = null;
-  for (const frame of FRAMES.filter((f) => f.face.L === side)) {
+  const frames = FRAMES.filter((f) => f.face.L === side && (!bottoms || bottoms.includes(f.face.D)));
+  if (!frames.length) throw new Error(`No allowed bottom next to side ${side}`);
+  for (const frame of frames) {
     const sol = fb.solve(reframe(scrambled, frame), { maxDepth: 12 })[0];
     if (sol && (!best || sol.length < best.moves.length)) best = { frame, moves: sol };
   }
@@ -112,8 +116,11 @@ export function analyzeRouxSide(scrambled: State, side: Face, known: Set<string>
 export function analyzeRoux(scramble: string | readonly Move[] | State, options: RouxAnalyzeOptions = {}): RouxAnalysisResult {
   const state = scramble instanceof Uint8Array ? scramble : applyMoves(solvedState(), typeof scramble === "string" ? parseAlg(scramble) : scramble);
   const known = options.known ? new Set(options.known) : null;
-  const sides = options.sides ?? (["L", "R", "F", "B", "U", "D"] as Face[]);
-  const bySide = sides.map((side) => analyzeRouxSide(state, side, known)).sort((a, b) => a.length - b.length);
+  const bottoms = options.bottoms;
+  // A side is possible only with an allowed bottom next to it (not on the side itself or opposite it).
+  const sides = (options.sides ?? (["L", "R", "F", "B", "U", "D"] as Face[])).filter((side) => FRAMES.some((f) => f.face.L === side && (!bottoms || bottoms.includes(f.face.D))));
+  if (!sides.length) throw new Error("No side has an allowed bottom");
+  const bySide = sides.map((side) => analyzeRouxSide(state, side, known, bottoms)).sort((a, b) => a.length - b.length);
   return { bySide, best: bySide[0] };
 }
 

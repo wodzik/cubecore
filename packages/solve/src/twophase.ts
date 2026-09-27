@@ -97,6 +97,48 @@ function moveTable(n: number, make: (i: number) => CC, coord: (c: CC) => number,
   return t;
 }
 
+/**
+ * A move table over permutations of `n` pieces, straight on ranks: for each
+ * rank, the permutation once, then per move `next[i] = perm[map[i]]` (map =
+ * where the move takes each position from, restricted to these `n` pieces)
+ * and its rank — no objects per entry (8! × 18 entries: this is most of the
+ * build time otherwise).
+ */
+function permMoveTable(n: number, maps: readonly (readonly number[])[]): Uint16Array {
+  const count = maps.length;
+  let size = 1;
+  for (let i = 2; i <= n; i++) size *= i;
+  const t = new Uint16Array(size * count);
+  const perm = new Int8Array(n), next = new Int8Array(n), pool = new Int8Array(n);
+  for (let r = 0; r < size; r++) {
+    // unrank (Lehmer code, same order as core permRank / permUnrank)
+    let rank = r;
+    for (let i = 0; i < n; i++) pool[i] = i;
+    let left = n;
+    for (let i = 0; i < n; i++) {
+      let f = 1;
+      for (let k = 2; k < n - i; k++) f *= k;
+      const d = Math.floor(rank / f);
+      rank -= d * f;
+      perm[i] = pool[d];
+      for (let k = d; k < left - 1; k++) pool[k] = pool[k + 1];
+      left--;
+    }
+    for (let m = 0; m < count; m++) {
+      const map = maps[m];
+      for (let i = 0; i < n; i++) next[i] = perm[map[i]];
+      let out = 0;
+      for (let i = 0; i < n; i++) {
+        let smaller = 0;
+        for (let j = i + 1; j < n; j++) if (next[j] < next[i]) smaller++;
+        out = out * (n - i) + smaller;
+      }
+      t[r * count + m] = out;
+    }
+  }
+  return t;
+}
+
 /** Breadth-first distances over a product of two coordinates. */
 function pruneTable(n1: number, n2: number, move1: ArrayLike<number>, move2: ArrayLike<number>, moveCount: number, start: number): Int8Array {
   const dist = new Int8Array(n1 * n2).fill(-1);
@@ -123,8 +165,9 @@ function buildTables(): Tables {
   const twistMove = moveTable(N_TWIST, withTwist, twistOf, all18);
   const flipMove = moveTable(N_FLIP, withFlip, flipOf, all18);
   const sliceMove = moveTable(N_SLICE, withSlice, sliceOf, all18);
-  const cornerMove = moveTable(N_PERM8, (i) => ({ ...SOLVED_CC, cp: permUnrank(i, 8) }), (c) => permRank(c.cp), all18);
-  const udEdgeMove = moveTable(N_PERM8, (i) => ({ ...SOLVED_CC, ep: [...permUnrank(i, 8), 8, 9, 10, 11] }), (c) => permRank(c.ep.slice(0, 8)), P2_MOVES);
+  const cornerMove = permMoveTable(8, all18.map((m) => MOVE_CC[m].cp));
+  // P2 moves keep the U / D edges (positions 0–7) among themselves.
+  const udEdgeMove = permMoveTable(8, P2_MOVES.map((m) => MOVE_CC[m].ep.slice(0, 8)));
   const slicePermMove = Uint8Array.from(
     moveTable(N_SLICEPERM, (i) => ({ ...SOLVED_CC, ep: [0, 1, 2, 3, 4, 5, 6, 7, ...permUnrank(i, 4).map((e) => e + 8)] }), (c) => permRank(c.ep.slice(8).map((e) => e - 8)), P2_MOVES),
   );

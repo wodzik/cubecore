@@ -20,4 +20,15 @@ describe("Roux scramble analysis", () => {
     }
     expect(a.best.length).toBe(Math.min(...a.bySide.map((r) => r.length)));
   }, 180_000);
+
+  it("bottoms: only blocks with their bottom on the allowed faces (white / yellow)", () => {
+    const a = analyzeRoux(SCRAMBLE, { bottoms: ["U", "D"] });
+    expect(a.bySide.map((r) => r.side).sort()).toEqual(["B", "F", "L", "R"]);
+    for (const r of a.bySide) {
+      expect(["U", "D"]).toContain(r.bottom);
+      expect(rouxFollowsThrough(state, r)).toBe(true);
+    }
+    const white = analyzeRoux(SCRAMBLE, { bottoms: ["U"] });
+    expect(white.bySide.every((r) => r.bottom === "U")).toBe(true);
+  }, 180_000);
 });

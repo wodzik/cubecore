@@ -88,11 +88,23 @@ const pkg = {
   keywords: ["rubiks-cube", "speedcubing", "cube", "smart-cube", "bluetooth", "solver", "scramble", "three", "web-components", "react", "cfop", "roux", "zz"],
   type: "module",
   exports,
-  sideEffects: ["./element/index.js", "./react/index.js"],
+  // Modules that register something when imported — a bundler must keep them:
+  // the elements, the built-in skin features, the smart-cube protocols.
+  sideEffects: ["./element/index.js", "./react/index.js", "./skin/attachments.js", "./bluetooth/vendor/**"],
   dependencies,
   peerDependencies: { three: ">=0.160", react: ">=18", "@resvg/resvg-js": ">=2" },
   peerDependenciesMeta: { three: { optional: true }, react: { optional: true }, "@resvg/resvg-js": { optional: true } },
 };
+// Guard: a module that registers something at the top level (a protocol, a feature, an element)
+// must be listed in sideEffects — else bundlers drop it and the registry is empty in apps.
+const glob = (g: string) => new RegExp(`^${g.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*\*/g, "§").replace(/\*/g, "[^/]*").replace(/§/g, ".*")}$`);
+const kept = pkg.sideEffects.map(glob);
+for (const file of files.filter((f) => f.endsWith(".js"))) {
+  const text = await Bun.file(file).text();
+  if (!/^(registerProtocol|defineFeature|define[A-Z]\w*|customElements\.define)\(/m.test(text)) continue;
+  const rel = `./${relative(out, file)}`;
+  if (!kept.some((r) => r.test(rel))) throw new Error(`${rel} registers something when imported but isn't in sideEffects`);
+}
 await Bun.write(join(out, "package.json"), JSON.stringify(pkg, null, 2) + "\n");
 
 const blob = "https://github.com/wodzik/cubecore/blob/main/";

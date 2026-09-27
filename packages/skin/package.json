@@ -27,7 +27,9 @@
     "src",
     "!src/**/*.test.ts"
   ],
-  "sideEffects": false,
+  "sideEffects": [
+    "./src/attachments.ts"
+  ],
   "dependencies": {
     "@cubecore/core": "workspace:*"
   }

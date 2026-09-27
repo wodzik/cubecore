@@ -30,7 +30,9 @@
     "src",
     "!src/**/*.test.ts"
   ],
-  "sideEffects": false,
+  "sideEffects": [
+    "./src/vendor/**"
+  ],
   "dependencies": {
     "@cubecore/core": "workspace:*",
     "@cubecore/skin": "workspace:*",

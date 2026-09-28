@@ -45,3 +45,24 @@ describe("F2L recognition", () => {
     }
   });
 });
+
+import { F2LCaseTable, isTrappedF2L } from "./f2l";
+describe("F2LCaseTable — any set, pieces anywhere", () => {
+  it("an advanced case: the BL pair's piece stuck in FR — extract (R U R') and insert (U L U L')", () => {
+    const alg = "R U R' U L U L'";
+    const setup = applyMoves(solvedState(), invert(parseAlg(alg)));
+    expect(isTrappedF2L(setup, "BL")).toBe(true);
+    const table = new F2LCaseTable("BL", [{ id: "AF2L 5", alg }]);
+    for (const u of ["", "U", "U2", "U'"]) {
+      const m = table.recognize(u ? applyMoves(setup, u) : setup);
+      expect(m?.id).toBe("AF2L 5");
+    }
+    expect(table.recognize(solvedState())).toBeNull();
+  });
+
+  it("the standard set through it recognises the same cases as recognizeF2L", () => {
+    const table = new F2LCaseTable("FR", F2L_CASES.map((c) => ({ id: c.id, alg: c.algs.FR })));
+    expect(table.duplicates).toEqual([]);
+    for (const c of F2L_CASES) expect(table.recognize(applyMoves(solvedState(), invert(parseAlg(c.algs.FR))))?.id).toBe(c.id);
+  });
+});

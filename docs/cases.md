@@ -57,3 +57,27 @@ Read relative to the blocks, not the centres — the M slice may be off —
 and corners only (the edges are LSE). All 648 corner arrangements map to
 exactly one case (tested). In a Roux solve, the CMLL stage reports the case
 it started from (`StageBoundary.case`, `MethodTracker.current.case`).
+
+## Any F2L set (advanced F2L)
+
+`new F2LCaseTable(slot, cases)` recognises a set's cases from its own
+algorithms (`{ id, alg }` for that slot, cross on D): a case is where the
+slot's pair is — anywhere, the top layer or any slot — and how it's turned,
+up to a U turn. `isTrappedF2L(state, slot)` says a piece of the pair is in
+another slot (not one of the 41).
+
+## Which algorithm was done
+
+`AlgMatcher` matches moves to algorithms by what they do — the face turns
+relative to the centres (`toFaceTurns`) — so any writing of an algorithm is
+one: `M'` = `r R'` = `R' L` = `L R'`, `U U` = `U2'`, rotations don't count.
+Up to a U turn before and after.
+
+```ts
+const m = new AlgMatcher<string>();
+m.add("r U R' U' M2 U R U' R' U' M'", "OLL 20");
+m.match(solveMoves);          // the whole list is it
+m.matchSuffix(stageMoves);    // the longest ending that is one: { data, start, preAuf, postAuf } — moves before `start` a setup
+effectKey("M'") === effectKey("r R'");   // true
+```
+

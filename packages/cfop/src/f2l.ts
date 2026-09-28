@@ -104,3 +104,73 @@ export function recognizeF2L(s: State, slot: F2LSlot): F2LMatch | "solved" | nul
   }) ?? "";
   return { id: e.kase.id, group: e.kase.group, slot, preAuf, alg: e.kase.algs[slot] };
 }
+
+// ─── any F2L set: a table from its own algorithms ───────────────────────
+
+/** A case of an F2L set, for one slot: its algorithm as held (cross on D, inserting into that slot). */
+export interface F2LCaseSource {
+  id: string;
+  alg: string;
+}
+
+export interface F2LSetMatch {
+  id: string;
+  slot: F2LSlot;
+  /** The U turn before the algorithm (moves only pieces in the top layer). */
+  preAuf: string;
+  alg: string;
+}
+
+/**
+ * Recognition for any set of F2L cases — e.g. "advanced F2L", where a piece
+ * of the pair is stuck in another slot. The case's state is its algorithm
+ * undone on a solved cube, and a case is told by where the slot's pair is
+ * (anywhere — top layer or any slot) and how it's turned, up to a U turn
+ * (only pieces in the top layer move with it). Cases the set lists twice
+ * under the same pair position keep the first; `duplicates` names the rest.
+ */
+export class F2LCaseTable {
+  private readonly table = new Map<string, { source: F2LCaseSource; raw: string }>();
+  readonly duplicates: string[] = [];
+
+  constructor(
+    readonly slot: F2LSlot,
+    cases: readonly F2LCaseSource[]
+  ) {
+    for (const source of cases) {
+      let s: State;
+      try {
+        s = applyMoves(solvedState(), invert(parseAlg(source.alg)));
+      } catch {
+        continue;
+      }
+      const k = key(s, slot);
+      const p = pairOf(s, slot);
+      if (!k || !p) continue;
+      if (this.table.has(k)) this.duplicates.push(source.id);
+      else this.table.set(k, { source, raw: pairText(p) });
+    }
+  }
+
+  get size(): number {
+    return this.table.size;
+  }
+
+  recognize(s: State): F2LSetMatch | null {
+    const k = key(s, this.slot);
+    const e = k ? this.table.get(k) : undefined;
+    if (!e) return null;
+    const preAuf =
+      AUFS.find((u) => {
+        const q = pairOf(u ? applyMoves(s, u) : s, this.slot);
+        return q !== null && pairText(q) === e.raw;
+      }) ?? "";
+    return { id: e.source.id, slot: this.slot, preAuf, alg: e.source.alg };
+  }
+}
+
+/** Is a piece of the slot's pair in another slot (not the top layer, not its own) — an "advanced F2L" case? */
+export function isTrappedF2L(s: State, slot: F2LSlot): boolean {
+  const p = pairOf(s, slot);
+  return !!p && !isStandardF2L(s, slot);
+}

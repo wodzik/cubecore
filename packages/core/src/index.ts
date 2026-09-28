@@ -17,3 +17,4 @@ export * from "./sequence";
 export * from "./practice";
 export * from "./arrows";
 export * from "./stages";
+export * from "./algMatch";

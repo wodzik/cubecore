@@ -72,16 +72,18 @@ export interface HeldOptions {
   /**
    * Wide moves to read from one face turn and the core's rotation — the rest
    * stay a face turn and a rotation. Default r, l, f, b: a u or d is almost
-   * always a U / D turn and a y regrip. Slices (both faces of an axis) are
-   * always read.
+   * always a U / D turn and a y regrip.
    */
   wide?: readonly string[];
+  /** Slices to read from both faces of an axis and the core's rotation (default M, E, S); the rest stay two face turns and a rotation. */
+  slices?: readonly string[];
 }
 
 export const DEFAULT_WIDE: readonly string[] = ["r", "l", "f", "b"];
+export const DEFAULT_SLICES: readonly string[] = ["M", "E", "S"];
 
 export function heldTokens(moves: readonly TimedMove[], startRotation: string, rotations: readonly RotationRecord[], options: HeldOptions = {}): HeldToken[] {
-  const allowed = new Set(options.wide ?? DEFAULT_WIDE);
+  const allowed = new Set([...(options.wide ?? DEFAULT_WIDE), ...(options.slices ?? DEFAULT_SLICES)]);
   let grip = rotateGrip(IDENTITY_GRIP, startRotation);
   const rots = snapToSlices(moves, grip, [...rotations].sort((a, b) => a.after - b.after || a.t - b.t), allowed);
   const tokens: HeldToken[] = [];
@@ -122,11 +124,11 @@ const SLICE_WIDE = ["M", "E", "S", "r", "l", "u", "d", "f", "b"].flatMap((f) => 
 const effect = (alg: string) => applyMoves(solvedState(), alg).join();
 const SLICE_WIDE_EFFECT = new Map<string, string>();
 
-/** The slice (or an `allowed` wide move) the group (held letters and a rotation) amounts to, or null. */
+/** The slice / wide move the group (held letters and a rotation) amounts to, if `allowed` (by its letter), or null. */
 function sliceOrWide(group: readonly string[], allowed: ReadonlySet<string>): string | null {
   if (SLICE_WIDE_EFFECT.size === 0) for (const m of SLICE_WIDE) SLICE_WIDE_EFFECT.set(effect(m), m);
   const m = SLICE_WIDE_EFFECT.get(effect(group.join(" ")));
-  return m && ("MES".includes(m[0]) || allowed.has(m[0])) ? m : null;
+  return m && allowed.has(m[0]) ? m : null;
 }
 
 /**
@@ -189,7 +191,7 @@ function snapToSlices(moves: readonly TimedMove[], startGrip: Grip, rotations: R
 }
 
 /** A rotation and the face moves around it that make a slice / wide move → that move. */
-export function mergeSlicesAndWides(tokens: readonly HeldToken[], allowed: ReadonlySet<string> = new Set(DEFAULT_WIDE)): HeldToken[] {
+export function mergeSlicesAndWides(tokens: readonly HeldToken[], allowed: ReadonlySet<string> = new Set([...DEFAULT_WIDE, ...DEFAULT_SLICES])): HeldToken[] {
   const out = [...tokens];
   for (let k = 0; k < out.length; k++) {
     const rot = out[k];

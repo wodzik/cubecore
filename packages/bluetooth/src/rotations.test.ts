@@ -62,6 +62,17 @@ describe("a peek at the back and back after a slice", () => {
   });
 });
 
+describe("u and d are a turn and a regrip", () => {
+  it("D + y stays D and y by default; r / l / f / b and slices are still read", () => {
+    // u = D + y (the core turns with E): by default a D turn and a y regrip.
+    expect(heldTokens(at([["D", 0], ["R", 800]]), "", [{ after: 1, t: 30, move: "y" }]).map((t) => t.move)).toEqual(["D", "y", "F"]);
+    expect(heldTokens(at([["D", 0], ["R", 800]]), "", [{ after: 1, t: 30, move: "y" }], { wide: ["u", "d", "r", "l", "f", "b"] }).map((t) => t.move)).toEqual(["u", "F"]);
+    expect(heldTokens(at([["L", 0], ["U", 400]]), "", [{ after: 0, t: 20, move: "x" }]).map((t) => t.move)).toEqual(["r", "B"]);
+    // E (U D' + y') is a slice: still read.
+    expect(heldTokens(at([["U", 0], ["D'", 10], ["R", 800]]), "", [{ after: 2, t: 40, move: "y'" }]).map((t) => t.move)[0]).toBe("E");
+  });
+});
+
 describe("GripRecorder", () => {
   // An orientation (our axes) → what the simulated cube sends (GAN's axes, inverted).
   const raw = (ax: [number, number, number], deg: number) => {

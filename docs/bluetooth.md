@@ -62,8 +62,10 @@ heldTokens(moves, r.startRotation, r.rotations);
 //   wide moves read back from face moves with the core's rotation
 ```
 
-`heldTokens` also takes a slice's rotation that came in a little early or
-late (a cube held loosely while recognising the next case settles late);
+Wide moves read from one face turn are r, l, f and b by default
+(`heldTokens(…, { wide })`): a u or d is almost always a U / D turn and a y
+regrip. Slices are always read. `heldTokens` also takes a slice's rotation
+that came in a little early or late (a cube held loosely while recognising the next case settles late);
 far from its moves only a slice's signature (both faces of the axis) is
 trusted. `grips.ts` has the grip maths (`readGrip`, `rotateGrip`,
 `rotationBetween`, `GripTracker`, `gripQuaternion`).

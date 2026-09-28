@@ -313,11 +313,17 @@ export class CubeRenderer {
     if (this.arrows?.group) disposeArrows(this.arrows.group);
     this.resizeObserver.disconnect();
     this.finishAll(true);
-    this.renderer.dispose();
+    // Scene resources first, while the context is still there to free them in…
     for (const m of this.materials.values()) m.dispose();
     this.envMap?.dispose();
     this.kit?.dispose();
     this.attachments?.dispose();
+    this.renderer.dispose();
+    // …then give the WebGL context back now. dispose() alone leaves it alive
+    // until garbage collection, and a page that mounts cubes as they scroll
+    // into view soon passes the browser's limit (~16): "Too many active WebGL
+    // contexts. Oldest context will be lost."
+    this.renderer.forceContextLoss();
     this.canvas.remove();
   }
 

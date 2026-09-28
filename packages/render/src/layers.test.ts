@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { FACELETS, MOVE_FAMILIES, faceletAt, movePermutation, rotate, type Amount } from "@cubecore/core";
+import { FACELETS, MOVE_FAMILIES, faceletAt, movePermutation, parseAlg, rotate, type Amount } from "@cubecore/core";
 import { layerTurn } from "./layers";
 
 describe("layerTurn", () => {
@@ -16,5 +16,14 @@ describe("layerTurn", () => {
         }
       }
     }
+  });
+});
+
+describe("the direction as written", () => {
+  it("U2' turns the other way than U2", () => {
+    const [u2] = parseAlg("U2");
+    const [u2p] = parseAlg("U2'");
+    expect(layerTurn(u2p).angle).toBe(-layerTurn(u2).angle);
+    expect(Math.abs(layerTurn(u2).angle)).toBeCloseTo(Math.PI);
   });
 });

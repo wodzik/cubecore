@@ -8,7 +8,7 @@
  * no pop — and the scene never has to track which physical cubie is where.
  */
 
-import { FAMILY, type Move, type Vec3, amountQuarters } from "@cubecore/core";
+import { FAMILY, type Move, type Vec3, writtenQuarters } from "@cubecore/core";
 
 export interface LayerTurn {
   /** 0 = x, 1 = y, 2 = z. */
@@ -21,8 +21,9 @@ export interface LayerTurn {
 
 export function layerTurn(move: Move): LayerTurn {
   const def = FAMILY[move.family];
-  // A family's clockwise turn is `def.q` CCW quarters about +axis; the amount multiplies it.
-  const quarters = def.q * (move.amount === -1 ? -1 : move.amount === 2 ? 2 : 1);
+  // A family's clockwise turn is `def.q` CCW quarters about +axis; the turn as written multiplies it
+  // (U2' goes the other way than U2 — the state is the same, the hands aren't).
+  const quarters = def.q * writtenQuarters(move);
   return {
     axis: def.axis,
     angle: (quarters * Math.PI) / 2,
@@ -32,5 +33,6 @@ export function layerTurn(move: Move): LayerTurn {
 
 /** Default animation length for a move, scaled by how far it turns (half turns take longer). */
 export function defaultDuration(move: Move, quarterMs = 120): number {
-  return amountQuarters(move.amount) === 2 ? quarterMs * 1.5 : quarterMs;
+  const q = Math.abs(writtenQuarters(move));
+  return q === 1 ? quarterMs : quarterMs * (1 + 0.5 * (q - 1));
 }

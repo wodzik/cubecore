@@ -76,6 +76,12 @@ GAN → `gan`, QiYi QY-SC → `qiyiSC`, MoYu WCU_MY… → `moyu`, else `default
 { autoSkin: true })` uses it. Add your own models first with
 `registerCubeSkin({ protocol: "moyu", name: /V10/, skin: myMoyuSkin })`.
 
+**GAN smart timer.** `connectGanTimer()` (a user gesture) gives its
+`events$`: `GanTimerState` HANDS_ON → GET_SET → RUNNING → STOPPED (with the
+time), IDLE. `getCachedMacForDevice(device)` is the MAC a connection found
+for a device (QiYi's handshake needs one) — to offer back when asking the
+user for it.
+
 **Without a cube.** `new SmartCubeSession(new SimulatedCube())` behaves like a
 connected cube: `turn("R U R'")`, `turn("U", { delayMs: 3000 })` (a late
 notification), `turn("F", { dropLocalTime: true })` (a resent move),

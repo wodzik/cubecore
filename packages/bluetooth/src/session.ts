@@ -19,7 +19,8 @@ import type { ConnectSmartCubeOptions, SmartCubeCapabilities, SmartCubeCommand, 
 import type { Skin } from "@cubecore/skin";
 import { ClockSync } from "./clock";
 import { skinForCube } from "./cubeSkins";
-import { type AxisMap, GAN_AXES, GyroCalibrator, type Quat } from "./gyro";
+import { type AxisMap, GAN_AXES, GyroCalibrator, type Quat, axesFromSpec } from "./gyro";
+import { type Grip, gripQuaternion, readGrip } from "./grips";
 
 /** What the session needs from a connection — smartcube-web-bluetooth's, or a SimulatedCube. */
 export interface CubeConnection {
@@ -65,8 +66,8 @@ interface Events {
 export interface SessionOptions {
   /** A move is `late` when it arrives this much after it happened. Default 1000 ms. */
   lateMs?: number;
-  /** Gyro axes of this cube (default: GAN). */
-  axes?: AxisMap;
+  /** Gyro axes of this cube (default: GAN) — a map, or a signed permutation after GAN's ("x,y,z"…, see gyro.ts AXES_SPECS). */
+  axes?: AxisMap | string;
   /**
    * For a cube that can't reset its own state (QiYi…): the state of it that
    * counts as solved, kept from an earlier connection (the `base` event) —
@@ -85,6 +86,7 @@ export class SmartCubeSession {
   private readonly subscription: { unsubscribe(): void };
   private readonly lateMs: number;
   private connected = true;
+  private moves = 0;
 
   /** Ask the browser for a cube and connect (needs a user gesture; Chrome / Edge / Bluefy). */
   static async connect(options?: ConnectSmartCubeOptions, session?: SessionOptions): Promise<SmartCubeSession> {
@@ -94,7 +96,7 @@ export class SmartCubeSession {
 
   constructor(private readonly connection: CubeConnection, options: SessionOptions = {}) {
     this.lateMs = options.lateMs ?? 1000;
-    this.gyro = new GyroCalibrator(options.axes ?? GAN_AXES);
+    this.gyro = new GyroCalibrator(typeof options.axes === "string" ? axesFromSpec(options.axes) : (options.axes ?? GAN_AXES));
     const base = typeof options.base === "function" ? options.base({ name: connection.deviceName, mac: connection.deviceMAC ?? null }) : options.base;
     this._base = base ?? null;
     this.subscription = connection.events$.subscribe((e) => this.onEvent(e));
@@ -132,9 +134,46 @@ export class SmartCubeSession {
     return () => set.delete(listener as (e: never) => void);
   }
 
-  /** "Held as shown now" for the gyro. */
-  calibrate(): void {
-    this.gyro.calibrate();
+  /**
+   * "Held as shown now" for the gyro: as drawn (U up, F front), or as
+   * `shown` — the orientation of the view the cube is shown in.
+   */
+  calibrate(shown?: Quat): void {
+    this.gyro.calibrate(shown);
+  }
+
+  /** The gyro's orientation now (calibrated), or null (none yet / no gyro). */
+  get orientation(): Quat | null {
+    return this.gyro.current;
+  }
+
+  /** The latest gyro reading as the cube sent it (for finding a cube's axes — gyro.ts detectAxes). */
+  get rawOrientation(): Quat | null {
+    return this.gyro.lastRaw;
+  }
+
+  /** Another brand's gyro axes, while connected — the calibration is kept. */
+  setAxes(axes: AxisMap | string): void {
+    this.gyro.setAxes(typeof axes === "string" ? axesFromSpec(axes) : axes);
+  }
+
+  /**
+   * The cube is held square now — snap the gyro onto the nearest grip (its
+   * yaw drifts over minutes). Nothing when it's more than `maxOffDeg` off
+   * any grip. Returns the grip, or null.
+   */
+  alignToGrip(maxOffDeg = 35): Grip | null {
+    const now = this.gyro.current;
+    if (!now) return null;
+    const { grip, offDeg } = readGrip(now);
+    if (offDeg > maxOffDeg) return null;
+    this.gyro.align(gripQuaternion(grip));
+    return grip;
+  }
+
+  /** Moves reported so far on this connection (a move event's number is the count before it). */
+  get moveCount(): number {
+    return this.moves;
   }
 
   /**
@@ -211,6 +250,7 @@ export class SmartCubeSession {
         }
         const state = applyMove(this._state, move);
         this._state = state;
+        this.moves++;
         this.emit("move", { move, time, cubeTime: e.cubeTimestamp, late: e.timestamp - time > this.lateMs, state });
         this.emit("state", { state, reason: "move" });
         break;

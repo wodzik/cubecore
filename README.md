@@ -24,7 +24,7 @@ headless packages also run in Node / Bun / workers.
 | `@wodzik/cubecore/bld` | Blindfolded (Old Pochmann): letter schemes (ruwix, Speffz), memo, execution followed letter by letter, a skin with letters |
 | `@wodzik/cubecore/analyze` | scramble analysis — CFOP: per cross colour the optimal cross / Cross+1…3, the best pair order (fewest moves or by F2L algorithms), OLL / PLL cases, coverage of known algorithms; Roux: per block side FB, second square + block, CMLL case, optimal LSE; ZZ: EOCross, R U L pairs, OCLL + PLL; worker |
 | `@wodzik/cubecore/element` | `<cube-player>` (algorithms at a tempo or timed solves; controls, progress bar with stage sections, 2D views, live mode), `<cube-scramble>` (follows a scramble on a smart cube; paste your own), `<cube-alg-practice>` (algorithm practice: hidden moves, hints, mistakes, TPS), `<cube-bld>` (blindfolded memo and execution), `<cube-alg>` (the text in sync) |
-| `@wodzik/cubecore/bluetooth` | `SmartCubeSession` over smartcube-web-bluetooth (GAN, MoYu, QiYi, GoCube, Giiker): moves timed by the cube's clock, resync, gyro, battery; skin per cube; `SimulatedCube` |
+| `@wodzik/cubecore/bluetooth` | `SmartCubeSession` over smartcube-web-bluetooth (GAN, MoYu, QiYi, GoCube, Giiker): moves timed by the cube's clock, resync, gyro (calibration, drift, other brands' axes), battery; rotations / slices / wide moves read back with the gyro (`GripRecorder`, `heldTokens`); skin per cube; `SimulatedCube` |
 | `@wodzik/cubecore/react` | `<CubePlayer>`, `<CubeScramble>`, `<CubeAlgPractice>`, `<CubeAlg>`, `useSmartCube()`, `useSolverWorker()` |
 
 ## Quick start

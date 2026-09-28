@@ -75,14 +75,17 @@ export function heldTokens(moves: readonly TimedMove[], startRotation: string, r
   let r = 0;
   for (let i = 0; i <= moves.length; i++) {
     let target = grip;
-    let t = 0;
+    // Several at one place (a peek at the back and back: x x' x) are one net
+    // rotation — timed by the first: that's when it began (a slice's rotation
+    // then still sits with its face moves).
+    let t: number | null = null;
     while (r < rots.length && rots[r].after <= i) {
       target = rotateGrip(target, rots[r].move);
-      t = rots[r].t;
+      t ??= rots[r].t;
       r++;
     }
     const net = rotationBetween(grip, target);
-    if (net) tokens.push({ kind: "rotation", move: net, t, after: i });
+    if (net) tokens.push({ kind: "rotation", move: net, t: t ?? 0, after: i });
     grip = target;
     if (i < moves.length) tokens.push({ kind: "move", move: heldMove(moves[i].move, grip), t: moves[i].t, index: i });
   }

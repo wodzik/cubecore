@@ -50,6 +50,18 @@ describe("heldTokens", () => {
   });
 });
 
+describe("a peek at the back and back after a slice", () => {
+  it("x x' x at one place is one x, timed by the first — still the slice's", () => {
+    // M' as R' L (one instant), then the cube tipped back and forth while recognising.
+    const tokens = heldTokens(at([["U", 0], ["R'", 1000], ["L", 1000], ["D'", 2200]]), "", [
+      { after: 2, t: 1070, move: "x" },
+      { after: 2, t: 1550, move: "x'" },
+      { after: 2, t: 1900, move: "x" },
+    ]);
+    expect(tokens.map((t) => t.move)).toEqual(["U", "M'", "F'"]);
+  });
+});
+
 describe("GripRecorder", () => {
   // An orientation (our axes) → what the simulated cube sends (GAN's axes, inverted).
   const raw = (ax: [number, number, number], deg: number) => {

@@ -64,7 +64,8 @@ heldTokens(moves, r.startRotation, r.rotations);
 
 Wide moves read from one face turn are r, l, f and b by default
 (`heldTokens(…, { wide })`): a u or d is almost always a U / D turn and a y
-regrip. Slices are M, E and S by default (`{ slices }`). `heldTokens` also takes a slice's rotation
+regrip. Slices are M and S by default (`{ slices }`; an E is as likely a U / D turn
+and a y regrip). `heldTokens` also takes a slice's rotation
 that came in a little early or late (a cube held loosely while recognising the next case settles late);
 far from its moves only a slice's signature (both faces of the axis) is
 trusted. `grips.ts` has the grip maths (`readGrip`, `rotateGrip`,

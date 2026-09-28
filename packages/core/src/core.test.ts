@@ -143,3 +143,18 @@ describe("facelet strings", () => {
     expect(() => fromFaceletString("UUU")).toThrow();
   });
 });
+
+import { countedStages } from "./method";
+describe("countedStages details", () => {
+  it("a group names its own new item, even when an earlier group named the same ones", () => {
+    const all = () => ["FR", "FL", "BR", "BL"];
+    const corners = countedStages("corner", "Corner", all, () => true);
+    const edges = countedStages("edge", "Edge", all, () => true);
+    const details: string[] = [];
+    for (const st of [...corners, ...edges]) {
+      const d = st.detail!(new Uint8Array(54), details);
+      if (d) details.push(d);
+    }
+    expect(details).toEqual(["FR", "FL", "BR", "BL", "FR", "FL", "BR", "BL"]);
+  });
+});

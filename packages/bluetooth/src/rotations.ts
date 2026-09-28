@@ -75,12 +75,16 @@ export interface HeldOptions {
    * always a U / D turn and a y regrip.
    */
   wide?: readonly string[];
-  /** Slices to read from both faces of an axis and the core's rotation (default M, E, S); the rest stay two face turns and a rotation. */
+  /**
+   * Slices to read from both faces of an axis and the core's rotation
+   * (default M, S: an E — U D' and a y — is as likely a U / D turn and a
+   * regrip as u and d); the rest stay two face turns and a rotation.
+   */
   slices?: readonly string[];
 }
 
 export const DEFAULT_WIDE: readonly string[] = ["r", "l", "f", "b"];
-export const DEFAULT_SLICES: readonly string[] = ["M", "E", "S"];
+export const DEFAULT_SLICES: readonly string[] = ["M", "S"];
 
 export function heldTokens(moves: readonly TimedMove[], startRotation: string, rotations: readonly RotationRecord[], options: HeldOptions = {}): HeldToken[] {
   const allowed = new Set([...(options.wide ?? DEFAULT_WIDE), ...(options.slices ?? DEFAULT_SLICES)]);

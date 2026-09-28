@@ -8,6 +8,8 @@
  */
 
 import {
+  applyMove,
+  parseAlg,
   type Cubie,
   FACELETS,
   type Face,
@@ -61,13 +63,35 @@ function rouxBlock(s: State, side: "L" | "R"): { bottom: number; front: number; 
   return { bottom, front, back };
 }
 
-export const firstBlock = (s: State) => rouxBlock(s, "L") !== null;
+/**
+ * Across M: the state turned about the L–R axis, 0–3 quarters — the first
+ * turn where `pick` finds something, and what. A smart cube reports its
+ * moves relative to its centres, so an M (R L' as it reports it) turns
+ * everything but the centres: the blocks end up a quarter or two off the
+ * bottom as it sees them. The checks here only compare with the L / R
+ * centres (which M never moves) and pieces with each other, so the turned
+ * state reads the same as a cube whose M slice was never turned.
+ */
+const X = parseAlg("x")[0];
+function acrossM<T>(s: State, pick: (t: State) => T | null | false): T | null {
+  let t = s;
+  for (let k = 0; k < 4; k++) {
+    const v = pick(t);
+    if (v !== null && v !== false) return v;
+    t = applyMove(t, X);
+  }
+  return null;
+}
 
-export function secondBlock(s: State): boolean {
+function bothBlocks(s: State): { bottom: number; front: number; back: number } | null {
   const fb = rouxBlock(s, "L");
   const sb = rouxBlock(s, "R");
-  return fb !== null && sb !== null && fb.bottom === sb.bottom && fb.front === sb.front && fb.back === sb.back;
+  return fb !== null && sb !== null && fb.bottom === sb.bottom && fb.front === sb.front && fb.back === sb.back ? fb : null;
 }
+
+export const firstBlock = (s: State) => acrossM(s, (t) => rouxBlock(t, "L")) !== null;
+
+export const secondBlock = (s: State): boolean => acrossM(s, bothBlocks) !== null;
 
 const CMLL_CORNERS = { ufl: cubieAt(-1, 1, 1), ubl: cubieAt(-1, 1, -1), ufr: cubieAt(1, 1, 1), ubr: cubieAt(1, 1, -1) };
 
@@ -91,7 +115,8 @@ function cmllAligned(s: State): boolean {
 }
 
 /** CMLL: both blocks, and the top corners solved relative to them (up to AUF). */
-export const cmll = (s: State) => secondBlock(s) && upToAuf(s, cmllAligned);
+const cmllAt = (s: State) => bothBlocks(s) !== null && upToAuf(s, cmllAligned);
+export const cmll = (s: State) => acrossM(s, cmllAt) !== null;
 
 const LSE_EDGES = [cubieAt(0, 1, 1), cubieAt(0, 1, -1), cubieAt(-1, 1, 0), cubieAt(1, 1, 0), cubieAt(0, -1, 1), cubieAt(0, -1, -1)];
 
@@ -101,8 +126,10 @@ const LSE_EDGES = [cubieAt(0, 1, 1), cubieAt(0, 1, -1), cubieAt(-1, 1, 0), cubie
  * (the top / bottom centres on F / B), the edges in the M slice count by
  * F / B instead (one M puts them right, flips and all).
  */
-export function lseEo(s: State): boolean {
-  if (!cmll(s)) return false;
+export const lseEo = (s: State): boolean => acrossM(s, lseEoAt) !== null;
+
+function lseEoAt(s: State): boolean {
+  if (!cmllAt(s)) return false;
   const bottom = rouxBlock(s, "L")!.bottom;
   const ud = [bottom, opposite(bottom)];
   const offQuarter = !ud.includes(colorAt(s, centerIdx("U")));
@@ -116,8 +143,10 @@ export function lseEo(s: State): boolean {
 }
 
 /** LSE 4b: UL and UR edges in place, with the corners aligned. */
-export function ulUr(s: State): boolean {
-  if (!lseEo(s)) return false;
+export const ulUr = (s: State): boolean => acrossM(s, ulUrAt) !== null;
+
+function ulUrAt(s: State): boolean {
+  if (!lseEoAt(s)) return false;
   return upToAuf(s, (t) => {
     if (!cmllAligned(t)) return false;
     const top = opposite(rouxBlock(t, "L")!.bottom);
@@ -132,17 +161,41 @@ export function ulUr(s: State): boolean {
   });
 }
 
+const COLOUR_LETTERS = "URFDLB";
+const letter = (c: number) => COLOUR_LETTERS[c] ?? "";
+/** A block's floor and wall colours ("DL"). */
+function blockColours(s: State, side: "L" | "R"): string | undefined {
+  const b = acrossM(s, (t) => {
+    const block = rouxBlock(t, side);
+    return block ? { bottom: block.bottom, wall: colorAt(t, centerIdx(side)) } : null;
+  });
+  return b ? letter(b.bottom) + letter(b.wall) : undefined;
+}
+/** The wall pair neither block touches ("FB"). */
+function wallColours(s: State): string | undefined {
+  const b = acrossM(s, bothBlocks);
+  return b ? letter(b.front) + letter(b.back) : undefined;
+}
+/** The floor's colour ("D"). */
+function floorColour(s: State): string | undefined {
+  const b = acrossM(s, (t) => rouxBlock(t, "L"));
+  return b ? letter(b.bottom) : undefined;
+}
+
 export const ROUX: Method = {
   id: "roux",
   name: "Roux",
   stages: [
-    { id: "fb", label: "First block", done: firstBlock },
-    { id: "sb", label: "Second block", done: secondBlock },
+    // Details as colours (a face's letter = its centre's colour, "DL" = D-coloured floor, L-coloured wall):
+    // across M, the floor a smart cube sees moves, the colours don't.
+    { id: "fb", label: "First block", done: firstBlock, absoluteDetail: true, detail: (s) => blockColours(s, "L") },
+    { id: "sb", label: "Second block", done: secondBlock, absoluteDetail: true, detail: (s) => blockColours(s, "R") },
     // CMLL recognises the case it starts from ("Sune Left Bar", "CMLL skip") — StageBoundary.case.
-    { id: "cmll", label: "CMLL", done: cmll, recognize: (s) => (secondBlock(s) ? (recognizeCmll(s)?.id ?? "CMLL skip") : undefined) },
+    { id: "cmll", label: "CMLL", done: cmll, absoluteDetail: true, detail: (s) => wallColours(s), recognize: (s) => (secondBlock(s) ? (recognizeCmll(s)?.id ?? "CMLL skip") : undefined) },
     { id: "eo", label: "EO", done: lseEo },
     { id: "ulur", label: "UL/UR", done: ulUr },
-    { id: "l4e", label: "L4E", done: C.isSolved },
+    // Solved, every quarter about L–R shows blocks: the floor is the first block's.
+    { id: "l4e", label: "L4E", done: C.isSolved, absoluteDetail: true, detail: (s, earlier) => earlier[0]?.[0] ?? floorColour(s) },
   ],
 };
 

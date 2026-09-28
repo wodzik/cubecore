@@ -68,10 +68,10 @@ describe("u and d are a turn and a regrip", () => {
     expect(heldTokens(at([["D", 0], ["R", 800]]), "", [{ after: 1, t: 30, move: "y" }]).map((t) => t.move)).toEqual(["D", "y", "F"]);
     expect(heldTokens(at([["D", 0], ["R", 800]]), "", [{ after: 1, t: 30, move: "y" }], { wide: ["u", "d", "r", "l", "f", "b"] }).map((t) => t.move)).toEqual(["u", "F"]);
     expect(heldTokens(at([["L", 0], ["U", 400]]), "", [{ after: 0, t: 20, move: "x" }]).map((t) => t.move)).toEqual(["r", "B"]);
-    // E (U D' + y') is a slice: still read.
-    expect(heldTokens(at([["U", 0], ["D'", 10], ["R", 800]]), "", [{ after: 2, t: 40, move: "y'" }]).map((t) => t.move)[0]).toBe("E");
-    // …unless left out: then two face turns and the rotation.
-    expect(heldTokens(at([["U", 0], ["D'", 10], ["R", 800]]), "", [{ after: 2, t: 40, move: "y'" }], { slices: ["M", "S"] }).map((t) => t.move).slice(0, 3)).toEqual(["U", "D'", "y'"]);
+    // E (U D' + y') is off by default (a U / D turn and a regrip as likely): two face turns and the rotation…
+    expect(heldTokens(at([["U", 0], ["D'", 10], ["R", 800]]), "", [{ after: 2, t: 40, move: "y'" }]).map((t) => t.move).slice(0, 3)).toEqual(["U", "D'", "y'"]);
+    // …read when asked for.
+    expect(heldTokens(at([["U", 0], ["D'", 10], ["R", 800]]), "", [{ after: 2, t: 40, move: "y'" }], { slices: ["M", "E", "S"] }).map((t) => t.move)[0]).toBe("E");
   });
 });
 

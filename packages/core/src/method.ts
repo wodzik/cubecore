@@ -17,6 +17,8 @@ export interface Stage {
   done(s: State): boolean;
   /** Canonical slot / sub-step finished at this stage, given the details already reported. */
   detail?(s: State, earlier: readonly string[]): string | undefined;
+  /** The detail is absolute (colours, "edges"…), not a canonical slot to translate into physical faces. */
+  absoluteDetail?: boolean;
   /**
    * The case this stage starts from (e.g. "OLL 27", "T", "OLL skip"),
    * recognised on the state the previous stage finished in.
@@ -42,7 +44,9 @@ export function countedStages(prefix: string, label: string, count: (s: State) =
     id: `${prefix}-${n}`,
     label: `${label} ${n}`,
     done: (s) => guard(s) && count(s).length >= n,
-    detail: (s, earlier) => newItem(count(s), earlier),
+    // Only this group's own earlier details (the n − 1 just before): another
+    // group's may name the same slots (LBL: corners, then edges, per slot).
+    detail: (s, earlier) => newItem(count(s), earlier.slice(earlier.length - (n - 1))),
   }));
 }
 

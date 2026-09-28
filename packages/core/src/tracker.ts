@@ -124,7 +124,7 @@ export class MethodTracker {
           stage: stage.id,
           moveIndex: this.moveCount,
           ...(time !== undefined ? { time } : {}),
-          ...(raw ? { detail: physicalSlot(raw, p.frame) } : {}),
+          ...(raw ? { detail: stage.absoluteDetail ? raw : physicalSlot(raw, p.frame) } : {}),
           ...(kase ? { case: kase } : {}),
         });
         p.stageIndex++;

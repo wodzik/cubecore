@@ -25,6 +25,58 @@ describe("following a scramble", () => {
     expect(feed(t, "R U").complete).toBe(true);
   });
 
+  it("moves on one axis in any order, interleaved: R2 L2 done as L R L R — no undo, both half done show partial, the arrows finish them", () => {
+    const t = new SequenceTracker("F R2 L2 U", S);
+    feed(t, "F");
+    let p = feed(t, "L");
+    expect(p.undo).toEqual([]);
+    expect(p.tokens).toEqual(["done", "current", "partial", "todo"]);
+    expect(t.nextTurn?.kind).toBe("finish");
+    expect(t.nextTurn?.arrows).toEqual([turnArrow({ family: "L", amount: 1 })]);
+    p = feed(t, "R");
+    expect(p.undo).toEqual([]);
+    expect(p.tokens).toEqual(["done", "partial", "partial", "todo"]);
+    expect(t.nextTurn?.arrows.length).toBe(2); // the rest of both
+    p = feed(t, "L");
+    expect(p.tokens).toEqual(["done", "partial", "done", "todo"]);
+    expect(t.nextTurn?.arrows).toEqual([turnArrow({ family: "R", amount: 1 })]);
+    p = feed(t, "R");
+    expect(p.tokens).toEqual(["done", "done", "done", "current"]);
+    expect(p.done).toBe(3);
+    expect(t.nextTurn?.kind).toBe("next");
+    expect(feed(t, "U").complete).toBe(true);
+    expect(t.nextTurn).toBeNull();
+    // Either way round, and the second face first in full.
+    const u = new SequenceTracker("R2 L2", S);
+    expect(feed(u, "R' L2").tokens).toEqual(["partial", "done"]);
+    expect(feed(u, "R'").complete).toBe(true);
+    const v = new SequenceTracker("U D'", S);
+    expect(feed(v, "D'").tokens).toEqual(["current", "done"]);
+    expect(v.nextTurn?.kind).toBe("next");
+  });
+
+  it("another face in the middle of a half turn is a slip: undo it, then finish the half turn", () => {
+    const t = new SequenceTracker("L2 U2", S);
+    let p = feed(t, "L U");
+    expect(formatAlg(p.undo)).toBe("U'");
+    expect(p.wrongWay).toBe(false);
+    expect(t.nextTurn?.kind).toBe("undo");
+    p = feed(t, "U'");
+    expect(p.undo).toEqual([]);
+    expect(p.tokens).toEqual(["partial", "todo"]);
+    expect(t.nextTurn?.kind).toBe("finish");
+    expect(feed(t, "L U2").complete).toBe(true);
+  });
+
+  it("a face of the axis still to do, turned the wrong way, is no slip either", () => {
+    const t = new SequenceTracker("R L", S);
+    const p = feed(t, "L'");
+    expect(p.wrongWay).toBe(true);
+    expect(p.tokens).toEqual(["current", "wrong-way"]);
+    expect(t.nextTurn?.kind).toBe("wrong-way");
+    expect(feed(t, "L2 R").complete).toBe(true);
+  });
+
   it("a slip gives the undo; fixing it puts the cube back on track", () => {
     const t = new SequenceTracker("R U F", S);
     feed(t, "R");

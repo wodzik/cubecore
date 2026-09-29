@@ -25,7 +25,9 @@
  * or the `player` property), the 3D cube shows the next turn — one arrow per
  * turning layer (two for a wide r), as many heads as quarter turns, in
  * --cc-arrow; after a slip the undo move in --cc-arrow-undo, or in
- * --cc-arrow-wrong-way when the right face went the wrong way.
+ * --cc-arrow-wrong-way when the right face went the wrong way; the rest of
+ * a half turn already started (R2 L2 half done, in any order) in
+ * --cc-arrow-finish.
  * `arrow-shape="circle"` for arcs instead of ribbons along the faces.
  *
  * After a slip the moves give way to the way back: the undo moves in their
@@ -83,6 +85,7 @@ export const SEQUENCE_STYLES = /* css */ `
   --cc-arrow: #2f8bff;
   --cc-arrow-undo: #ff4545;
   --cc-arrow-wrong-way: #ff9a1f;
+  --cc-arrow-finish: #ff9a1f;
   --cc-accent: #4f8cff;
   --cc-control-bg: color-mix(in srgb, currentColor 8%, transparent);
   --cc-control-bg-hover: color-mix(in srgb, currentColor 15%, transparent);

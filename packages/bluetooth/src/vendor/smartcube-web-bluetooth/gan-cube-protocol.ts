@@ -349,6 +349,7 @@ class GanGen2ProtocolDriver implements GanProtocolDriver {
 
     private lastSerial: number = -1;
     private lastMoveTimestamp: number = 0;
+    private hadMove = false;
     private cubeTimestamp: number = 0;
 
     createCommandMessage(command: GanCubeCommand): Uint8Array | undefined {
@@ -426,6 +427,13 @@ class GanGen2ProtocolDriver implements GanProtocolDriver {
                         if (elapsed == 0) { // In case of 16-bit cube timestamp register overflow
                             elapsed = timestamp - this.lastMoveTimestamp;
                         }
+                        // After more than the 16-bit register holds (~65 s idle), the interval
+                        // before the first of these moves rolls over: the local one is right.
+                        // (cubecore: GAN i3 times ran a minute or more off after the cube lay idle)
+                        if (i == diff - 1 && this.hadMove) {
+                            const local = timestamp - this.lastMoveTimestamp;
+                            if (local > 0xFFFF && elapsed < local) elapsed = local;
+                        }
                         this.cubeTimestamp += elapsed;
                         cubeEvents.push({
                             type: "MOVE",
@@ -439,6 +447,7 @@ class GanGen2ProtocolDriver implements GanProtocolDriver {
                         });
                     }
                     this.lastMoveTimestamp = timestamp;
+                    this.hadMove = true;
                 }
             }
 

@@ -11,8 +11,18 @@
 export class ClockSync {
   private samples: number[] = [];
 
-  /** @param window how many recent samples the offset is estimated from (the cube clock drifts slowly). */
-  constructor(private readonly window = 64) {}
+  /**
+   * @param window how many recent samples the offset is estimated from (the cube clock drifts slowly).
+   * @param jump a cube clock that lost time (GAN gen2's 16-bit move intervals roll over after
+   *   ~65 s idle): this many samples in a row that agree with each other (within `agree` ms)
+   *   and are all over `jumpMs` later than the offset — the cube clock jumped, start again
+   *   from them. A burst of late notifications (a backgrounded tab) doesn't agree: its
+   *   samples spread over the moves' real intervals.
+   */
+  constructor(
+    private readonly window = 64,
+    private readonly jump = { samples: 5, jumpMs: 1000, agree: 200 },
+  ) {}
 
   /** Offset (local − cube) estimated so far, or null before the first sample. */
   get offset(): number | null {
@@ -24,6 +34,12 @@ export class ClockSync {
     if (localTime === null) return;
     this.samples.push(localTime - cubeTime);
     if (this.samples.length > this.window) this.samples.shift();
+    const { samples: n, jumpMs, agree } = this.jump;
+    if (this.samples.length <= n) return;
+    const recent = this.samples.slice(-n);
+    const best = Math.min(...this.samples.slice(0, -n));
+    const lo = Math.min(...recent);
+    if (lo - best > jumpMs && Math.max(...recent) - lo <= agree) this.samples = recent;
   }
 
   /** The cube time on the page's clock (null until an offset is known). */
